@@ -13,7 +13,7 @@ import {
 
 function Demo() {
   return (
-    <div className="world" style={{ padding: "1rem", maxWidth: 960, margin: "0 auto" }}>
+    <div className="world" data-screenshot-harness style={{ padding: "1rem", maxWidth: 960, margin: "0 auto" }}>
       <h1 style={{ color: "var(--gold)", fontSize: "1.1rem", letterSpacing: "0.12em" }}>PR-B demo（fixture）</h1>
       <div className="settlement" style={{ gridTemplateColumns: "1fr 1fr" }}>
         <section aria-label="U2 shortage">
