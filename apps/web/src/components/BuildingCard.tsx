@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { canStopBuilding } from "../building-actions";
 import { fmtBuffered, fmtIo, realRemainSec, statusLabel } from "../format";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
@@ -137,7 +138,7 @@ export function BuildingCard({
           <button
             type="button"
             className="ghost"
-            disabled={b.status !== "running"}
+            disabled={!canStopBuilding(b.status)}
             onClick={() => setStopConfirmOpen(true)}
           >
             停止
