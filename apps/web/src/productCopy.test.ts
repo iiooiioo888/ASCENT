@@ -19,22 +19,31 @@ describe("productCopy", () => {
     expect(BRAND_DISPLAY_NAME.length).toBeGreaterThan(0);
   });
 
-  it("parseViteBooleanEnv respects common false/true tokens", () => {
-    expect(parseViteBooleanEnv(undefined, true)).toBe(true);
-    expect(parseViteBooleanEnv("", true)).toBe(true);
-    expect(parseViteBooleanEnv("false", true)).toBe(false);
-    expect(parseViteBooleanEnv("off", true)).toBe(false);
-    expect(parseViteBooleanEnv("true", false)).toBe(true);
-  });
-
-  it("parseViteBooleanEnv trims whitespace and accepts 1/yes; unknown falls back to default", () => {
-    expect(parseViteBooleanEnv("   ", false)).toBe(false);
-    expect(parseViteBooleanEnv("  true  ", false)).toBe(true);
-    expect(parseViteBooleanEnv("1", false)).toBe(true);
-    expect(parseViteBooleanEnv("yes", false)).toBe(true);
-    expect(parseViteBooleanEnv("maybe", true)).toBe(true);
-    expect(parseViteBooleanEnv("maybe", false)).toBe(false);
-    expect(parseViteBooleanEnv("garbage", true)).toBe(true);
+  it("parseViteBooleanEnv full semantics (trim, case, unknown → default)", () => {
+    const cases: [string | undefined, boolean, boolean][] = [
+      [undefined, true, true],
+      [undefined, false, false],
+      ["", true, true],
+      ["   ", false, false],
+      ["false", true, false],
+      ["FALSE", true, false],
+      ["0", true, false],
+      ["no", true, false],
+      ["off", true, false],
+      ["true", false, true],
+      ["TRUE", false, true],
+      ["1", false, true],
+      ["yes", false, true],
+      ["on", false, true],
+      ["  true  ", false, true],
+      ["maybe", true, true],
+      ["maybe", false, false],
+      ["garbage", true, true],
+      ["garbage", false, false],
+    ];
+    for (const [raw, defaultValue, expected] of cases) {
+      expect(parseViteBooleanEnv(raw, defaultValue)).toBe(expected);
+    }
   });
 
   it("FEATURE_SHOW_DEPLETION_EMPTY_STATE defaults on in test env", () => {
