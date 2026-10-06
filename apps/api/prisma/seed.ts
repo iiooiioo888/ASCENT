@@ -11,6 +11,7 @@ import {
   itemTypes,
   items,
   rules,
+  seedPlacedBuildingDefIds,
   startingInventory,
   validateCatalog,
 } from "@ascent/shared";
@@ -161,8 +162,7 @@ async function main() {
     });
   }
 
-  const toPlace = ["bdef_field", "bdef_mill", "bdef_oven"];
-  for (const defId of toPlace) {
+  for (const defId of seedPlacedBuildingDefIds) {
     await prisma.playerBuilding.create({
       data: {
         id: `pb_${LOCAL_PLAYER_ID}_${defId}`,

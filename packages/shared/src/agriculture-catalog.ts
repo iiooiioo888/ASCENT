@@ -1,6 +1,17 @@
 import { RELEASED_IN_VERSION } from "./config";
 import type { BuildingDef, ItemDef, ItemTypeDef, ProductionRuleDef } from "./types";
 
+/** TODO(product) 待確認：汲水工時（遊戲秒，佔位 ≈10 現實秒 @ timeScale=60） */
+export const PLACEHOLDER_DRAW_WATER_DURATION_GAME_SEC = 600;
+/** TODO(product) 待確認：每次汲水產出水數量；無輸入消耗 */
+export const PLACEHOLDER_DRAW_WATER_OUTPUT_QTY = 5;
+/** TODO(product) 待確認：留種工時（遊戲秒） */
+export const PLACEHOLDER_SAVE_SEED_DURATION_GAME_SEC = 1800;
+/** TODO(product) 待確認：留種輸入小麥數量 */
+export const PLACEHOLDER_SAVE_SEED_WHEAT_INPUT_QTY = 2;
+/** TODO(product) 待確認：留種產出種子數量 */
+export const PLACEHOLDER_SAVE_SEED_OUTPUT_QTY = 1;
+
 export const itemTypes: ItemTypeDef[] = [
   { id: "it_crop", code: "crop", name: "作物", is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "it_produce", code: "produce", name: "農產加工", is_active: true, released_in_version: RELEASED_IN_VERSION },
@@ -97,6 +108,32 @@ export const rules: ProductionRuleDef[] = [
     released_in_version: RELEASED_IN_VERSION,
     optimizations: [{ code: "batch", output_factor: 2, input_factor: { item_dough: 2 } }],
   },
+  {
+    id: "rule_draw_water",
+    code: "draw_water",
+    parent_rule_id: null,
+    inputs: [],
+    outputs: [{ item_id: "item_water", qty: PLACEHOLDER_DRAW_WATER_OUTPUT_QTY }],
+    duration_game_sec: PLACEHOLDER_DRAW_WATER_DURATION_GAME_SEC,
+    formulas: {},
+    compositions: [],
+    overrides: {},
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
+  {
+    id: "rule_save_seed",
+    code: "save_seed",
+    parent_rule_id: null,
+    inputs: [{ item_id: "item_wheat", qty: PLACEHOLDER_SAVE_SEED_WHEAT_INPUT_QTY }],
+    outputs: [{ item_id: "item_seed_wheat", qty: PLACEHOLDER_SAVE_SEED_OUTPUT_QTY }],
+    duration_game_sec: PLACEHOLDER_SAVE_SEED_DURATION_GAME_SEC,
+    formulas: {},
+    compositions: [],
+    overrides: {},
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
 ];
 
 export const buildingDefs: BuildingDef[] = [
@@ -105,7 +142,7 @@ export const buildingDefs: BuildingDef[] = [
     code: "field",
     name: "田",
     system_code: "agriculture",
-    allowed_rule_ids: ["rule_grow_wheat"],
+    allowed_rule_ids: ["rule_grow_wheat", "rule_save_seed"],
     queue_limit: 1,
     is_active: true,
     released_in_version: RELEASED_IN_VERSION,
@@ -140,6 +177,16 @@ export const buildingDefs: BuildingDef[] = [
     is_active: true,
     released_in_version: RELEASED_IN_VERSION,
   },
+  {
+    id: "bdef_well",
+    code: "well",
+    name: "水井",
+    system_code: "agriculture",
+    allowed_rule_ids: ["rule_draw_water"],
+    queue_limit: 1,
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
 ];
 
 export const startingInventory: Record<string, number> = {
@@ -161,4 +208,9 @@ export const METHOD_NAME: Record<string, string> = {
   method_make_dough_default: "和麵",
   method_bake_bread_default: "烘烤麵包",
   method_bake_bread_batch: "批量烘烤",
+  method_draw_water_default: "汲水",
+  method_save_seed_default: "留種",
 };
+
+/** 開局預放建築（與 seed.ts `toPlace` 對齊；TODO(product) 待確認 D2 是否預放水井） */
+export const seedPlacedBuildingDefIds = ["bdef_field", "bdef_mill", "bdef_oven", "bdef_well"] as const;
