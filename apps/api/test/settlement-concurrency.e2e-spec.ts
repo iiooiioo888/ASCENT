@@ -79,8 +79,10 @@ describe("結算並發（cron × HTTP）", () => {
 
         const after = await wheatQuantity();
         expect(after - before).toBeLessThanOrEqual(2);
+        expect(after - before).toBe(2);
         const building = await prisma.playerBuilding.findUnique({ where: { id: fieldBuildingId } });
         expect(building!.status).not.toBe("ready");
+        expect(building!.lastSettledAt.getTime()).toBeGreaterThanOrEqual(Date.now() - 60_000);
         const buffered = building!.bufferedOutputs as Record<string, number>;
         expect(Object.keys(buffered).length).toBe(0);
       }

@@ -70,11 +70,26 @@ describe("POST collect HTTP 語意（200 / 409）", () => {
 
   it("並發兩次 collect：200 與 409 各一", async () => {
     await readyToCollect();
+    const building = await prisma.playerBuilding.findUniqueOrThrow({ where: { id: fieldBuildingId } });
+    const buffered = building.bufferedOutputs as Record<string, number>;
+    const wheatBuffered = buffered.item_wheat ?? 0;
+    expect(wheatBuffered).toBeGreaterThan(0);
+
+    const invBefore = await prisma.playerInventory.findUnique({
+      where: { playerId_itemId: { playerId: "player_local", itemId: "item_wheat" } },
+    });
+    const qtyBefore = invBefore ? Number(invBefore.quantity) : 0;
+
     const [a, b] = await Promise.all([
       request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`),
       request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`),
     ]);
     expectCollectSuccessAndConflict(a, b);
+
+    const invAfter = await prisma.playerInventory.findUnique({
+      where: { playerId_itemId: { playerId: "player_local", itemId: "item_wheat" } },
+    });
+    expect(Number(invAfter?.quantity ?? 0)).toBe(qtyBefore + wheatBuffered);
   });
 
   it("成功 collect 回 200（非 201）", async () => {
