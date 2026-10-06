@@ -50,7 +50,11 @@ function Demo() {
       <p className="banner banner-goal">{SLICE_GOAL_BANNER}</p>
       <p className="banner">{SLICE_FLOW_BANNER}</p>
       <p className="banner banner-muted">{OFFLINE_PROGRESS_BANNER}</p>
-      <DepletionNotice visible={FEATURE_SHOW_DEPLETION_EMPTY_STATE && resourceDepleted} />
+      <DepletionNotice
+        visible={FEATURE_SHOW_DEPLETION_EMPTY_STATE && resourceDepleted}
+        onGoWell={() => {}}
+        onGoSaveSeed={() => {}}
+      />
 
       <Inventory inventory={demoDepletedInventory} />
 

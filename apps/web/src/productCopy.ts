@@ -22,12 +22,17 @@ export const SLICE_FLOW_BANNER =
 /** TODO(product): 待確認 — 切片目標／終局出口說明 */
 export const SLICE_GOAL_BANNER = "目標：做出第一個麵包（本切片尚無訂單或排行出口）。";
 
-/** TODO(product): 待確認 — 資源耗盡標題（U6 中性空狀態，不發明重置或加資源機制） */
-export const DEPLETION_EMPTY_TITLE = "本切片資源已用盡";
+/** TODO(product): 待確認 — 耗盡橫幅標題（資源循環 §5.2 / U6） */
+export const DEPLETION_EMPTY_TITLE = "生產已暫停：種子或水不足";
 
-/** TODO(product): 待確認 — 耗盡後下一步說明 */
-export const DEPLETION_EMPTY_BODY =
-  "目前所有已放置建築的生產方式都缺料，且沒有進行中或待收取的工作。完整版可能會有水源或育種途徑；若需繼續遊玩，請等待策劃／核心開發更新資料。";
+/** TODO(product): 待確認 — 耗盡橫幅說明 */
+export const DEPLETION_EMPTY_BODY = "用水井汲水，或用小麥留種後即可繼續。";
+
+/** TODO(product): 待確認 — 耗盡橫幅 CTA */
+export const DEPLETION_CTA_WELL = "前往水井";
+
+/** TODO(product): 待確認 — 耗盡橫幅 CTA */
+export const DEPLETION_CTA_SAVE_SEED = "查看留種";
 
 /** TODO(product): 待確認 — 各生產方式用途提示（U13） */
 export const METHOD_PURPOSE_HINTS: Partial<Record<string, string>> = {

@@ -161,9 +161,26 @@ body {
   letter-spacing: 0.06em;
 }
 .depletion-body {
-  margin: 0;
+  margin: 0 0 0.6rem;
   line-height: 1.45;
   color: #efe2c4;
+}
+.depletion-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.plot.scroll-highlight {
+  animation: plot-highlight 2.4s ease-out;
+  box-shadow: 0 0 0 3px rgba(244, 193, 74, 0.85), 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+@keyframes plot-highlight {
+  0% {
+    box-shadow: 0 0 0 4px rgba(244, 193, 74, 1), 0 12px 28px rgba(0, 0, 0, 0.35);
+  }
+  100% {
+    box-shadow: 0 0 0 1px rgba(244, 193, 74, 0.2), 0 8px 20px rgba(0, 0, 0, 0.2);
+  }
 }
 .purpose-hint {
   margin: 0.35rem 0 0;

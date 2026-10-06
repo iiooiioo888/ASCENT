@@ -21,6 +21,8 @@ type Props = {
   onStart: () => void;
   onStop: () => void;
   onCollect: () => void;
+  highlight?: boolean;
+  scrollAnchorId?: string;
 };
 
 export function BuildingCard({
@@ -36,6 +38,8 @@ export function BuildingCard({
   onStart,
   onStop,
   onCollect,
+  highlight = false,
+  scrollAnchorId,
 }: Props) {
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
@@ -62,7 +66,10 @@ export function BuildingCard({
   };
 
   return (
-    <article className={`plot ${b.status}${pending ? " pending" : ""}`}>
+    <article
+      id={scrollAnchorId}
+      className={`plot ${b.status}${pending ? " pending" : ""}${highlight ? " scroll-highlight" : ""}`}
+    >
       <fieldset className="plot-body" disabled={pending}>
         <div className="plot-head">
           <div style={{ display: "flex", gap: "0.7rem", alignItems: "center" }}>

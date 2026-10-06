@@ -5,7 +5,15 @@ import { DepletionNotice } from "./components/DepletionNotice";
 import { Inventory } from "./components/Inventory";
 import type { BuildingActionErrorView } from "./building-action-error";
 import { mapBuildingActionError } from "./building-action-error";
+import {
+  buildingScrollAnchorId,
+  findFieldBuilding,
+  pickSaveSeedMethodId,
+  resolveWellScrollAnchorId,
+  SCROLL_HIGHLIGHT_MS,
+} from "./depletion-scroll";
 import { isResourceDepleted } from "./depletion";
+import { FIELD_BUILDING_DEF_ID, WELL_BUILDING_DEF_ID } from "./resource-loop-copy";
 import { formatUserError, fmtGame } from "./format";
 import { BUILDING_ICON } from "./meta";
 import {
@@ -24,6 +32,8 @@ export default function App() {
   const [pollError, setPollError] = useState("");
   const [actionErrors, setActionErrors] = useState<Record<string, BuildingActionErrorView>>({});
   const [picked, setPicked] = useState<Record<string, string>>({});
+  const [highlightDefId, setHighlightDefId] = useState<string | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingKeysRef = useRef(new Set<string>());
   const [pendingKeys, setPendingKeys] = useState<Set<string>>(() => new Set());
 
@@ -41,6 +51,22 @@ export default function App() {
     return () => clearInterval(t);
   }, [refresh]);
 
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    };
+  }, []);
+
+  const flashHighlight = useCallback((buildingDefId: string) => {
+    setHighlightDefId(buildingDefId);
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = setTimeout(() => setHighlightDefId(null), SCROLL_HIGHLIGHT_MS);
+  }, []);
+
+  const scrollToAnchor = useCallback((anchorId: string) => {
+    document.getElementById(anchorId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
+
   const methodsByRule = useMemo(() => {
     const m = new Map<string, Method[]>();
     for (const method of state?.methods ?? []) {
@@ -55,6 +81,25 @@ export default function App() {
     if (!state) return false;
     return isResourceDepleted(state.buildings, state.inventory, methodsByRule);
   }, [state, methodsByRule]);
+
+  const goToWell = useCallback(() => {
+    if (!state) return;
+    flashHighlight(WELL_BUILDING_DEF_ID);
+    scrollToAnchor(resolveWellScrollAnchorId(state.buildings));
+  }, [flashHighlight, scrollToAnchor, state]);
+
+  const goToSaveSeed = useCallback(() => {
+    if (!state) return;
+    flashHighlight(FIELD_BUILDING_DEF_ID);
+    const field = findFieldBuilding(state.buildings);
+    if (field) {
+      const saveSeedId = pickSaveSeedMethodId(field, methodsByRule);
+      if (saveSeedId) {
+        setPicked((prev) => ({ ...prev, [field.id]: saveSeedId }));
+      }
+      scrollToAnchor(buildingScrollAnchorId(field.id));
+    }
+  }, [flashHighlight, methodsByRule, scrollToAnchor, state]);
 
   const setPending = useCallback((key: string, on: boolean) => {
     const next = new Set(pendingKeysRef.current);
@@ -134,7 +179,11 @@ export default function App() {
       <p className="banner banner-goal">{SLICE_GOAL_BANNER}</p>
       <p className="banner">{SLICE_FLOW_BANNER}</p>
       <p className="banner banner-muted">{OFFLINE_PROGRESS_BANNER}</p>
-      <DepletionNotice visible={FEATURE_SHOW_DEPLETION_EMPTY_STATE && resourceDepleted} />
+      <DepletionNotice
+        visible={FEATURE_SHOW_DEPLETION_EMPTY_STATE && resourceDepleted}
+        onGoWell={goToWell}
+        onGoSaveSeed={goToSaveSeed}
+      />
       {pollError ? <p className="banner error">{pollError}</p> : null}
 
       <Inventory inventory={state.inventory} />
@@ -160,6 +209,8 @@ export default function App() {
           return (
             <BuildingCard
               key={b.id}
+              scrollAnchorId={buildingScrollAnchorId(b.id)}
+              highlight={highlightDefId === b.buildingDefId}
               building={b}
               options={options}
               inventory={state.inventory}
@@ -180,7 +231,11 @@ export default function App() {
           const actionKey = `place:${d.id}`;
           const pending = pendingKeys.has(actionKey);
           return (
-            <div key={d.id} className={`plot empty${pending ? " pending" : ""}`}>
+            <div
+              key={d.id}
+              id={`plot-unplaced-${d.id}`}
+              className={`plot empty${pending ? " pending" : ""}${highlightDefId === d.id ? " scroll-highlight" : ""}`}
+            >
               <fieldset className="plot-body" disabled={pending}>
                 <div className="bicon">{BUILDING_ICON[d.id] ?? "🪵"}</div>
                 <div>空地 · 可放置{d.name}</div>
