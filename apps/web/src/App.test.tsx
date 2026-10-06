@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { BUILDING_STATE_CHANGED_COPY } from "./format";
 import { growWheatDefault } from "./prb-demo/fixtures";
 import { CONNECTION_INTERRUPTED_BANNER } from "./productCopy";
 import type { GameState } from "./types";
@@ -166,7 +167,7 @@ describe("App P0 stale building action refresh", () => {
     await waitFor(() => {
       expect(stateFetches).toBeGreaterThan(beforeCollect);
     });
-    expect(screen.getByRole("alert")).toHaveTextContent(/狀態已變更|重新整理/);
+    expect(screen.getByRole("alert")).toHaveTextContent(BUILDING_STATE_CHANGED_COPY);
   });
 
   it("refreshes state after pre-PR#8 HTTP 400 race on collect", async () => {
@@ -194,5 +195,6 @@ describe("App P0 stale building action refresh", () => {
     await waitFor(() => {
       expect(stateFetches).toBeGreaterThan(beforeCollect);
     });
+    expect(screen.getByRole("alert")).toHaveTextContent(BUILDING_STATE_CHANGED_COPY);
   });
 });
