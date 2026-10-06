@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "./api";
-import {
-  BUILDING_STATE_CHANGED_COPY,
-  formatActionError,
-  formatQuantity,
-  formatUserError,
-  fmtIo,
-} from "./format";
+import { BUILDING_ACTION_ERROR_COPY } from "./building-action-error";
+import { formatActionError, formatQuantity, formatUserError, fmtIo } from "./format";
 
 describe("formatQuantity", () => {
   it("shows integers without decimals", () => {
@@ -34,13 +29,13 @@ describe("formatUserError", () => {
 });
 
 describe("formatActionError", () => {
-  it("maps stale HTTP 409 to refreshed copy", () => {
-    expect(formatActionError(new ApiError("建築狀態已變更，請重新整理", 409))).toBe(BUILDING_STATE_CHANGED_COPY);
-  });
-
-  it("passes through non-stale HTTP 400", () => {
-    expect(formatActionError(new ApiError("此建築不能使用該方式", 400))).toBe("此建築不能使用該方式");
-    expect(formatActionError(new ApiError("資源不足：item_water", 400))).toBe("資源不足：水");
+  it("delegates to building action mapper", () => {
+    expect(formatActionError(new ApiError("建築狀態已變更，請重新整理", 409))).toBe(
+      BUILDING_ACTION_ERROR_COPY.STATE_CHANGED,
+    );
+    expect(formatActionError(new ApiError("此建築不能使用該方式", 400))).toBe(
+      BUILDING_ACTION_ERROR_COPY.METHOD_NOT_ALLOWED,
+    );
   });
 });
 

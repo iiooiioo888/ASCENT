@@ -2,15 +2,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import { BuildingCard } from "./components/BuildingCard";
 import { Inventory } from "./components/Inventory";
-import { formatActionError, formatUserError, fmtGame } from "./format";
-import { isStaleBuildingActionError } from "./stale-building-action";
+import type { BuildingActionErrorView } from "./building-action-error";
+import { mapBuildingActionError } from "./building-action-error";
+import { formatUserError, fmtGame } from "./format";
 import { BUILDING_ICON } from "./meta";
 import type { GameState, Method } from "./types";
 
 export default function App() {
   const [state, setState] = useState<GameState | null>(null);
   const [pollError, setPollError] = useState("");
-  const [actionErrors, setActionErrors] = useState<Record<string, string>>({});
+  const [actionErrors, setActionErrors] = useState<Record<string, BuildingActionErrorView>>({});
   const [picked, setPicked] = useState<Record<string, string>>({});
   const pendingKeysRef = useRef(new Set<string>());
   const [pendingKeys, setPendingKeys] = useState<Set<string>>(() => new Set());
@@ -67,10 +68,14 @@ export default function App() {
         });
         await refresh();
       } catch (e) {
-        if (isStaleBuildingActionError(e)) {
+        const mapped = mapBuildingActionError(e);
+        if (mapped.shouldRefresh) {
           await refresh().catch(() => undefined);
         }
-        setActionErrors((prev) => ({ ...prev, [actionKey]: formatActionError(e) }));
+        setActionErrors((prev) => ({
+          ...prev,
+          [actionKey]: { message: mapped.message, hint: mapped.hint },
+        }));
       } finally {
         setPending(actionKey, false);
       }
@@ -160,8 +165,8 @@ export default function App() {
                 <div className="bicon">{BUILDING_ICON[d.id] ?? "🪵"}</div>
                 <div>空地 · 可放置{d.name}</div>
                 {actionErrors[actionKey] ? (
-                  <p className="plot-action-error" role="alert">
-                    {actionErrors[actionKey]}
+                  <p className="plot-action-error" role="alert" title={actionErrors[actionKey].hint}>
+                    {actionErrors[actionKey].message}
                   </p>
                 ) : null}
                 <button type="button" onClick={() => act(actionKey, "/api/v1/buildings", { buildingDefId: d.id })}>

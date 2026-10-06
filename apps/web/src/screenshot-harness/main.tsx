@@ -32,7 +32,7 @@ function Harness() {
           selectedId={methodId}
           selected={selected}
           timeScale={60}
-          actionError="資源不足：水"
+          actionError={{ message: "資源不足：水" }}
           pending={false}
           onSelectMethod={setMethodId}
           onStart={() => undefined}
@@ -45,7 +45,7 @@ function Harness() {
           selectedId={undefined}
           selected={undefined}
           timeScale={60}
-          actionError="此建築不能使用該方式"
+          actionError={{ message: "此建築不能使用該方式" }}
           pending={false}
           onSelectMethod={() => undefined}
           onStart={() => undefined}
@@ -58,7 +58,7 @@ function Harness() {
           selectedId={millMethodId}
           selected={millSelected}
           timeScale={60}
-          actionError={BUILDING_STATE_CHANGED_COPY}
+          actionError={{ message: BUILDING_STATE_CHANGED_COPY }}
           pending={false}
           onSelectMethod={() => undefined}
           onStart={() => undefined}
