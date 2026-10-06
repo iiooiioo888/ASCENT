@@ -72,6 +72,19 @@ describe("BuildingCard U4 stop confirm", () => {
     expect(screen.getByRole("button", { name: "停止" })).toBeEnabled();
   });
 
+  it("stop stays enabled while running even with empty inventory (U6 does not block U4)", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoMillRunning}
+        inventory={[]}
+        selectedId={mixFeedDefault.id}
+        selected={mixFeedDefault}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "停止" })).toBeEnabled();
+  });
+
   it("cancel closes dialog without stop; confirm calls onStop once", async () => {
     const user = userEvent.setup();
     const onStop = vi.fn();
