@@ -32,6 +32,23 @@ export const DEPLETION_EMPTY_BODY =
 /** When false, hide the depletion banner (logic still testable). TODO(product): 待確認 — 是否永遠顯示耗盡提示 */
 export const FEATURE_SHOW_DEPLETION_EMPTY_STATE = true;
 
+/** TODO(product): 待確認 — 離線摘要方案 A/B（A＝localStorage 比對；off＝關閉；B＝日後 API 摘要） */
+export type OfflineSummaryFeatureMode = "A" | "off";
+
+export const FEATURE_OFFLINE_SUMMARY: OfflineSummaryFeatureMode = "A";
+
+/** TODO(product): 待確認 — 離線歸來摘要標題（U11 方案 A，文案待策劃） */
+export const OFFLINE_SUMMARY_TITLE = "離開期間";
+
+/** Small tag shown beside the summary title while product picks A vs API (B). */
+export const OFFLINE_SUMMARY_PENDING_TAG = "待確認";
+
+export const OFFLINE_SUMMARY_DISMISS_LABEL = "知道了";
+
+/** Wording aligned with OFFLINE_PROGRESS_BANNER — no backend settlement promise. */
+export const OFFLINE_SUMMARY_FOOTNOTE =
+  "此為本機上次畫面與目前狀態的前端比對，並非後端結算紀錄。離線最多補算 8 現實小時；每座建築同一時間只做一單，完成後需回來收取。";
+
 /** TODO(product): 待確認 — 各生產方式用途提示（U13） */
 export const METHOD_PURPOSE_HINTS: Partial<Record<string, string>> = {
   method_mix_feed_default: "飼料：目前冇下游用途，可先略過。",

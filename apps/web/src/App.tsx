@@ -4,6 +4,7 @@ import { BuildingCard } from "./components/BuildingCard";
 import { ConnectionStatusBar } from "./components/ConnectionStatusBar";
 import { DepletionNotice } from "./components/DepletionNotice";
 import { Inventory } from "./components/Inventory";
+import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { nextPollFailureCount, shouldShowConnectionLost } from "./connectionPoll";
 import { isResourceDepleted } from "./depletion";
@@ -13,6 +14,7 @@ import {
   BRAND_DISPLAY_NAME,
   BRAND_SUBTITLE,
   FEATURE_SHOW_DEPLETION_EMPTY_STATE,
+  FEATURE_OFFLINE_SUMMARY,
   OFFLINE_PROGRESS_BANNER,
   OFFLINE_PROGRESS_HUD_CHIP,
   SLICE_FLOW_BANNER,
@@ -24,6 +26,14 @@ import {
   SUCCESS_FEEDBACK_MS,
 } from "./successFeedback";
 import type { GameState, Method } from "./types";
+import {
+  diffOfflineSnapshot,
+  isOfflineSummaryEnabled,
+  loadStoredSnapshot,
+  saveStoredSnapshot,
+  snapshotFromGameState,
+  type OfflineSummaryResult,
+} from "./offlineSummary";
 
 export default function App() {
   const [state, setState] = useState<GameState | null>(null);
@@ -38,6 +48,12 @@ export default function App() {
   const [picked, setPicked] = useState<Record<string, string>>({});
   const pendingKeysRef = useRef(new Set<string>());
   const [pendingKeys, setPendingKeys] = useState<Set<string>>(() => new Set());
+  const stateRef = useRef<GameState | null>(null);
+  const offlineSummaryVisibleRef = useRef(false);
+  const offlineEvaluatedRef = useRef(false);
+  const [offlineSummary, setOfflineSummary] = useState<OfflineSummaryResult | null>(null);
+
+  stateRef.current = state;
 
   const refresh = useCallback(async () => {
     const next = await api<GameState>("/api/v1/state");
@@ -73,6 +89,52 @@ export default function App() {
   useEffect(() => {
     runInitialLoad();
   }, [runInitialLoad]);
+
+  useEffect(() => {
+    if (!state || !isOfflineSummaryEnabled(FEATURE_OFFLINE_SUMMARY)) return;
+    if (offlineEvaluatedRef.current) return;
+    offlineEvaluatedRef.current = true;
+
+    const previous = loadStoredSnapshot();
+    if (previous) {
+      const summary = diffOfflineSnapshot(previous, state);
+      if (summary) {
+        setOfflineSummary(summary);
+        offlineSummaryVisibleRef.current = true;
+        return;
+      }
+    }
+    saveStoredSnapshot(snapshotFromGameState(state));
+  }, [state]);
+
+  useEffect(() => {
+    if (!state || !isOfflineSummaryEnabled(FEATURE_OFFLINE_SUMMARY)) return undefined;
+
+    const persistUnlessSummaryOpen = () => {
+      if (offlineSummaryVisibleRef.current) return;
+      const current = stateRef.current;
+      if (current) saveStoredSnapshot(snapshotFromGameState(current));
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") persistUnlessSummaryOpen();
+    };
+
+    window.addEventListener("pagehide", persistUnlessSummaryOpen);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", persistUnlessSummaryOpen);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [state]);
+
+  const dismissOfflineSummary = useCallback(() => {
+    const current = stateRef.current;
+    if (!current) return;
+    setOfflineSummary(null);
+    offlineSummaryVisibleRef.current = false;
+    saveStoredSnapshot(snapshotFromGameState(current));
+  }, []);
 
   useEffect(() => {
     if (!state) return undefined;
@@ -236,6 +298,9 @@ export default function App() {
       <p className="banner banner-goal">{SLICE_GOAL_BANNER}</p>
       <p className="banner">{SLICE_FLOW_BANNER}</p>
       <p className="banner banner-muted">{OFFLINE_PROGRESS_BANNER}</p>
+      {offlineSummary ? (
+        <OfflineSummaryNotice summary={offlineSummary} onDismiss={dismissOfflineSummary} />
+      ) : null}
       <DepletionNotice visible={FEATURE_SHOW_DEPLETION_EMPTY_STATE && resourceDepleted} />
 
       <Inventory inventory={state.inventory} highlightItemIds={highlightItems} />
