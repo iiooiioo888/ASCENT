@@ -10,6 +10,7 @@ import {
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { SimulationService } from "../simulation/simulation.service";
+import { isMethodAllowedForBuilding } from "./building-method-access";
 import { SettlementMutex } from "./settlement-mutex";
 
 function toGameInt(sec: number): bigint {
@@ -126,7 +127,7 @@ export class InventoryService {
       const method = await this.prisma.productionMethod.findFirst({ where: { id: methodId, isActive: true } });
       if (!method) throw new BadRequestException("未知生產方式");
       const allowed = (building.buildingDef.allowedRuleIds as string[]) ?? [];
-      if (allowed.length && !allowed.includes(method.ruleId)) {
+      if (!isMethodAllowedForBuilding(allowed, method.ruleId)) {
         throw new BadRequestException("此建築不能使用該方式");
       }
       const inputs = iosToRecord(method.inputs as ItemIo[]);
