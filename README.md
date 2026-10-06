@@ -148,16 +148,19 @@ pnpm dev
 
 工程 MVP **預設仍為 SQLite**；下列步驟僅在要驗證 ADR 0001 目標主庫（`prisma/migrations/` 內 `JSONB`／GIN migration）時使用。完成後請依 **切回 SQLite** 還原，避免誤 commit `provider = postgresql`。
 
+**無 Docker 時**：可改用本機已安裝的 PostgreSQL（步驟 1 改為確保服務在跑，並把步驟 3 的 `DATABASE_URL` 改成你的帳密／資料庫名）；或**不跑本機 Postgres**，直接看 PR 上 CI 的 **`postgres-migrate-test`** job（等同步驟 4–6 + API 測試，無需本機容器）。
+
 | 步驟 | 命令 | 預期結果 |
 | --- | --- | --- |
-| 1. 啟動 Postgres | 在 repo 根目錄：`pnpm db:up` | Docker 輸出 `healthy`；`docker compose ps` 見 `postgres` 監聽 `5432` |
+| 1. 啟動 Postgres | 在 repo 根目錄：`pnpm db:up`（需 Docker） | Docker 輸出 `healthy`；`docker compose ps` 見 `postgres` 監聽 `5432` |
 | 2. 改 provider | 編輯 `apps/api/prisma/schema.prisma`：`provider = "sqlite"` → `provider = "postgresql"` | `prisma validate` 不再報 provider 與 URL 不符 |
-| 3. 改連線 | 編輯 `apps/api/.env`：`DATABASE_URL="postgresql://ascent:ascent@localhost:5432/ascent"` | 與 `docker-compose.yml` 帳密一致 |
-| 4. 產生 Client | `pnpm --filter @ascent/api prisma:generate` | `✔ Generated Prisma Client` 至 `apps/api/generated/prisma` |
-| 5. 套用 migration | `pnpm --filter @ascent/api exec -- prisma migrate deploy` | `Applying migration \`20261006000000_init\``，無 error |
-| 6. 種子 | `pnpm db:seed` | `種子完成：8 物品、2 屬性定義、5 規則、7 方式` |
-| 7. 啟 API | `pnpm dev:api` | `Nest application successfully started`；監聽 `3000` |
-| 8. 驗證 HTTP | 另開終端機：<br>`curl -s http://localhost:3000/api/v1/state \| jq .player.id`<br>`curl -s -X POST http://localhost:3000/api/v1/buildings/pb_player_local_bdef_field/collect` | 前者輸出 `"player_local"`；後者回 JSON（空 buffer 時仍為 200，含建築狀態） |
+| 3. 改連線 | 編輯 `apps/api/.env`：`DATABASE_URL="postgresql://ascent:ascent@localhost:5432/ascent"` | 與 `docker-compose.yml` 帳密一致（本機 Postgres 則改為你的連線字串） |
+| 4. 建置 shared | `pnpm --filter @ascent/shared build` | `packages/shared/dist` 更新（seed 依賴 `@ascent/shared`） |
+| 5. 產生 Client | `pnpm --filter @ascent/api prisma:generate` | CLI 顯示 `Generated Prisma Client … to ./generated/prisma`（目錄為 **`apps/api/generated/prisma/`**，內含 `client` 子模組；已 gitignore） |
+| 6. 套用 migration | `pnpm --filter @ascent/api exec -- prisma migrate deploy` | `Applying migration \`20261006000000_init\``，無 error |
+| 7. 種子 | `pnpm db:seed` | `種子完成：8 物品、2 屬性定義、5 規則、7 方式` |
+| 8. 啟 API | `pnpm dev:api` | `Nest application successfully started`；監聽 `3000` |
+| 9. 驗證 HTTP | 另開終端機：<br>`curl -s http://localhost:3000/api/v1/state \| jq .player.id`<br>`curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/v1/buildings/pb_player_local_bdef_field/collect` | 前者輸出 `"player_local"`；後者種子建築為 **`idle`**，對 `collect` 目前回 **`400`**（body：`尚無可收取產出`）。**PR #8 合併後**同一情況會改為 **`409`**。要測成功收取需先 `start` 生產至 `ready` 再 `collect` |
 
 **常見失敗與處理**
 
@@ -167,7 +170,7 @@ pnpm dev
 | `P1010` / SSL 相關（雲端 Postgres） | Prisma 7 `pg` adapter SSL 預設較嚴 | 本機 Compose 通常無 SSL；雲端請依 [Prisma 7 升級指南](https://www.prisma.io/docs/guides/upgrade-prisma-orm/v7) 設定 `ssl` 或 CA |
 | migration 失敗、`JSONB`/`GIN` 語法錯誤 | 仍用 SQLite provider 或對 SQLite 跑 `migrate deploy` | 確認 provider 為 `postgresql` 且 URL 為 `postgresql://…` |
 | `db push` 警告或索引被改寫 | 對 Postgres 誤用 `db push` | Postgres 只用 **`migrate deploy`**；SQLite 本機才用 `db push` |
-| `PrismaClient` / adapter 錯誤 | 未 `generate` 或 `.env` 與 provider 不一致 | 重跑步驟 3–4；確認 `createPrismaAdapter()` 會依 URL 選 `@prisma/adapter-pg` |
+| `PrismaClient` / adapter 錯誤 | 未 `generate`、未 build shared，或 `.env` 與 provider 不一致 | 重跑步驟 3–5；確認 `createPrismaAdapter()` 只接受 `file:`／`sqlite:`／`postgres(ql)://`，其他協定會 **throw** |
 | seed 後測試失敗 | 未 seed 或仍指向舊 SQLite 檔 | 確認 `.env` 為 Postgres URL 後重跑 seed |
 
 **切回 SQLite（預設 dev）**
@@ -177,7 +180,7 @@ pnpm dev
 3. `apps/api/.env`：`DATABASE_URL="file:./dev.db"`。
 4. `pnpm setup:db`（會 `generate`、`db push`、seed；SQLite 不走 `migrate deploy`）。
 
-CI 另跑 **`postgres-migrate-test`** job（GitHub Actions `postgres` service）：自動執行步驟 4–6 與 API 測試，無需本機 Docker。
+CI 另跑 **`postgres-migrate-test`** job（GitHub Actions `postgres` service）：自動執行 **shared build**、generate、migrate deploy、seed 與 API 測試，無需本機 Docker。
 
 `packages/shared` 不得依賴 Prisma、Socket.IO 或 Redis 客戶端。權威寫入只留在 `apps/api`。否決：Fastify 當核心、Phaser 進核心、Redis 當主庫、每 tick 全量模擬。
 
