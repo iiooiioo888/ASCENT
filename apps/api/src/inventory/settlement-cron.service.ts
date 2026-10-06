@@ -18,6 +18,7 @@ export class SettlementCronService {
 
   @Cron("*/5 * * * * *")
   async coarseTick() {
+    if (process.env.NODE_ENV === "test") return;
     try {
       await this.sim.refreshConfig();
       await this.inventory.settleAll();

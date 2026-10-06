@@ -19,6 +19,15 @@ describe("遊戲設定", () => {
   it("DB 缺列時回退常數", () => {
     expect(gameConfigFromDb(null)).toEqual(GAME_CONFIG);
   });
+
+  it("DB 欄位缺失或非法時逐欄回退常數", () => {
+    expect(
+      gameConfigFromDb({
+        timeScale: Number.NaN,
+        maxOfflineRealSec: undefined,
+      }),
+    ).toEqual(GAME_CONFIG);
+  });
 });
 
 describe("時間契約", () => {

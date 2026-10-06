@@ -17,10 +17,22 @@ function toGameInt(sec: number): bigint {
 
 @Injectable()
 export class InventoryService {
+  /** 序列化懶結算，避免 GET 與背景 cron 併發重複結算同一時間窗。 */
+  private settlementTail: Promise<void> = Promise.resolve();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly sim: SimulationService,
   ) {}
+
+  private runSerialized<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.settlementTail.then(fn);
+    this.settlementTail = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }
 
   async time() {
     const state = await this.requireState();
@@ -220,15 +232,21 @@ export class InventoryService {
   }
 
   async settleAll() {
-    const buildings = await this.prisma.playerBuilding.findMany({
-      where: { playerId: LOCAL_PLAYER_ID },
+    return this.runSerialized(async () => {
+      const buildings = await this.prisma.playerBuilding.findMany({
+        where: { playerId: LOCAL_PLAYER_ID },
+      });
+      for (const b of buildings) {
+        await this.settleBuildingUnlocked(b.id);
+      }
     });
-    for (const b of buildings) {
-      await this.settleBuilding(b.id);
-    }
   }
 
   async settleBuilding(id: string) {
+    return this.runSerialized(() => this.settleBuildingUnlocked(id));
+  }
+
+  private async settleBuildingUnlocked(id: string) {
     const building = await this.prisma.playerBuilding.findUnique({ where: { id } });
     if (!building) return;
     const now = new Date();

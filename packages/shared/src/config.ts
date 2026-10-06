@@ -25,15 +25,23 @@ export const GAME_CONFIG: GameConfigValues = {
 
 export type GameConfig = typeof GAME_CONFIG;
 
+function pickConfigNumber(
+  value: number | null | undefined,
+  fallback: number,
+): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+/** DB 缺列或欄位非法時，逐欄回退 {@link GAME_CONFIG}。 */
 export function gameConfigFromDb(
-  row: GameConfigValues | null | undefined,
+  row: Partial<GameConfigValues> | null | undefined,
 ): GameConfigValues {
-  if (!row) return GAME_CONFIG;
+  if (!row) return { ...GAME_CONFIG };
   return {
-    timeScale: row.timeScale,
-    gameDayGameSec: row.gameDayGameSec,
-    maxOfflineRealSec: row.maxOfflineRealSec,
-    maxOfflineGameSec: row.maxOfflineGameSec,
-    tickIntervalRealMs: row.tickIntervalRealMs,
+    timeScale: pickConfigNumber(row.timeScale, GAME_CONFIG.timeScale),
+    gameDayGameSec: pickConfigNumber(row.gameDayGameSec, GAME_CONFIG.gameDayGameSec),
+    maxOfflineRealSec: pickConfigNumber(row.maxOfflineRealSec, GAME_CONFIG.maxOfflineRealSec),
+    maxOfflineGameSec: pickConfigNumber(row.maxOfflineGameSec, GAME_CONFIG.maxOfflineGameSec),
+    tickIntervalRealMs: pickConfigNumber(row.tickIntervalRealMs, GAME_CONFIG.tickIntervalRealMs),
   };
 }
