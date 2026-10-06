@@ -1,8 +1,15 @@
+/**
+ * PR-C screenshot harness (`prc-demo.html`).
+ * Requires Playwright Chromium once per machine: `pnpm exec playwright install chromium`
+ */
 import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+
+const PLAYWRIGHT_INSTALL_HINT =
+  "Playwright browser missing. From apps/web run: pnpm exec playwright install chromium";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const webRoot = path.resolve(__dirname, "..");
@@ -30,6 +37,18 @@ function waitForServer(ms = 45000) {
   });
 }
 
+async function launchBrowser() {
+  try {
+    return await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-gpu"] });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/Executable doesn't exist|browserType.launch/i.test(msg)) {
+      console.error(PLAYWRIGHT_INSTALL_HINT);
+    }
+    throw err;
+  }
+}
+
 const vite = spawn(
   "pnpm",
   ["exec", "vite", "--port", String(port), "--strictPort", "--host", "127.0.0.1"],
@@ -44,7 +63,7 @@ vite.stderr?.on("data", (chunk) => process.stderr.write(chunk));
 
 try {
   await waitForServer();
-  const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-gpu"] });
+  const browser = await launchBrowser();
   const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
   await page.goto(url, { waitUntil: "networkidle", timeout: 60000 });
   await page.waitForSelector("[data-screenshot-harness]", { timeout: 15000 });
