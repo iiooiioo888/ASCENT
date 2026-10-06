@@ -28,8 +28,9 @@ export type GameConfig = typeof GAME_CONFIG;
 function pickConfigNumber(
   value: number | null | undefined,
   fallback: number,
+  min = 1,
 ): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  return typeof value === "number" && Number.isFinite(value) && value >= min ? value : fallback;
 }
 
 /** DB 缺列或欄位非法時，逐欄回退 {@link GAME_CONFIG}。 */

@@ -140,7 +140,7 @@ pnpm dev
 
 前端：http://localhost:5173 。API：http://localhost:3000/api/v1/state 。
 
-目標主庫仍是 PostgreSQL（ADR 0001）。`prisma/migrations/` 內 SQL 對應 **PostgreSQL**（`JSONB` 等）。工程 MVP 預設在 `apps/api/prisma/schema.prisma` 使用 **SQLite**（`file:./dev.db`），本機無 Docker 即可 `pnpm setup:db` 可玩。
+目標主庫仍是 PostgreSQL（ADR 0001）。`prisma/migrations/` 內 SQL 對應 **PostgreSQL**（`JSONB` 等）。工程 MVP 預設在 `apps/api/prisma/schema.prisma` 使用 **SQLite**（`DATABASE_URL="file:./dev.db"`，檔案落在 **`apps/api/prisma/dev.db`**），本機無 Docker 即可 `pnpm setup:db` 可玩。
 
 若要改用 Compose 裡的 Postgres：先 `pnpm db:up`，把 `schema.prisma` 的 `provider` 改為 `postgresql`，`apps/api/.env` 的 `DATABASE_URL` 改為 `postgresql://ascent:ascent@localhost:5432/ascent`，再執行 `pnpm --filter @ascent/api exec -- prisma migrate deploy` 與 `pnpm db:seed`（不要用 `db push` 覆蓋正式 migration）。
 

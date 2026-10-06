@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import { BuildingCard } from "./components/BuildingCard";
 import { Inventory } from "./components/Inventory";
-import { formatUserError, fmtGame } from "./format";
+import { formatActionError, formatUserError, fmtGame, isApiConflict } from "./format";
 import { BUILDING_ICON } from "./meta";
 import type { GameState, Method } from "./types";
 
@@ -66,7 +66,10 @@ export default function App() {
         });
         await refresh();
       } catch (e) {
-        setActionErrors((prev) => ({ ...prev, [actionKey]: formatUserError(e) }));
+        if (isApiConflict(e)) {
+          await refresh().catch(() => undefined);
+        }
+        setActionErrors((prev) => ({ ...prev, [actionKey]: formatActionError(e) }));
       } finally {
         setPending(actionKey, false);
       }
