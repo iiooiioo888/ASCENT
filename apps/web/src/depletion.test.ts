@@ -36,6 +36,11 @@ const fieldBuilding = (status: Building["status"]): Building => ({
 const methodsByRule = new Map<string, Method[]>([["rule_grow_wheat", [growWheat]]]);
 
 describe("isResourceDepleted", () => {
+  it("is false when there are no placed buildings (empty settlement)", () => {
+    const inventory = [row("item_seed_wheat", "0"), row("item_water", "0")];
+    expect(isResourceDepleted([], inventory, methodsByRule)).toBe(false);
+  });
+
   it("is false when at least one method is affordable", () => {
     const inventory = [row("item_seed_wheat", "1"), row("item_water", "1")];
     expect(isResourceDepleted([fieldBuilding("idle")], inventory, methodsByRule)).toBe(false);
