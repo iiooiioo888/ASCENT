@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatQuantity, formatUserError, fmtIo } from "./format";
+import { ApiError } from "./api";
+import {
+  BUILDING_STATE_CHANGED_COPY,
+  formatActionError,
+  formatQuantity,
+  formatUserError,
+  fmtIo,
+} from "./format";
 
 describe("formatQuantity", () => {
   it("shows integers without decimals", () => {
@@ -23,6 +30,16 @@ describe("formatUserError", () => {
   it("removes Error prefix and maps item ids", () => {
     expect(formatUserError(new Error("資源不足：item_water"))).toBe("資源不足：水");
     expect(formatUserError("Error: 資源不足：item_water")).toBe("資源不足：水");
+  });
+});
+
+describe("formatActionError", () => {
+  it("maps HTTP 409 to refreshed copy", () => {
+    expect(formatActionError(new ApiError("建築狀態已變更，請重新整理", 409))).toBe(BUILDING_STATE_CHANGED_COPY);
+  });
+
+  it("passes through method-not-allowed HTTP 400", () => {
+    expect(formatActionError(new ApiError("此建築不能使用該方式", 400))).toBe("此建築不能使用該方式");
   });
 });
 

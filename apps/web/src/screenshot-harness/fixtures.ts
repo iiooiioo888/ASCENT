@@ -43,6 +43,37 @@ export const demoFieldBuilding: Building = {
 
 export const demoFieldMethods = growMethods;
 
+export const demoSiloBuilding: Building = {
+  id: "demo_silo",
+  status: "idle",
+  buildingDefId: "bdef_silo",
+  buildingDef: { name: "倉", allowedRuleIds: [] },
+  methodId: null,
+  queue: [],
+  bufferedOutputs: {},
+};
+
+export const demoMillBuilding: Building = {
+  id: "demo_mill",
+  status: "ready",
+  buildingDefId: "bdef_mill",
+  buildingDef: { name: "磨坊", allowedRuleIds: ["rule_mill_flour", "rule_mix_feed"] },
+  methodId: "method_mill_flour_default",
+  queue: [],
+  bufferedOutputs: { item_flour: 1 },
+};
+
+export const demoMillMethods: Method[] = [
+  {
+    id: "method_mill_flour_default",
+    code: "method_mill_flour_default",
+    ruleId: "rule_mill_flour",
+    durationGameSec: 1800,
+    inputs: [{ item_id: "item_wheat", qty: 1 }],
+    outputs: [{ item_id: "item_flour", qty: 1 }],
+  },
+];
+
 function invRow(itemId: string, quantity: string, code: string): InvRow {
   return {
     itemId,

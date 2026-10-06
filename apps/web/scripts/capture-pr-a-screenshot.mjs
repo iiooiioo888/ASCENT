@@ -45,7 +45,7 @@ vite.stderr?.on("data", (chunk) => process.stderr.write(chunk));
 try {
   await waitForServer();
   const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-gpu"] });
-  const page = await browser.newPage({ viewport: { width: 520, height: 920 } });
+  const page = await browser.newPage({ viewport: { width: 960, height: 1100 } });
   await page.goto(url, { waitUntil: "networkidle", timeout: 60000 });
   await page.waitForSelector("[data-screenshot-harness]", { timeout: 15000 });
   await page.waitForTimeout(500);

@@ -1,4 +1,8 @@
+import { ApiError } from "./api";
 import { ITEM_META, itemLabel } from "./meta";
+
+/** Shown on building card after HTTP 409 (concurrent start/stop/collect). */
+export const BUILDING_STATE_CHANGED_COPY = "狀態已變更，已重新整理";
 
 /** Integers show no decimals; otherwise up to 2 decimal places, trailing zeros trimmed. */
 export function formatQuantity(qty: number): string {
@@ -30,6 +34,18 @@ export function formatUserError(raw: unknown): string {
   msg = msg.replace(/^Error:\s*/i, "");
   msg = msg.replace(ITEM_ID_PATTERN, (id) => itemLabel(id));
   return msg;
+}
+
+export function isApiConflict(raw: unknown): boolean {
+  return raw instanceof ApiError && raw.status === 409;
+}
+
+/** Player-facing copy for failed building actions (card-level). */
+export function formatActionError(raw: unknown): string {
+  if (isApiConflict(raw)) {
+    return BUILDING_STATE_CHANGED_COPY;
+  }
+  return formatUserError(raw);
 }
 
 export function fmtGame(sec: number) {
