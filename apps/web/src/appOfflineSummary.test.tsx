@@ -99,6 +99,32 @@ describe("App offline summary (PR-E U11)", () => {
     });
   });
 
+  it("persists settled game state to localStorage after dismiss (知道了)", async () => {
+    saveStoredSnapshot(snapshotFromGameState(gameState([fieldBuilding("pb_field", "running")])));
+    const ready = gameState(
+      [fieldBuilding("pb_field", "ready", { item_wheat: 2, item_straw: 1 })],
+      [inv("item_water", "50")],
+    );
+    apiMock.mockResolvedValue(ready);
+
+    const App = await importApp();
+    const user = userEvent.setup();
+    render(<App />);
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeVisible());
+
+    expect(parseStoredSnapshot(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY))?.buildings.pb_field.status).toBe(
+      "running",
+    );
+
+    await user.click(screen.getByRole("button", { name: "知道了" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+    const stored = parseStoredSnapshot(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY));
+    expect(stored?.buildings.pb_field.status).toBe("ready");
+    expect(stored?.buildings.pb_field.bufferedOutputs.item_wheat).toBe(2);
+    expect(stored?.inventory.item_water).toBe(50);
+  });
+
   it("acknowledging updates snapshot and suppresses repeat on remount", async () => {
     saveStoredSnapshot(snapshotFromGameState(gameState([fieldBuilding("pb_field", "running")])));
     const ready = gameState([fieldBuilding("pb_field", "ready", { item_wheat: 2, item_straw: 1 })]);
@@ -197,23 +223,49 @@ describe("FEATURE_OFFLINE_SUMMARY off", () => {
     vi.resetModules();
   });
 
-  it("skips writing and showing when flag is off", async () => {
+  async function importAppWithSummaryOff() {
     vi.doMock("./productCopy", async (importOriginal) => {
       const actual = await importOriginal<typeof import("./productCopy")>();
       return { ...actual, FEATURE_OFFLINE_SUMMARY: "off" as const };
     });
+    const mod = await import("./App");
+    return mod.default;
+  }
 
+  it("does not show offline summary dialog when FEATURE_OFFLINE_SUMMARY is off", async () => {
     saveStoredSnapshot(snapshotFromGameState(gameState([fieldBuilding("pb_field", "running")])));
     apiMock.mockResolvedValue(
       gameState([fieldBuilding("pb_field", "ready", { item_wheat: 2, item_straw: 1 })]),
     );
 
-    const App = await importApp();
+    const App = await importAppWithSummaryOff();
     render(<App />);
     await waitFor(() => expect(screen.getByText("田")).toBeInTheDocument());
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY)).toBeTruthy();
+  });
+
+  it("does not run summary persist-on-load when flag is off (pre-seeded snapshot unchanged)", async () => {
+    saveStoredSnapshot(snapshotFromGameState(gameState([fieldBuilding("pb_field", "running")])));
+    apiMock.mockResolvedValue(
+      gameState([fieldBuilding("pb_field", "ready", { item_wheat: 2, item_straw: 1 })]),
+    );
+
+    const App = await importAppWithSummaryOff();
+    render(<App />);
+    await waitFor(() => expect(screen.getByText("田")).toBeInTheDocument());
+
     const stored = parseStoredSnapshot(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY));
     expect(stored?.buildings.pb_field.status).toBe("running");
+  });
+
+  it("does not write snapshot on first load when flag is off and storage was empty", async () => {
+    apiMock.mockResolvedValue(gameState([fieldBuilding("pb_field", "idle")]));
+
+    const App = await importAppWithSummaryOff();
+    render(<App />);
+    await waitFor(() => expect(screen.getByText("田")).toBeInTheDocument());
+
+    expect(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY)).toBeNull();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

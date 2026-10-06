@@ -155,9 +155,9 @@ export function diffOfflineSnapshot(
 
     if (prev.status === "running" && b.status === "ready") {
       const pending = fmtBuffered(b.bufferedOutputs);
+      // TODO(product): 待確認 — 完成行格式（UX §E 示例：「田完成，待收取 🌾×2…」；標題見 OFFLINE_SUMMARY_TITLE）
       lines.push({
         buildingId: b.id,
-        // UX acceptance (U11):「田完成，待收取 🌾×2…」— title「離開期間」由 OfflineSummaryNotice 顯示
         text: `${b.buildingDef.name}完成，待收取 ${pending}`,
       });
     }

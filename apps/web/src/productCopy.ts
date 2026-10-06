@@ -64,7 +64,7 @@ export type OfflineSummaryFeatureMode = "A" | "off";
 
 export const FEATURE_OFFLINE_SUMMARY: OfflineSummaryFeatureMode = "A";
 
-/** TODO(product): 待確認 — 離線歸來摘要標題（U11 方案 A，文案待策劃） */
+/** TODO(product): 待確認 — 離線歸來摘要標題與整段排版（UX §E 示例以「離開期間：…」描述；標題／內文分工待策劃定案） */
 export const OFFLINE_SUMMARY_TITLE = "離開期間";
 
 /** Small tag shown beside the summary title while product picks A vs API (B). */
