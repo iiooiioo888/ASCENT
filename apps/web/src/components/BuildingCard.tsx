@@ -1,3 +1,4 @@
+import { canStopBuilding } from "../building-actions";
 import { fmtBuffered, fmtIo, realRemainSec, statusLabel } from "../format";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
 import type { Building, Method } from "../types";
@@ -86,7 +87,7 @@ export function BuildingCard({
           <button type="button" disabled={!options.length || b.status !== "idle"} onClick={onStart}>
             開工
           </button>
-          <button type="button" className="ghost" onClick={onStop}>
+          <button type="button" className="ghost" disabled={!canStopBuilding(b.status)} onClick={onStop}>
             停止
           </button>
           <button type="button" className="collect" disabled={b.status !== "ready"} onClick={onCollect}>
