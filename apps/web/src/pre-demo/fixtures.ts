@@ -6,7 +6,7 @@ export const demoOfflineSummary: OfflineSummaryResult = {
   lines: [
     {
       buildingId: "pb_field",
-      text: "田：已完成，待收取 🌾 小麥×2  🪵 秸稈×1",
+      text: "田完成，待收取 🌾 小麥×2  🪵 秸稈×1",
     },
   ],
 };

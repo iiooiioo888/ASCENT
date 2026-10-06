@@ -8,7 +8,7 @@ import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { nextPollFailureCount, shouldShowConnectionLost } from "./connectionPoll";
 import { isResourceDepleted } from "./depletion";
-import { formatActionError, formatUserError, fmtGame, isApiConflict } from "./format";
+import { formatActionError, formatUserError, fmtGame } from "./format";
 import { BUILDING_ICON } from "./meta";
 import {
   BRAND_DISPLAY_NAME,
@@ -21,6 +21,7 @@ import {
   SLICE_GOAL_BANNER,
   INDUSTRY_CHAIN_ARIA_LABEL,
 } from "./productCopy";
+import { isStaleBuildingActionError } from "./stale-building-action";
 import {
   collectHighlightItemIds,
   formatCollectSuccess,
@@ -244,7 +245,7 @@ export default function App() {
         }
         await refresh();
       } catch (e) {
-        if (isApiConflict(e)) {
+        if (isStaleBuildingActionError(e)) {
           await refresh().catch(() => undefined);
         }
         setActionErrors((prev) => ({ ...prev, [actionKey]: formatActionError(e) }));

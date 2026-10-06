@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { canAffordInputs, inventoryQtyMap } from "./inventory";
 import { hasAffordableStart, isResourceDepleted } from "./depletion";
 import type { Building, InvRow, Method } from "./types";
 
@@ -36,6 +37,11 @@ const fieldBuilding = (status: Building["status"]): Building => ({
 const methodsByRule = new Map<string, Method[]>([["rule_grow_wheat", [growWheat]]]);
 
 describe("isResourceDepleted", () => {
+  it("is false when there are no placed buildings (empty settlement)", () => {
+    const inventory = [row("item_seed_wheat", "0"), row("item_water", "0")];
+    expect(isResourceDepleted([], inventory, methodsByRule)).toBe(false);
+  });
+
   it("is false when at least one method is affordable", () => {
     const inventory = [row("item_seed_wheat", "1"), row("item_water", "1")];
     expect(isResourceDepleted([fieldBuilding("idle")], inventory, methodsByRule)).toBe(false);
@@ -53,6 +59,26 @@ describe("isResourceDepleted", () => {
 
   it("is true when all methods lack inputs and nothing is active", () => {
     const inventory = [row("item_seed_wheat", "0"), row("item_water", "0")];
+    expect(isResourceDepleted([fieldBuilding("idle")], inventory, methodsByRule)).toBe(true);
+  });
+
+  it("is true when inventory quantities are non-finite (NaN) — aligns with U2 canAffordInputs", () => {
+    const inventory = [row("item_seed_wheat", "not-a-number"), row("item_water", "1")];
+    expect(isResourceDepleted([fieldBuilding("idle")], inventory, methodsByRule)).toBe(true);
+  });
+
+  it("is true when stock quantity is negative — aligns with isValidQty", () => {
+    const inventory = [row("item_seed_wheat", "1"), row("item_water", "-1")];
+    expect(isResourceDepleted([fieldBuilding("idle")], inventory, methodsByRule)).toBe(true);
+  });
+});
+
+describe("isValidQty regression (U6 ↔ U2 canAffordInputs)", () => {
+  it("water=-1 must not count as affordable (regression if isValidQty is removed)", () => {
+    const inventory = [row("item_seed_wheat", "10"), row("item_water", "-1")];
+    const stock = inventoryQtyMap(inventory);
+    expect(canAffordInputs(stock, growWheat.inputs)).toBe(false);
+    expect(hasAffordableStart([fieldBuilding("idle")], inventory, methodsByRule)).toBe(false);
     expect(isResourceDepleted([fieldBuilding("idle")], inventory, methodsByRule)).toBe(true);
   });
 });
