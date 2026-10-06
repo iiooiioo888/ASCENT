@@ -21,7 +21,7 @@ function Demo() {
           selectedId={growWheatDefault.id}
           selected={growWheatDefault}
           timeScale={60}
-          actionError="資源不足：水"
+          actionError={{ message: "資源不足：水" }}
           pending={false}
           onSelectMethod={() => undefined}
           onStart={() => undefined}
