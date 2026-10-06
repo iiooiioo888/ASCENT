@@ -190,6 +190,20 @@ body {
   line-height: 1.45;
   color: #efe2c4;
 }
+dialog.offline-summary-dialog {
+  border: 0;
+  padding: 0;
+  margin: auto;
+  max-width: min(560px, calc(100% - 2rem));
+  background: transparent;
+  color: inherit;
+}
+dialog.offline-summary-dialog::backdrop {
+  background: rgba(8, 6, 4, 0.55);
+}
+.offline-summary-panel {
+  margin: 0;
+}
 .banner.offline-summary {
   border-style: solid;
   border-color: rgba(120, 180, 220, 0.55);
