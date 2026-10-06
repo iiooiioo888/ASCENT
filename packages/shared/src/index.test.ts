@@ -28,6 +28,11 @@ describe("遊戲設定", () => {
       }),
     ).toEqual(GAME_CONFIG);
   });
+
+  it("timeScale 非正數時回退常數", () => {
+    expect(gameConfigFromDb({ timeScale: 0 })).toEqual(GAME_CONFIG);
+    expect(gameConfigFromDb({ timeScale: -10, tickIntervalRealMs: 0 })).toEqual(GAME_CONFIG);
+  });
 });
 
 describe("時間契約", () => {
