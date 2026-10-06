@@ -10,8 +10,9 @@ export function inventoryQtyMap(inventory: InvRow[]): Map<string, number> {
   return map;
 }
 
-function isFiniteQty(qty: number): boolean {
-  return Number.isFinite(qty);
+/** Finite, non-negative quantity from inventory or catalog inputs. */
+function isValidQty(qty: number): boolean {
+  return Number.isFinite(qty) && qty >= 0;
 }
 
 export function canAffordInputs(
@@ -19,9 +20,9 @@ export function canAffordInputs(
   inputs: { item_id: string; qty: number }[],
 ): boolean {
   for (const io of inputs) {
-    if (!isFiniteQty(io.qty)) return false;
+    if (!isValidQty(io.qty)) return false;
     const have = stock.get(io.item_id) ?? 0;
-    if (!isFiniteQty(have)) return false;
+    if (!isValidQty(have)) return false;
     if (have + 1e-9 < io.qty) return false;
   }
   return true;
@@ -41,7 +42,7 @@ export function inputAvailability(
   return inputs.map((io) => {
     const have = stock.get(io.item_id) ?? 0;
     const short =
-      !isFiniteQty(have) || !isFiniteQty(io.qty) || have + 1e-9 < io.qty;
+      !isValidQty(have) || !isValidQty(io.qty) || have + 1e-9 < io.qty;
     return {
       item_id: io.item_id,
       need: io.qty,
