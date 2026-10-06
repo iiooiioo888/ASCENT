@@ -72,7 +72,7 @@ describe("結算並發（cron × HTTP）", () => {
 
         await Promise.all([
           cron.coarseTick(),
-          request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`).expect(201),
+          request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`).expect(200),
           cron.coarseTick(),
           request(app.getHttpServer()).get("/api/v1/inventory").expect(200),
         ]);
@@ -117,7 +117,7 @@ describe("結算並發（cron × HTTP）", () => {
     "collect 完成後 cron 不得把建築寫回 ready 並恢復 buffer",
     async () => {
       await prepareReadyBuilding();
-      await request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`).expect(201);
+      await request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`).expect(200);
       await cron.coarseTick();
       const building = await prisma.playerBuilding.findUnique({ where: { id: fieldBuildingId } });
       expect(building!.status).toBe("idle");
