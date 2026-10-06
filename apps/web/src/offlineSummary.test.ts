@@ -109,6 +109,13 @@ describe("diffOfflineSnapshot", () => {
     expect(diffOfflineSnapshot(snap, state)).toBeNull();
   });
 
+  it("does not treat running → idle as an offline completion summary", () => {
+    const before = minimalState([fieldBuilding("pb_field", "running")]);
+    const snap = snapshotFromGameState(before);
+    const after = minimalState([fieldBuilding("pb_field", "idle")]);
+    expect(diffOfflineSnapshot(snap, after)).toBeNull();
+  });
+
   it("reports inventory-only increases not explained by buffered outputs", () => {
     const before = minimalState([fieldBuilding("pb_field", "idle")], [inv("item_water", "80")]);
     const snap = snapshotFromGameState(before);
