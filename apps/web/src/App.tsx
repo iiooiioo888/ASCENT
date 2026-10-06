@@ -1,18 +1,33 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import { BuildingCard } from "./components/BuildingCard";
+import { DepletionBanner } from "./components/DepletionBanner";
 import { Inventory } from "./components/Inventory";
 import type { BuildingActionErrorView } from "./building-action-error";
 import { mapBuildingActionError } from "./building-action-error";
 import { formatUserError, fmtGame } from "./format";
 import { BUILDING_ICON } from "./meta";
+import { isProductionDepleted } from "./production-depleted";
+import {
+  FIELD_BUILDING_DEF_ID,
+  METHOD_SAVE_SEED_ID,
+  RESOURCE_LOOP_GOAL_HINT,
+  WELL_BUILDING_DEF_ID,
+} from "./resource-loop-copy";
 import type { GameState, Method } from "./types";
+
+const MAIN_GOAL_BANNER =
+  "田種麥 → 磨坊磨粉／拌飼 → 爐和麵烤麵包。工時以遊戲秒計，現實約為六十分之一。";
+
+const SCROLL_HIGHLIGHT_MS = 2400;
 
 export default function App() {
   const [state, setState] = useState<GameState | null>(null);
   const [pollError, setPollError] = useState("");
   const [actionErrors, setActionErrors] = useState<Record<string, BuildingActionErrorView>>({});
   const [picked, setPicked] = useState<Record<string, string>>({});
+  const [highlightDefId, setHighlightDefId] = useState<string | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingKeysRef = useRef(new Set<string>());
   const [pendingKeys, setPendingKeys] = useState<Set<string>>(() => new Set());
 
@@ -29,6 +44,22 @@ export default function App() {
     }, 2000);
     return () => clearInterval(t);
   }, [refresh]);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    };
+  }, []);
+
+  const flashHighlight = useCallback((buildingDefId: string) => {
+    setHighlightDefId(buildingDefId);
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = setTimeout(() => setHighlightDefId(null), SCROLL_HIGHLIGHT_MS);
+  }, []);
+
+  const scrollToAnchor = useCallback((anchorId: string) => {
+    document.getElementById(anchorId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
 
   const methodsByRule = useMemo(() => {
     const m = new Map<string, Method[]>();
@@ -83,6 +114,23 @@ export default function App() {
     [refresh, setPending],
   );
 
+  const goToWell = useCallback(() => {
+    if (!state) return;
+    flashHighlight(WELL_BUILDING_DEF_ID);
+    const placed = state.buildings.find((b) => b.buildingDefId === WELL_BUILDING_DEF_ID);
+    scrollToAnchor(placed ? `building-${placed.id}` : `plot-unplaced-${WELL_BUILDING_DEF_ID}`);
+  }, [flashHighlight, scrollToAnchor, state]);
+
+  const goToSaveSeed = useCallback(() => {
+    if (!state) return;
+    flashHighlight(FIELD_BUILDING_DEF_ID);
+    const field = state.buildings.find((b) => b.buildingDefId === FIELD_BUILDING_DEF_ID);
+    if (field) {
+      setPicked((prev) => ({ ...prev, [field.id]: METHOD_SAVE_SEED_ID }));
+      scrollToAnchor(`building-${field.id}`);
+    }
+  }, [flashHighlight, scrollToAnchor, state]);
+
   if (!state) {
     return (
       <div className="loading">
@@ -95,6 +143,7 @@ export default function App() {
   }
 
   const unplaced = state.buildingDefs.filter((d) => !state.buildings.some((b) => b.buildingDefId === d.id));
+  const depleted = isProductionDepleted(state);
 
   return (
     <div className="world">
@@ -115,7 +164,11 @@ export default function App() {
         </div>
       </header>
 
-      <p className="banner">田種麥 → 磨坊磨粉／拌飼 → 爐和麵烤麵包。工時以遊戲秒計，現實約為六十分之一。</p>
+      <p className="banner">
+        {MAIN_GOAL_BANNER}
+        <span className="banner-hint"> {RESOURCE_LOOP_GOAL_HINT}</span>
+      </p>
+      {depleted ? <DepletionBanner onGoWell={goToWell} onGoSaveSeed={goToSaveSeed} /> : null}
       {pollError ? <p className="banner error">{pollError}</p> : null}
 
       <Inventory inventory={state.inventory} />
@@ -141,6 +194,8 @@ export default function App() {
           return (
             <BuildingCard
               key={b.id}
+              scrollAnchorId={`building-${b.id}`}
+              highlight={highlightDefId === b.buildingDefId}
               building={b}
               options={options}
               inventory={state.inventory}
@@ -161,7 +216,11 @@ export default function App() {
           const actionKey = `place:${d.id}`;
           const pending = pendingKeys.has(actionKey);
           return (
-            <div key={d.id} className={`plot empty${pending ? " pending" : ""}`}>
+            <div
+              key={d.id}
+              id={`plot-unplaced-${d.id}`}
+              className={`plot empty${pending ? " pending" : ""}${highlightDefId === d.id ? " scroll-highlight" : ""}`}
+            >
               <fieldset className="plot-body" disabled={pending}>
                 <div className="bicon">{BUILDING_ICON[d.id] ?? "🪵"}</div>
                 <div>空地 · 可放置{d.name}</div>

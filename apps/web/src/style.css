@@ -133,10 +133,39 @@ body {
   background: rgba(120, 24, 24, 0.55);
   border: 1px solid rgba(255, 120, 120, 0.45);
 }
+.banner-hint {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: #d8c99a;
+}
 .banner.error {
   border-color: #e08a6a;
   color: #ffd2c0;
   background: rgba(80, 24, 12, 0.55);
+}
+.depletion-banner {
+  margin: 0.75rem 1.2rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: rgba(48, 28, 14, 0.88);
+  border: 2px solid rgba(244, 193, 74, 0.55);
+  color: #f6ecd4;
+  font-size: 0.88rem;
+}
+.depletion-banner strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--ready);
+}
+.depletion-banner p {
+  margin: 0 0 0.6rem;
+  line-height: 1.45;
+}
+.depletion-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .pack {
@@ -176,6 +205,23 @@ body {
   font-variant-numeric: tabular-nums;
 }
 .item.empty { opacity: 0.45; filter: grayscale(0.4); }
+.item.low-stock {
+  border-color: rgba(244, 193, 74, 0.65);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 200, 0.2),
+    0 0 0 1px rgba(244, 193, 74, 0.25);
+}
+.item.low-stock .qty {
+  color: #f4c14a;
+}
+.plot.scroll-highlight {
+  animation: plot-highlight 2.4s ease-out;
+  box-shadow: 0 0 0 3px rgba(244, 193, 74, 0.85), 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+@keyframes plot-highlight {
+  0% { box-shadow: 0 0 0 4px rgba(244, 193, 74, 1), 0 12px 28px rgba(0, 0, 0, 0.35); }
+  100% { box-shadow: 0 0 0 1px rgba(244, 193, 74, 0.2), 0 8px 20px rgba(0, 0, 0, 0.2); }
+}
 
 .chain {
   display: flex;

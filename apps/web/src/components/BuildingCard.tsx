@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { canStopBuilding } from "../building-actions";
-import { fmtBuffered, fmtIo, realRemainSec, statusLabel } from "../format";
+import { fmtBuffered, realRemainSec, statusLabel } from "../format";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
 import type { BuildingActionErrorView } from "../building-action-error";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
+import { recipeConsumeLine, recipeProduceLine } from "../recipe-display";
+import { WELL_BUILDING_DEF_ID, WELL_IDLE_JOBLINE } from "../resource-loop-copy";
 import type { Building, InvRow, Method } from "../types";
 import { StopConfirmDialog } from "./StopConfirmDialog";
 
@@ -20,6 +22,8 @@ type Props = {
   onStart: () => void;
   onStop: () => void;
   onCollect: () => void;
+  highlight?: boolean;
+  scrollAnchorId?: string;
 };
 
 export function BuildingCard({
@@ -35,6 +39,8 @@ export function BuildingCard({
   onStart,
   onStop,
   onCollect,
+  highlight = false,
+  scrollAnchorId,
 }: Props) {
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
@@ -60,7 +66,10 @@ export function BuildingCard({
   };
 
   return (
-    <article className={`plot ${b.status}${pending ? " pending" : ""}`}>
+    <article
+      id={scrollAnchorId}
+      className={`plot ${b.status}${pending ? " pending" : ""}${highlight ? " scroll-highlight" : ""}`}
+    >
       <fieldset className="plot-body" disabled={pending}>
         <div className="plot-head">
           <div style={{ display: "flex", gap: "0.7rem", alignItems: "center" }}>
@@ -77,7 +86,13 @@ export function BuildingCard({
             進行中 {progress.toFixed(0)}% · 剩 {remain.toFixed(0)} 現實秒
           </p>
         ) : (
-          <p className="jobline">{b.status === "ready" ? `可收取 ${fmtBuffered(b.bufferedOutputs)}` : "等待開工"}</p>
+          <p className="jobline">
+            {b.status === "ready"
+              ? `可收取 ${fmtBuffered(b.bufferedOutputs)}`
+              : b.buildingDefId === WELL_BUILDING_DEF_ID
+                ? WELL_IDLE_JOBLINE
+                : "等待開工"}
+          </p>
         )}
 
         {options.length ? (
@@ -107,10 +122,10 @@ export function BuildingCard({
                         ))}
                       </span>
                     ) : (
-                      <span>{fmtIo(displayMethod.inputs)}</span>
+                      <span>{recipeConsumeLine(displayMethod)}</span>
                     )}
                   </div>
-                  <div>產出 {fmtIo(displayMethod.outputs)}</div>
+                  <div>產出 {recipeProduceLine(displayMethod)}</div>
                 </>
               ) : null}
             </div>
