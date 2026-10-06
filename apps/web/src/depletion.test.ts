@@ -55,6 +55,11 @@ describe("isResourceDepleted", () => {
     const inventory = [row("item_seed_wheat", "0"), row("item_water", "0")];
     expect(isResourceDepleted([fieldBuilding("idle")], inventory, methodsByRule)).toBe(true);
   });
+
+  it("is true when inventory quantities are non-finite (NaN) — aligns with U2 canAffordInputs", () => {
+    const inventory = [row("item_seed_wheat", "not-a-number"), row("item_water", "1")];
+    expect(isResourceDepleted([fieldBuilding("idle")], inventory, methodsByRule)).toBe(true);
+  });
 });
 
 describe("hasAffordableStart", () => {
