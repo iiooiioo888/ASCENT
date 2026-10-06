@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import {
+  DEFAULT_MARKET_PRICES,
   LOCAL_PLAYER_ID,
   MAX_OFFLINE_GAME_SEC,
   MAX_OFFLINE_REAL_SEC,
@@ -47,6 +48,7 @@ async function main() {
       maxOfflineRealSec: MAX_OFFLINE_REAL_SEC,
       maxOfflineGameSec: MAX_OFFLINE_GAME_SEC,
       tickIntervalRealMs: TICK_INTERVAL_REAL_MS,
+      marketPrices: DEFAULT_MARKET_PRICES,
     },
   });
 

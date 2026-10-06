@@ -31,7 +31,8 @@ export class InventoryService {
     private readonly sim: SimulationService,
   ) {}
 
-  private runExclusive<T>(fn: () => Promise<T>): Promise<T> {
+  /** 與結算／建築寫入共用，避免並發雙花。 */
+  runExclusive<T>(fn: () => Promise<T>): Promise<T> {
     return this.settlementMutex.runExclusive(fn);
   }
 
@@ -255,14 +256,17 @@ export class InventoryService {
   }
 
   async settleAll() {
-    return this.runExclusive(async () => {
-      const buildings = await this.prisma.playerBuilding.findMany({
-        where: { playerId: LOCAL_PLAYER_ID },
-      });
-      for (const b of buildings) {
-        await this.settleBuildingUnlocked(b.id);
-      }
+    return this.runExclusive(() => this.settleAllUnlocked());
+  }
+
+  /** 僅在已持有 {@link runExclusive} 時呼叫（例如市集交易）。 */
+  async settleAllUnlocked() {
+    const buildings = await this.prisma.playerBuilding.findMany({
+      where: { playerId: LOCAL_PLAYER_ID },
     });
+    for (const b of buildings) {
+      await this.settleBuildingUnlocked(b.id);
+    }
   }
 
   async settleBuilding(id: string) {
