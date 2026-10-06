@@ -21,10 +21,43 @@ const baseProps = {
   onCollect: vi.fn(),
 };
 
+describe("BuildingCard U2 inventory precheck", () => {
+  it("disables start and renders shortage text when water is short", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoFieldIdle}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "開工" })).toBeDisabled();
+    const shortage = document.querySelector(".recipe-shortages .shortage");
+    expect(shortage).not.toBeNull();
+    expect(shortage?.textContent).toMatch(/0\.5／1/);
+  });
+});
+
 describe("BuildingCard U4 stop confirm", () => {
-  it("stop is only enabled when running", () => {
+  it("stop is disabled for idle and ready, enabled only when running", () => {
     const { rerender } = render(
       <BuildingCard {...baseProps} building={demoFieldIdle} selectedId={growWheatDefault.id} selected={growWheatDefault} />,
+    );
+    expect(screen.getByRole("button", { name: "停止" })).toBeDisabled();
+
+    rerender(
+      <BuildingCard
+        {...baseProps}
+        building={{
+          ...demoFieldIdle,
+          status: "ready",
+          methodId: growWheatDefault.id,
+          bufferedOutputs: { item_wheat: 2 },
+        }}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+      />,
     );
     expect(screen.getByRole("button", { name: "停止" })).toBeDisabled();
 
