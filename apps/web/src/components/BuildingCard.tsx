@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { canStopBuilding } from "../building-actions";
 import { fmtBuffered, fmtIo, statusLabel } from "../format";
 import { useProgressTick } from "../hooks/useProgressTick";
 import { jobProgressPercent, jobRemainRealSec } from "../productionProgress";
@@ -168,7 +169,7 @@ export function BuildingCard({
           <button
             type="button"
             className="ghost"
-            disabled={b.status !== "running"}
+            disabled={!canStopBuilding(b.status)}
             onClick={() => setStopConfirmOpen(true)}
           >
             停止
