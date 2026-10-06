@@ -14,6 +14,17 @@ export type ItemTypeDef = {
   released_in_version: string;
 };
 
+export type ItemPropertyValueKind = "number" | "bool" | "string";
+
+export type ItemPropertyDef = {
+  id: string;
+  code: string;
+  name: string;
+  value_kind: ItemPropertyValueKind;
+  is_active: boolean;
+  released_in_version: string;
+};
+
 export type ItemDef = {
   id: string;
   code: string;

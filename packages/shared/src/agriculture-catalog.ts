@@ -1,5 +1,25 @@
 import { RELEASED_IN_VERSION } from "./config";
-import type { BuildingDef, ItemDef, ItemTypeDef, ProductionRuleDef } from "./types";
+import type { BuildingDef, ItemDef, ItemPropertyDef, ItemTypeDef, ProductionRuleDef } from "./types";
+
+/** GDD 範例屬性（純度、含水）；農業 MVP 最小集合，其餘（熱值、同位素）留待後續切片。 */
+export const itemProperties: ItemPropertyDef[] = [
+  {
+    id: "iprop_moisture",
+    code: "moisture",
+    name: "含水",
+    value_kind: "number",
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
+  {
+    id: "iprop_purity",
+    code: "purity",
+    name: "純度",
+    value_kind: "number",
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
+];
 
 export const itemTypes: ItemTypeDef[] = [
   { id: "it_crop", code: "crop", name: "作物", is_active: true, released_in_version: RELEASED_IN_VERSION },

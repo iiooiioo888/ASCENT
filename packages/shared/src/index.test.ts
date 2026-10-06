@@ -8,6 +8,7 @@ import {
   displayGameTime,
   gameConfigFromDb,
   generateMethods,
+  itemProperties,
   items,
   rules,
   settleProduction,
@@ -99,6 +100,15 @@ describe("生產結算", () => {
 });
 
 describe("規則生成與驗證", () => {
+  it("農業切片屬性定義非空且 code 唯一", () => {
+    expect(itemProperties.length).toBeGreaterThan(0);
+    const codes = itemProperties.map((p) => p.code);
+    expect(new Set(codes).size).toBe(codes.length);
+    expect(itemProperties.every((p) => p.value_kind === "number" || p.value_kind === "bool" || p.value_kind === "string")).toBe(
+      true,
+    );
+  });
+
   it("農業切片由規則生成 5–10 種方式", () => {
     const methods = generateMethods(rules);
     expect(methods.length).toBeGreaterThanOrEqual(5);

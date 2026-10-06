@@ -8,6 +8,7 @@ import {
   GAME_DAY_GAME_SEC,
   buildingDefs,
   generateMethods,
+  itemProperties,
   itemTypes,
   items,
   rules,
@@ -34,6 +35,7 @@ async function main() {
   await prisma.productionRule.deleteMany();
   await prisma.item.deleteMany();
   await prisma.itemType.deleteMany();
+  await prisma.itemProperty.deleteMany();
   await prisma.buildingDef.deleteMany();
   await prisma.gameConfig.deleteMany();
   await prisma.serverState.deleteMany();
@@ -57,6 +59,27 @@ async function main() {
       lastUpdate: now,
     },
   });
+
+  for (const p of itemProperties) {
+    await prisma.itemProperty.upsert({
+      where: { id: p.id },
+      create: {
+        id: p.id,
+        code: p.code,
+        name: p.name,
+        valueKind: p.value_kind,
+        isActive: p.is_active,
+        releasedInVersion: p.released_in_version,
+      },
+      update: {
+        code: p.code,
+        name: p.name,
+        valueKind: p.value_kind,
+        isActive: p.is_active,
+        releasedInVersion: p.released_in_version,
+      },
+    });
+  }
 
   for (const t of itemTypes) {
     await prisma.itemType.create({
@@ -181,7 +204,9 @@ async function main() {
     });
   }
 
-  console.log(`種子完成：${items.length} 物品、${rules.length} 規則、${methods.length} 方式`);
+  console.log(
+    `種子完成：${items.length} 物品、${itemProperties.length} 屬性定義、${rules.length} 規則、${methods.length} 方式`,
+  );
 }
 
 main()
