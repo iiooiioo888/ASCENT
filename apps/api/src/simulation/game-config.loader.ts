@@ -1,5 +1,5 @@
 import { gameConfigFromDb, type GameConfigValues } from "@ascent/shared";
-import type { GameConfig } from "@prisma/client";
+import type { GameConfig } from "../../generated/prisma/client";
 
 export function gameConfigFromRow(row: GameConfig | null): GameConfigValues {
   if (!row) return gameConfigFromDb(null);

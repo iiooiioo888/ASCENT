@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../../generated/prisma/client";
+import { createPrismaAdapter } from "../prisma/create-prisma-adapter";
 import { itemProperties } from "@ascent/shared";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ adapter: createPrismaAdapter() });
 
 describe("目錄 GET 資料（需先 pnpm setup:db 或 db:seed）", () => {
   it("item_properties 與 shared 目錄一致且可冪等重跑 seed", async () => {

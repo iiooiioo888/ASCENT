@@ -136,7 +136,7 @@ pnpm dev
 
 或分開啟動 API／前端：`pnpm dev:api`、`pnpm dev:web`。
 
-`setup:db` 會從根目錄 `.env.example` 複製出 `apps/api/.env`（若尚不存在）、產生 Prisma Client、`db push` 並種子。Prisma 讀取的是 **`apps/api/.env`**，不是根目錄 `.env`。CLI 設定（schema 路徑、migration 目錄、seed 指令）在 **`apps/api/prisma.config.ts`**，不再使用 `package.json#prisma`（Prisma 7 將移除此欄位）。目前鎖定 **Prisma 6.19.x**；升級至 Prisma 7 需另做 driver adapter 遷移。
+`setup:db` 會從根目錄 `.env.example` 複製出 `apps/api/.env`（若尚不存在）、產生 Prisma Client、`db push` 並種子。Prisma 讀取的是 **`apps/api/.env`**，不是根目錄 `.env`。CLI 設定（schema 路徑、`DATABASE_URL`、migration 目錄、seed 指令）在 **`apps/api/prisma.config.ts`**。執行期與 seed 透過 **driver adapter**（SQLite：`@prisma/adapter-better-sqlite3`；PostgreSQL：`@prisma/adapter-pg`）建立 `PrismaClient`；Client 產生於 `apps/api/generated/prisma/`（已 gitignore）。
 
 前端：http://localhost:5173 。API：http://localhost:3000/api/v1/state 。
 
