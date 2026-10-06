@@ -3,8 +3,27 @@ import { GAME_CONFIG, MAX_OFFLINE_REAL_SEC, TIME_SCALE } from "@ascent/shared";
 import request from "supertest";
 import { PrismaService } from "../src/prisma/prisma.service";
 import { SimulationService } from "../src/simulation/simulation.service";
+import { BUILDING_STATE_CONFLICT_MESSAGE } from "../src/inventory/building-state-update";
 import { createTestApp } from "./test-app";
 import { createEmptyTestDatabase, removeTestDatabase, seedTestDatabase } from "./test-db";
+function expectOneOkOneConflict(a: { status: number }, b: { status: number }) {
+  const statuses = [a.status, b.status].sort((x, y) => x - y);
+  expect(statuses).toEqual([200, 409]);
+}
+
+async function readyToCollect(
+  app: INestApplication,
+  windBuildingBack: (id: string, sec: number) => Promise<void>,
+  buildingId: string,
+  methodId: string,
+) {
+  await request(app.getHttpServer())
+    .post(`/api/v1/buildings/${buildingId}/start`)
+    .send({ methodId })
+    .expect(201);
+  await windBuildingBack(buildingId, 90);
+  await request(app.getHttpServer()).get(`/api/v1/buildings/${buildingId}`).expect(200);
+}
 
 describe("API v1（整合）", () => {
   let app: INestApplication;
@@ -138,7 +157,7 @@ describe("API v1（整合）", () => {
       expect(res.body.generatedPreview.length).toBeGreaterThan(0);
     });
 
-    it("game_config 錯誤時回傳 V-OFFLINE", async () => {
+    it("maxOfflineRealSec 錯誤時回傳 V-OFFLINE", async () => {
       await prisma.gameConfig.update({
         where: { id: 1 },
         data: { maxOfflineRealSec: 86400 },
@@ -146,6 +165,30 @@ describe("API v1（整合）", () => {
       const res = await request(app.getHttpServer()).post("/api/v1/validate").expect(201);
       expect(res.body.ok).toBe(false);
       expect(res.body.errors.some((e: { code: string }) => e.code === "V-OFFLINE")).toBe(true);
+    });
+
+    it("gameDayGameSec 錯誤時回傳 V-OFFLINE", async () => {
+      await prisma.gameConfig.update({
+        where: { id: 1 },
+        data: { gameDayGameSec: 1 },
+      });
+      const res = await request(app.getHttpServer()).post("/api/v1/validate").expect(201);
+      expect(res.body.ok).toBe(false);
+      expect(res.body.errors.some((e: { message: string }) => e.message.includes("gameDayGameSec"))).toBe(
+        true,
+      );
+    });
+
+    it("tickIntervalRealMs 錯誤時回傳 V-OFFLINE", async () => {
+      await prisma.gameConfig.update({
+        where: { id: 1 },
+        data: { tickIntervalRealMs: 999 },
+      });
+      const res = await request(app.getHttpServer()).post("/api/v1/validate").expect(201);
+      expect(res.body.ok).toBe(false);
+      expect(res.body.errors.some((e: { message: string }) => e.message.includes("tickIntervalRealMs"))).toBe(
+        true,
+      );
     });
   });
 
@@ -200,7 +243,7 @@ describe("API v1（整合）", () => {
         .send({ methodId: growMethodId })
         .expect(201);
       await windBuildingBack(fieldBuildingId, 90);
-      await request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`).expect(201);
+      await request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`).expect(200);
       const inv = await prisma.playerInventory.findUnique({
         where: { playerId_itemId: { playerId: "player_local", itemId: "item_wheat" } },
       });
@@ -235,14 +278,42 @@ describe("API v1（整合）", () => {
         .expect(400);
     });
 
+    it("POST start 於倉庫（allowed_rule_ids 為空）→ 400", async () => {
+      const placed = await request(app.getHttpServer())
+        .post("/api/v1/buildings")
+        .send({ buildingDefId: "bdef_silo" })
+        .expect(201);
+      await request(app.getHttpServer())
+        .post(`/api/v1/buildings/${placed.body.id}/start`)
+        .send({ methodId: growMethodId })
+        .expect(400);
+    });
+
     it("GET 不存在建築 → 404", async () => {
       await request(app.getHttpServer()).get("/api/v1/buildings/pb_missing").expect(404);
     });
 
-    it("POST collect 非 ready → 400", async () => {
-      await request(app.getHttpServer())
-        .post(`/api/v1/buildings/${fieldBuildingId}/collect`)
-        .expect(400);
+    it("POST collect 非 ready → 409（狀態衝突）", async () => {
+      const res = await request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`);
+      expect(res.status).toBe(409);
+      expect(res.body.message).toContain(BUILDING_STATE_CONFLICT_MESSAGE);
+    });
+
+    it("連續兩次 POST collect：200 後第二次 → 409", async () => {
+      await readyToCollect(app, windBuildingBack, fieldBuildingId, growMethodId);
+      await request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`).expect(200);
+      const second = await request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`);
+      expect(second.status).toBe(409);
+      expect(second.body.message).toContain(BUILDING_STATE_CONFLICT_MESSAGE);
+    });
+
+    it("並發兩次 POST collect 於 ready 建築：200 與 409 各一", async () => {
+      await readyToCollect(app, windBuildingBack, fieldBuildingId, growMethodId);
+      const [a, b] = await Promise.all([
+        request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`),
+        request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`),
+      ]);
+      expectOneOkOneConflict(a, b);
     });
 
     it("POST place 未知建築 → 400", async () => {
