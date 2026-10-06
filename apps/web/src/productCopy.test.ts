@@ -45,6 +45,16 @@ describe("productCopy", () => {
     expect(parseViteBooleanEnv("true", false)).toBe(true);
   });
 
+  it("parseViteBooleanEnv trims whitespace and accepts 1/yes; unknown falls back to default", () => {
+    expect(parseViteBooleanEnv("   ", false)).toBe(false);
+    expect(parseViteBooleanEnv("  true  ", false)).toBe(true);
+    expect(parseViteBooleanEnv("1", false)).toBe(true);
+    expect(parseViteBooleanEnv("yes", false)).toBe(true);
+    expect(parseViteBooleanEnv("maybe", true)).toBe(true);
+    expect(parseViteBooleanEnv("maybe", false)).toBe(false);
+    expect(parseViteBooleanEnv("garbage", true)).toBe(true);
+  });
+
   it("FEATURE_SHOW_DEPLETION_EMPTY_STATE defaults on in test env", () => {
     expect(FEATURE_SHOW_DEPLETION_EMPTY_STATE).toBe(true);
   });
