@@ -60,6 +60,11 @@ describe("isResourceDepleted", () => {
     const inventory = [row("item_seed_wheat", "not-a-number"), row("item_water", "1")];
     expect(isResourceDepleted([fieldBuilding("idle")], inventory, methodsByRule)).toBe(true);
   });
+
+  it("is true when stock quantity is negative — aligns with isValidQty", () => {
+    const inventory = [row("item_seed_wheat", "1"), row("item_water", "-1")];
+    expect(isResourceDepleted([fieldBuilding("idle")], inventory, methodsByRule)).toBe(true);
+  });
 });
 
 describe("hasAffordableStart", () => {

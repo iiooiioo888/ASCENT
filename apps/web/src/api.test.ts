@@ -27,7 +27,27 @@ describe("api", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it("throws ApiError with status 409 on concurrent or invalid collect", async () => {
+  it("throws ApiError with status 400 when collect has nothing to claim (main backend)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        mockResponse(400, {
+          statusCode: 400,
+          message: "尚無可收取產出",
+          error: "Bad Request",
+        }),
+      ),
+    );
+
+    await expect(api("/api/v1/buildings/pb_field/collect")).rejects.toSatisfy((err: unknown) => {
+      expect(err).toBeInstanceOf(ApiError);
+      expect((err as ApiError).status).toBe(400);
+      expect((err as ApiError).message).toBe("尚無可收取產出");
+      return true;
+    });
+  });
+
+  it("throws ApiError with status 409 on concurrent collect (post–PR #8 backend)", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
