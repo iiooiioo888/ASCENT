@@ -1,6 +1,7 @@
 import { fmtIo } from "../format";
 import { METHOD_NAME } from "../meta";
 import type { Method } from "../types";
+import { stopConfirmIntro } from "./stopConfirmCopy";
 
 type Props = {
   open: boolean;
@@ -14,6 +15,7 @@ export function StopConfirmDialog({ open, buildingName, method, onCancel, onConf
   if (!open) return null;
 
   const lossLine = method ? fmtIo(method.inputs) : "（未知配方）";
+  const methodLabel = method ? (METHOD_NAME[method.id] ?? method.code) : "…";
 
   return (
     <dialog className="confirm-dialog" open>
@@ -26,10 +28,7 @@ export function StopConfirmDialog({ open, buildingName, method, onCancel, onConf
         }}
       >
         <h4 className="confirm-dialog-title">確認停止生產？</h4>
-        <p className="confirm-dialog-body">
-          <strong>{buildingName}</strong> 正在進行「{method ? (METHOD_NAME[method.id] ?? method.code) : "…"}」。停止後將失去下列已在開工時扣除的資源（目前後端
-          <strong>不會</strong>退還），且進行中的工時與未完成產出也會作廢：
-        </p>
+        <p className="confirm-dialog-body">{stopConfirmIntro(buildingName, methodLabel)}</p>
         <p className="confirm-dialog-loss">{lossLine}</p>
         <div className="confirm-dialog-actions">
           <button type="button" className="ghost" onClick={onCancel}>
