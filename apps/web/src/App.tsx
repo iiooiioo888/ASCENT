@@ -134,6 +134,7 @@ export default function App() {
               key={b.id}
               building={b}
               options={options}
+              inventory={state.inventory}
               selectedId={selectedId}
               selected={selected}
               timeScale={state.time.timeScale}
