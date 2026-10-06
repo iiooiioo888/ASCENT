@@ -2,6 +2,7 @@ import { useState } from "react";
 import { canStopBuilding } from "../building-actions";
 import { fmtBuffered, fmtIo, realRemainSec, statusLabel } from "../format";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
+import type { BuildingActionErrorView } from "../building-action-error";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
 import type { Building, InvRow, Method } from "../types";
 import { methodPurposeHint } from "../productCopy";
@@ -14,7 +15,7 @@ type Props = {
   selectedId: string | undefined;
   selected: Method | undefined;
   timeScale: number;
-  actionError?: string;
+  actionError?: BuildingActionErrorView;
   pending: boolean;
   onSelectMethod: (methodId: string) => void;
   onStart: () => void;
@@ -122,8 +123,8 @@ export function BuildingCard({
         )}
 
         {actionError ? (
-          <p className="plot-action-error" role="alert">
-            {actionError}
+          <p className="plot-action-error" role="alert" title={actionError.hint}>
+            {actionError.message}
           </p>
         ) : null}
 
