@@ -66,6 +66,16 @@ describe("canAffordInputs", () => {
     expect(canAffordInputs(stock, [{ item_id: "item_water", qty: 1 }])).toBe(false);
   });
 
+  it("returns false when required input qty is negative", () => {
+    const stock = inventoryQtyMap([row("item_water", "10")]);
+    expect(canAffordInputs(stock, [{ item_id: "item_water", qty: -1 }])).toBe(false);
+  });
+
+  it("returns false when stock quantity is negative", () => {
+    const stock = new Map<string, number>([["item_water", -0.5]]);
+    expect(canAffordInputs(stock, [{ item_id: "item_water", qty: 1 }])).toBe(false);
+  });
+
   it("returns true when stock meets all inputs", () => {
     const stock = inventoryQtyMap([
       row("item_water", "1"),
@@ -84,6 +94,13 @@ describe("inputAvailability", () => {
   it("marks row short when have is NaN from bad inventory string", () => {
     const rows = inputAvailability(inventoryQtyMap([row("item_water", "oops")]), [
       { item_id: "item_water", qty: 1 },
+    ]);
+    expect(rows[0]?.short).toBe(true);
+  });
+
+  it("marks row short when need qty is negative", () => {
+    const rows = inputAvailability(inventoryQtyMap([row("item_water", "5")]), [
+      { item_id: "item_water", qty: -1 },
     ]);
     expect(rows[0]?.short).toBe(true);
   });
