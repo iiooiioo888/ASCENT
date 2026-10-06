@@ -16,4 +16,5 @@ export function collectHighlightItemIds(buffered: Record<string, number>): strin
 }
 
 /** How long success copy and inventory highlight stay visible after collect. */
-export const SUCCESS_FEEDBACK_MS = 2500;
+/** Matches UX acceptance: success copy visible within 2s window (U9). */
+export const SUCCESS_FEEDBACK_MS = 2000;
