@@ -10,6 +10,7 @@ export const ITEM_META: Record<string, { name: string; icon: string }> = {
   item_feed: { name: "飼料", icon: "🧺" },
   item_dough: { name: "麵團", icon: "⚪" },
   item_bread: { name: "麵包", icon: "🍞" },
+  item_gold: { name: "金幣", icon: "🪙" },
 };
 
 /** P3-5: method display names from shared catalog (avoid drift). */

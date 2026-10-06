@@ -6,10 +6,14 @@ import { SiloBuildingCard } from "./components/SiloBuildingCard";
 import { ConnectionStatusBar } from "./components/ConnectionStatusBar";
 import { DepletionNotice } from "./components/DepletionNotice";
 import { Inventory } from "./components/Inventory";
+import { MarketPanel, marketPendingKey } from "./components/MarketPanel";
 import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
 import { LoadingScreen } from "./components/LoadingScreen";
 import type { BuildingActionErrorView } from "./building-action-error";
 import { mapBuildingActionError } from "./building-action-error";
+import type { MarketActionErrorView } from "./market-action-error";
+import { mapMarketActionError } from "./market-action-error";
+import { fetchMarket, postMarketBuy, postMarketSell, type MarketSnapshot } from "./market";
 import { nextPollFailureCount, shouldShowConnectionLost } from "./connectionPoll";
 import { isResourceDepleted } from "./depletion";
 import { FEATURE_SHOW_DEPLETION_EMPTY_STATE, FEATURE_SHOW_SILO_PLACEMENT, FEATURE_SILO_CARD_MODE } from "./featureFlags";
@@ -60,6 +64,8 @@ export default function App() {
   const offlineSummaryVisibleRef = useRef(false);
   const offlineEvaluatedRef = useRef(false);
   const [offlineSummary, setOfflineSummary] = useState<OfflineSummaryResult | null>(null);
+  const [marketSnapshot, setMarketSnapshot] = useState<MarketSnapshot | null>(null);
+  const [marketPanelError, setMarketPanelError] = useState<MarketActionErrorView | null>(null);
 
   stateRef.current = state;
 
@@ -70,6 +76,12 @@ export default function App() {
     setConnectionLost(false);
     setLoadError("");
     return next;
+  }, []);
+
+  const refreshMarket = useCallback(async () => {
+    const snapshot = await fetchMarket();
+    setMarketSnapshot(snapshot);
+    return snapshot;
   }, []);
 
   const handlePollFailure = useCallback((e: unknown) => {
@@ -151,6 +163,11 @@ export default function App() {
     }, 2000);
     return () => clearInterval(t);
   }, [state, refresh, handlePollFailure]);
+
+  useEffect(() => {
+    if (!state) return;
+    refreshMarket().catch(() => undefined);
+  }, [state, refreshMarket]);
 
   const methodsByRule = useMemo(() => {
     const m = new Map<string, Method[]>();
@@ -271,6 +288,36 @@ export default function App() {
     [refresh, setPending, clearSuccessFeedback, showCollectSuccess],
   );
 
+  const marketTrade = useCallback(
+    async (side: "sell" | "buy", itemId: string, quantity: number) => {
+      const actionKey = marketPendingKey(side, itemId);
+      if (pendingKeysRef.current.has(actionKey)) return;
+
+      setPending(actionKey, true);
+      setMarketPanelError(null);
+
+      try {
+        if (side === "sell") {
+          await postMarketSell(itemId, quantity);
+        } else {
+          await postMarketBuy(itemId, quantity);
+        }
+        await refresh();
+        await refreshMarket();
+      } catch (e) {
+        const mapped = mapMarketActionError(e);
+        if (mapped.shouldRefresh) {
+          await refresh().catch(() => undefined);
+          await refreshMarket().catch(() => undefined);
+        }
+        setMarketPanelError({ message: mapped.message, hint: mapped.hint });
+      } finally {
+        setPending(actionKey, false);
+      }
+    },
+    [refresh, refreshMarket, setPending],
+  );
+
   const retryInitialLoad = useCallback(() => {
     if (loadRetrying) return;
     setLoadRetrying(true);
@@ -326,6 +373,14 @@ export default function App() {
       <DepletionNotice visible={FEATURE_SHOW_DEPLETION_EMPTY_STATE && resourceDepleted} />
 
       <Inventory inventory={sortedInventory} highlightItemIds={highlightItems} />
+
+      <MarketPanel
+        market={marketSnapshot}
+        panelError={marketPanelError}
+        pendingKeys={pendingKeys}
+        onSell={(itemId, quantity) => marketTrade("sell", itemId, quantity)}
+        onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
+      />
 
       <IndustryChain buildings={state.buildings} />
 
