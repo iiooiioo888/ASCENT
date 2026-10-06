@@ -5,9 +5,11 @@ import { ConnectionStatusBar } from "./components/ConnectionStatusBar";
 import { DepletionNotice } from "./components/DepletionNotice";
 import { Inventory } from "./components/Inventory";
 import { LoadingScreen } from "./components/LoadingScreen";
+import type { BuildingActionErrorView } from "./building-action-error";
+import { mapBuildingActionError } from "./building-action-error";
 import { nextPollFailureCount, shouldShowConnectionLost } from "./connectionPoll";
 import { isResourceDepleted } from "./depletion";
-import { formatActionError, formatUserError, fmtGame } from "./format";
+import { formatUserError, fmtGame } from "./format";
 import { BUILDING_ICON } from "./meta";
 import {
   BRAND_DISPLAY_NAME,
@@ -18,7 +20,6 @@ import {
   SLICE_FLOW_BANNER,
   SLICE_GOAL_BANNER,
 } from "./productCopy";
-import { isStaleBuildingActionError } from "./stale-building-action";
 import {
   collectHighlightItemIds,
   formatCollectSuccess,
@@ -32,7 +33,7 @@ export default function App() {
   const [loadRetrying, setLoadRetrying] = useState(false);
   const [connectionLost, setConnectionLost] = useState(false);
   const pollFailuresRef = useRef(0);
-  const [actionErrors, setActionErrors] = useState<Record<string, string>>({});
+  const [actionErrors, setActionErrors] = useState<Record<string, BuildingActionErrorView>>({});
   const [actionSuccess, setActionSuccess] = useState<Record<string, string>>({});
   const [highlightItems, setHighlightItems] = useState<Set<string>>(() => new Set());
   const successTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -182,10 +183,14 @@ export default function App() {
         }
         await refresh();
       } catch (e) {
-        if (isStaleBuildingActionError(e)) {
+        const mapped = mapBuildingActionError(e);
+        if (mapped.shouldRefresh) {
           await refresh().catch(() => undefined);
         }
-        setActionErrors((prev) => ({ ...prev, [actionKey]: formatActionError(e) }));
+        setActionErrors((prev) => ({
+          ...prev,
+          [actionKey]: { message: mapped.message, hint: mapped.hint },
+        }));
       } finally {
         setPending(actionKey, false);
       }
@@ -292,8 +297,8 @@ export default function App() {
                 <div className="bicon">{BUILDING_ICON[d.id] ?? "🪵"}</div>
                 <div>空地 · 可放置{d.name}</div>
                 {actionErrors[actionKey] ? (
-                  <p className="plot-action-error" role="alert">
-                    {actionErrors[actionKey]}
+                  <p className="plot-action-error" role="alert" title={actionErrors[actionKey].hint}>
+                    {actionErrors[actionKey].message}
                   </p>
                 ) : null}
                 <button type="button" onClick={() => act(actionKey, "/api/v1/buildings", { buildingDefId: d.id })}>
