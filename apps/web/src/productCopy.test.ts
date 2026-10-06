@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { BRAND_DISPLAY_NAME, itemPurposeHint, methodPurposeHint } from "./productCopy";
+import {
+  BRAND_DISPLAY_NAME,
+  CONNECTION_INTERRUPTED_BANNER,
+  isUnseededWorldClockError,
+  itemPurposeHint,
+  methodPurposeHint,
+} from "./productCopy";
 
 describe("productCopy", () => {
   it("exposes feed and bread purpose hints for U13", () => {
@@ -9,5 +15,11 @@ describe("productCopy", () => {
 
   it("brand constant is non-empty for HUD / loading", () => {
     expect(BRAND_DISPLAY_NAME.length).toBeGreaterThan(0);
+  });
+
+  it("U10 connection copy and seed hint detection", () => {
+    expect(CONNECTION_INTERRUPTED_BANNER).toContain("連線中斷");
+    expect(isUnseededWorldClockError("尚未種子世界時鐘")).toBe(true);
+    expect(isUnseededWorldClockError("無法連接")).toBe(false);
   });
 });
