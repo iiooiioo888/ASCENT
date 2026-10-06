@@ -113,6 +113,26 @@ body {
   color: #efe2c4;
   font-size: 0.9rem;
 }
+.plot-body {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.plot.pending {
+  opacity: 0.88;
+  pointer-events: none;
+}
+.plot-action-error {
+  margin: 0.45rem 0 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  color: #ffd4d4;
+  background: rgba(120, 24, 24, 0.55);
+  border: 1px solid rgba(255, 120, 120, 0.45);
+}
 .banner.error {
   border-color: #e08a6a;
   color: #ffd2c0;
