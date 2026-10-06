@@ -15,6 +15,7 @@ vi.mock("./api", async (importOriginal) => {
   };
 });
 
+import { ApiError } from "./api";
 import App from "./App";
 
 function invRow(itemId: string, quantity: string) {
@@ -53,6 +54,60 @@ function makeReadyFieldState(): GameState {
     buildingDefs: [{ id: "bdef_field", name: "田", code: "field" }],
   };
 }
+
+describe("App P0 stale building action refresh", () => {
+  beforeEach(() => {
+    apiMock.mockReset();
+  });
+
+  it("refetches state after HTTP 409 on collect", async () => {
+    const ready = makeReadyFieldState();
+    let stateFetches = 0;
+    apiMock.mockImplementation(async (path: string, init?: RequestInit) => {
+      if (path === "/api/v1/state") {
+        stateFetches += 1;
+        return ready;
+      }
+      if (path === "/api/v1/buildings/pb_field/collect" && init?.method === "POST") {
+        throw new ApiError("建築狀態已變更，請重新整理", 409);
+      }
+      throw new Error(`unexpected api call: ${path}`);
+    });
+
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(await screen.findByRole("button", { name: "收取" }));
+
+    await waitFor(() => {
+      expect(stateFetches).toBeGreaterThanOrEqual(2);
+      expect(screen.getByText("狀態已變更，已重新整理")).toBeInTheDocument();
+    });
+  });
+
+  it("refetches state after pre-PR#8 HTTP 400 stale collect message", async () => {
+    const ready = makeReadyFieldState();
+    let stateFetches = 0;
+    apiMock.mockImplementation(async (path: string, init?: RequestInit) => {
+      if (path === "/api/v1/state") {
+        stateFetches += 1;
+        return ready;
+      }
+      if (path === "/api/v1/buildings/pb_field/collect" && init?.method === "POST") {
+        throw new ApiError("尚無可收取產出", 400);
+      }
+      throw new Error(`unexpected api call: ${path}`);
+    });
+
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(await screen.findByRole("button", { name: "收取" }));
+
+    await waitFor(() => {
+      expect(stateFetches).toBeGreaterThanOrEqual(2);
+    });
+    expect(screen.getByText("狀態已變更，已重新整理")).toBeInTheDocument();
+  });
+});
 
 describe("App U9 collect success feedback", () => {
   beforeEach(() => {
