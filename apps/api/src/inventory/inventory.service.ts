@@ -260,22 +260,6 @@ export class InventoryService {
     });
   }
 
-  private async consume(need: Record<string, number>) {
-    for (const [itemId, qty] of Object.entries(need)) {
-      const row = await this.prisma.playerInventory.findUnique({
-        where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
-      });
-      const have = row ? Number(row.quantity) : 0;
-      if (have + 1e-9 < qty) throw new BadRequestException(`資源不足：${itemId}`);
-    }
-    for (const [itemId, qty] of Object.entries(need)) {
-      await this.prisma.playerInventory.update({
-        where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
-        data: { quantity: { decrement: qty } },
-      });
-    }
-  }
-
   private async add(gain: Record<string, number>) {
     for (const [itemId, qty] of Object.entries(gain)) {
       await this.prisma.playerInventory.upsert({

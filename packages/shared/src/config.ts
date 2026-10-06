@@ -7,7 +7,15 @@ export const LOCAL_PLAYER_ID = "player_local";
 export const QUEUE_LIMIT_MVP = 1;
 export const RELEASED_IN_VERSION = "mvp";
 
-export const GAME_CONFIG = {
+export type GameConfigValues = {
+  timeScale: number;
+  gameDayGameSec: number;
+  maxOfflineRealSec: number;
+  maxOfflineGameSec: number;
+  tickIntervalRealMs: number;
+};
+
+export const GAME_CONFIG: GameConfigValues = {
   timeScale: TIME_SCALE,
   gameDayGameSec: GAME_DAY_GAME_SEC,
   maxOfflineRealSec: MAX_OFFLINE_REAL_SEC,
@@ -16,3 +24,16 @@ export const GAME_CONFIG = {
 } as const;
 
 export type GameConfig = typeof GAME_CONFIG;
+
+export function gameConfigFromDb(
+  row: GameConfigValues | null | undefined,
+): GameConfigValues {
+  if (!row) return GAME_CONFIG;
+  return {
+    timeScale: row.timeScale,
+    gameDayGameSec: row.gameDayGameSec,
+    maxOfflineRealSec: row.maxOfflineRealSec,
+    maxOfflineGameSec: row.maxOfflineGameSec,
+    tickIntervalRealMs: row.tickIntervalRealMs,
+  };
+}

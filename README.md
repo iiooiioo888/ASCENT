@@ -130,17 +130,19 @@ packages/shared   共用型別與結算純函數
 
 ```
 pnpm install
-pnpm --filter @ascent/shared build
-pnpm --filter @ascent/api prisma:generate
-pnpm --filter @ascent/api exec -- prisma db push
-pnpm db:seed
-pnpm --filter @ascent/api start:dev
-pnpm --filter @ascent/web dev
+pnpm setup:db
+pnpm dev
 ```
+
+或分開啟動 API／前端：`pnpm dev:api`、`pnpm dev:web`。
+
+`setup:db` 會從根目錄 `.env.example` 複製出 `apps/api/.env`（若尚不存在）、產生 Prisma Client、`db push` 並種子。Prisma 讀取的是 **`apps/api/.env`**，不是根目錄 `.env`。
 
 前端：http://localhost:5173 。API：http://localhost:3000/api/v1/state 。
 
-目標主庫仍是 PostgreSQL（ADR 0001）。本機若沒有 Docker／Postgres，工程 MVP 用 SQLite 檔 `apps/api/dev.db` 以便可玩。有 Postgres 時把 `DATABASE_URL` 改回連線字串即可。
+目標主庫仍是 PostgreSQL（ADR 0001）。`prisma/migrations/` 內 SQL 對應 **PostgreSQL**（`JSONB` 等）。工程 MVP 預設在 `apps/api/prisma/schema.prisma` 使用 **SQLite**（`file:./dev.db`），本機無 Docker 即可 `pnpm setup:db` 可玩。
+
+若要改用 Compose 裡的 Postgres：先 `pnpm db:up`，把 `schema.prisma` 的 `provider` 改為 `postgresql`，`apps/api/.env` 的 `DATABASE_URL` 改為 `postgresql://ascent:ascent@localhost:5432/ascent`，再執行 `pnpm --filter @ascent/api exec -- prisma migrate deploy` 與 `pnpm db:seed`（不要用 `db push` 覆蓋正式 migration）。
 
 `packages/shared` 不得依賴 Prisma、Socket.IO 或 Redis 客戶端。權威寫入只留在 `apps/api`。否決：Fastify 當核心、Phaser 進核心、Redis 當主庫、每 tick 全量模擬。
 

@@ -8,7 +8,7 @@
 | 技術目標 | 仍聽 [ADR 0001](adr/0001-tech-stack.md)；本檔只鎖 MVP 啟用範圍 |
 | 生產規則 | [GDD v2.0 全文](gdd/production-system-v2.md)；分冊 [gdd/README.md](gdd/README.md) |
 
-本檔只鎖**工程 MVP**，不得把 [GDD §13／0007 目標首發](gdd/0007-scope-expansion.md) 縮成這一份。目前只寫文件，不實作。
+本檔只鎖**工程 MVP**，不得把 [GDD §13／0007 目標首發](gdd/0007-scope-expansion.md) 縮成這一份。程式實作見倉庫根 `apps/`、`packages/shared`（工程 MVP 0.1.0）。
 
 ---
 
@@ -89,7 +89,7 @@ MVP 結算時機（無 Redis／BullMQ）：
 1. `GET` 庫存或建築（進頁即結算）。
 2. `POST` 開工／停止／收取。
 3. 可選：前端定時輪詢同一 GET。
-4. 可選：**NestJS cron**（`@nestjs/schedule`），呼叫與 `inventory` **同一**結算入口。不是遊戲秒迴圈，也不取代懶結算。
+4. 可選：**NestJS cron**（`@nestjs/schedule`），呼叫與 `inventory` **同一**結算入口。不是遊戲秒迴圈，也不取代懶結算。（已實作：`SettlementCronService` 每 5 現實秒呼叫 `settleAll`。）
 
 仍須：伺服器唯一權威、純函數可重播、同一區間不重複入帳、先裁切現實差再 × 60。細則：[GDD 0002](gdd/0002-time-and-settlement.md)。之後若有登入，改為登入時補結算；MVP 無登入，以進頁代替。
 
@@ -158,21 +158,21 @@ MVP 結算時機（無 Redis／BullMQ）：
 
 ## 驗收清單
 
-- [ ] 農業 5–10 物品、3–5 建築、5–10 由規則生成的方式，驗證器可過。
-- [ ] 開工後經過對應遊戲秒，收取使庫存增加；客戶端預覽不得寫回。
-- [ ] 離線（或把 `lastSettledAt` 撥早）再進頁，補算不超過 8 現實小時（`maxOfflineRealSec=28800`，遊戲秒上限 `1728000`）。
-- [ ] 同一結算區間重放不雙計。
-- [ ] 重開應用／重進頁後庫存與建築狀態仍在。
-- [ ] 無登入頁、無市場、無排行榜。
-- [ ] 無 Redis、無 WebSocket 仍能完成上述閉環。
-- [ ] 無加速。
+- [x] 農業 5–10 物品、3–5 建築、5–10 由規則生成的方式，驗證器可過（`POST /api/v1/validate`、種子、`packages/shared` 測試）。
+- [x] 開工後經過對應遊戲秒，收取使庫存增加；客戶端預覽不得寫回。
+- [x] 離線（或把 `lastSettledAt` 撥早）再進頁，補算不超過 8 現實小時（`maxOfflineRealSec=28800`，遊戲秒上限 `1728000`）。
+- [x] 同一結算區間重放不雙計（`settleWindow` 冪等；`ready` 狀態不重複入帳產出）。
+- [x] 重開應用／重進頁後庫存與建築狀態仍在（Prisma 持久化）。
+- [x] 無登入頁、無市場、無排行榜。
+- [x] 無 Redis、無 WebSocket 仍能完成上述閉環。
+- [x] 無加速。
 
 ---
 
 ## 下一步
 
-本階段**只有設計文件**，尚未建碼、未裝依賴。農業切片目錄見 [gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md)。市場、排行榜、登入、WebSocket **不在**工程 MVP。
+工程 MVP 骨架已落地（見根 [README.md](../README.md) 本機啟動）。農業切片目錄見 [gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md)。市場、排行榜、登入、WebSocket **仍不在**工程 MVP。
 
-**下一步建議：** MVP Schema → 後端核心 → 前端。
+**建議後續：** 數值平衡與 UX 打磨 → 切 Postgres 正式 migration 部署 → 認證與多存檔 → 目標首發系統擴充。
 
-與 [系統定義 §9](system-definition.md) 同義（本次不實作）：生產鏈核心 → 數值平衡 → 離線結算 → 存檔 → 視覺 → 玩家互動。
+與 [系統定義 §9](system-definition.md) 同義的產品順序：生產鏈核心（已）→ 數值平衡 → 離線結算（已）→ 存檔（已）→ 視覺 → 玩家互動。

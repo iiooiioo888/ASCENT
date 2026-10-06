@@ -1,6 +1,5 @@
 import { Injectable } from "@nestjs/common";
 import {
-  GAME_CONFIG,
   generateMethods,
   validateCatalog,
   type ItemDef,
@@ -9,6 +8,7 @@ import {
   type ProductionRuleDef,
 } from "@ascent/shared";
 import { PrismaService } from "../prisma/prisma.service";
+import { gameConfigFromRow } from "../simulation/game-config.loader";
 
 @Injectable()
 export class RulesService {
@@ -41,11 +41,13 @@ export class RulesService {
   }
 
   async validate() {
-    const [items, rules, methods] = await Promise.all([
+    const [items, rules, methods, gameRow] = await Promise.all([
       this.prisma.item.findMany(),
       this.prisma.productionRule.findMany(),
       this.prisma.productionMethod.findMany(),
+      this.prisma.gameConfig.findUnique({ where: { id: 1 } }),
     ]);
+    const config = gameConfigFromRow(gameRow);
     const mappedRules: ProductionRuleDef[] = rules.map((r) => ({
       id: r.id,
       code: r.code,
@@ -83,7 +85,7 @@ export class RulesService {
       })),
       rules: mappedRules,
       methods: mappedMethods,
-      config: GAME_CONFIG,
+      config,
     });
     return { ok: errors.length === 0, errors, generatedPreview: generateMethods(mappedRules).map((m) => m.id) };
   }

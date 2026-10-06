@@ -9,9 +9,13 @@
     "dev": "pnpm --parallel --filter @ascent/shared --filter @ascent/api --filter @ascent/web dev",
     "dev:api": "pnpm --filter @ascent/api start:dev",
     "dev:web": "pnpm --filter @ascent/web dev",
+    "setup:env": "node scripts/setup-env.mjs",
+    "setup:db": "pnpm setup:env && pnpm --filter @ascent/shared build && pnpm --filter @ascent/api prisma:generate && pnpm --filter @ascent/api exec -- prisma db push && pnpm db:seed",
+    "setup": "pnpm install && pnpm setup:db",
     "db:up": "docker compose up -d postgres",
     "db:migrate": "pnpm --filter @ascent/api prisma:migrate",
     "db:seed": "pnpm --filter @ascent/api prisma:seed",
+    "typecheck": "pnpm --filter @ascent/shared build && pnpm --filter @ascent/api exec tsc --noEmit && pnpm --filter @ascent/web exec tsc --noEmit",
     "test": "pnpm --filter @ascent/shared test"
   }
 }
