@@ -1,5 +1,5 @@
-import { ApiError } from "./api";
 import { ITEM_META, itemLabel } from "./meta";
+import { isStaleBuildingActionError } from "./stale-building-action";
 
 /** Shown on building card after HTTP 409 (concurrent start/stop/collect). */
 export const BUILDING_STATE_CHANGED_COPY = "狀態已變更，已重新整理";
@@ -36,13 +36,9 @@ export function formatUserError(raw: unknown): string {
   return msg;
 }
 
-export function isApiConflict(raw: unknown): boolean {
-  return raw instanceof ApiError && raw.status === 409;
-}
-
 /** Player-facing copy for failed building actions (card-level). */
 export function formatActionError(raw: unknown): string {
-  if (isApiConflict(raw)) {
+  if (isStaleBuildingActionError(raw)) {
     return BUILDING_STATE_CHANGED_COPY;
   }
   return formatUserError(raw);
