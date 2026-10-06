@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 import { InventoryService } from "./inventory.service";
 
 @Controller("api/v1")
@@ -46,7 +46,6 @@ export class InventoryController {
   }
 
   @Post("buildings/:id/collect")
-  @HttpCode(HttpStatus.OK)
   collect(@Param("id") id: string) {
     return this.inventory.collect(id);
   }

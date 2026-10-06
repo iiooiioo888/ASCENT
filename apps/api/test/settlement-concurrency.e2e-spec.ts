@@ -54,17 +54,6 @@ describe("結算並發（cron × HTTP）", () => {
     expect(b!.status).toBe("ready");
   }
 
-  /** coarseTick 在 NODE_ENV=test 時為 no-op；並發測試需暫時脫離 test 環境。 */
-  async function runCoarseTick() {
-    const prev = process.env.NODE_ENV;
-    process.env.NODE_ENV = "development";
-    try {
-      await cron.coarseTick();
-    } finally {
-      process.env.NODE_ENV = prev;
-    }
-  }
-
   async function wheatQuantity(): Promise<number> {
     const row = await prisma.playerInventory.findUnique({
       where: { playerId_itemId: { playerId: "player_local", itemId: "item_wheat" } },
@@ -82,9 +71,9 @@ describe("結算並發（cron × HTTP）", () => {
         const before = await wheatQuantity();
 
         await Promise.all([
-          runCoarseTick(),
-          request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`).expect(200),
-          runCoarseTick(),
+          cron.coarseTick(),
+          request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`).expect(201),
+          cron.coarseTick(),
           request(app.getHttpServer()).get("/api/v1/inventory").expect(200),
         ]);
 
@@ -112,9 +101,9 @@ describe("結算並發（cron × HTTP）", () => {
       });
 
       await Promise.all([
-        runCoarseTick(),
+        cron.coarseTick(),
         request(app.getHttpServer()).get("/api/v1/inventory").expect(200),
-        runCoarseTick(),
+        cron.coarseTick(),
         request(app.getHttpServer()).get(`/api/v1/buildings/${fieldBuildingId}`).expect(200),
       ]);
 
@@ -128,8 +117,8 @@ describe("結算並發（cron × HTTP）", () => {
     "collect 完成後 cron 不得把建築寫回 ready 並恢復 buffer",
     async () => {
       await prepareReadyBuilding();
-      await request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`).expect(200);
-      await runCoarseTick();
+      await request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`).expect(201);
+      await cron.coarseTick();
       const building = await prisma.playerBuilding.findUnique({ where: { id: fieldBuildingId } });
       expect(building!.status).toBe("idle");
       const buffered = building!.bufferedOutputs as Record<string, number>;
