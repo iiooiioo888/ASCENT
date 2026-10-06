@@ -17,3 +17,4 @@ coverage/
 *.tsbuildinfo
 *.db
 *.db-journal
+apps/api/test/.tmp/
