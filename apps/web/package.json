@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "screenshot:pr-a": "node scripts/capture-pr-a-screenshot.mjs"
+    "screenshot:pr-a": "node scripts/capture-pr-a-screenshot.mjs",
+    "screenshot:pr-b": "node scripts/capture-pr-b-screenshot.mjs"
   },
   "dependencies": {
     "react": "^19.0.0",
