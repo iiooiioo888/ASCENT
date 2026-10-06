@@ -40,7 +40,7 @@ export const ITEM_PURPOSE_HINTS: Partial<Record<string, string>> = {
   item_bread: "終產；本切片目標是做出並留存麵包。",
 };
 
-/** Parses Vite env booleans (`1`/`0`, `true`/`false`, `on`/`off`, etc.); empty → default. */
+/** Parses Vite env booleans (case-insensitive, trimmed). Empty/whitespace → default; unknown tokens → default. */
 export function parseViteBooleanEnv(raw: string | undefined, defaultValue: boolean): boolean {
   if (raw === undefined || raw.trim() === "") return defaultValue;
   const v = raw.trim().toLowerCase();
