@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ascent
+      POSTGRES_PASSWORD: ascent
+      POSTGRES_DB: ascent
+    ports:
+      - "5432:5432"
+    volumes:
+      - ascent_pg:/var/lib/postgresql/data
+
+  # 目標棧保留；MVP 不啟動
+  # redis:
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+
+volumes:
+  ascent_pg:

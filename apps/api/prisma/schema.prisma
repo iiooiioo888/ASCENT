@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model ItemType {
+  id                 String @id
+  code               String @unique
+  name               String
+  isActive           Boolean @default(true) @map("is_active")
+  releasedInVersion  String  @map("released_in_version")
+  metadata           Json
+  items              Item[]
+
+  @@map("item_types")
+}
+
+model ItemProperty {
+  id                String @id
+  code              String @unique
+  name              String
+  valueKind         String @map("value_kind")
+  isActive          Boolean @default(true) @map("is_active")
+  releasedInVersion String  @map("released_in_version")
+
+  @@map("item_properties")
+}
+
+model Item {
+  id                String   @id
+  code              String   @unique
+  typeId            String   @map("type_id")
+  type              ItemType @relation(fields: [typeId], references: [id])
+  layer             String
+  derivedTier       Int      @map("derived_tier")
+  properties        Json
+  rarity            Int?
+  isActive          Boolean  @default(true) @map("is_active")
+  releasedInVersion String   @map("released_in_version")
+  inventory         PlayerInventory[]
+
+  @@map("items")
+}
+
+model ProductionRule {
+  id                String  @id
+  code              String  @unique
+  parentRuleId      String? @map("parent_rule_id")
+  inputs            Json
+  outputs           Json
+  durationGameSec   Int     @map("duration_game_sec")
+  formulas          Json
+  compositions      Json
+  overrides         Json
+  optimizations     Json
+  isActive          Boolean @default(true) @map("is_active")
+  releasedInVersion String  @map("released_in_version")
+  methods           ProductionMethod[]
+
+  @@map("production_rules")
+}
+
+model ProductionMethod {
+  id                String          @id
+  code              String          @unique
+  ruleId            String          @map("rule_id")
+  rule              ProductionRule  @relation(fields: [ruleId], references: [id])
+  optimization      Json
+  inputs            Json
+  outputs           Json
+  durationGameSec   Int             @map("duration_game_sec")
+  isActive          Boolean         @default(true) @map("is_active")
+  releasedInVersion String          @map("released_in_version")
+  buildings         PlayerBuilding[]
+
+  @@map("production_methods")
+}
+
+model BuildingDef {
+  id                String  @id
+  code              String  @unique
+  name              String
+  systemCode        String  @map("system_code")
+  footprint         Int     @default(1)
+  canUpgrade        Boolean @default(true) @map("can_upgrade")
+  canSpecialize     Boolean @default(true) @map("can_specialize")
+  allowedRuleIds    Json    @map("allowed_rule_ids")
+  isActive          Boolean @default(true) @map("is_active")
+  releasedInVersion String  @map("released_in_version")
+  levels            BuildingLevel[]
+  buildings         PlayerBuilding[]
+
+  @@map("building_defs")
+}
+
+model BuildingLevel {
+  buildingDefId String      @map("building_def_id")
+  buildingDef   BuildingDef @relation(fields: [buildingDefId], references: [id])
+  level         Int
+  modifiers     Json
+  queueLimit    Int         @map("queue_limit")
+
+  @@id([buildingDefId, level])
+  @@map("building_levels")
+}
+
+model GameConfig {
+  id                 Int @id @default(1)
+  timeScale          Int @default(60) @map("time_scale")
+  gameDayGameSec     Int @default(86400) @map("game_day_game_sec")
+  maxOfflineRealSec  Int @default(28800) @map("max_offline_real_sec")
+  maxOfflineGameSec  Int @default(1728000) @map("max_offline_game_sec")
+  tickIntervalRealMs Int @default(5000) @map("tick_interval_real_ms")
+
+  @@map("game_config")
+}
+
+model ServerState {
+  id             Int      @id @default(1)
+  startRealTime  DateTime @map("start_real_time")
+  startGameTime  BigInt   @map("start_game_time")
+  finishAt       DateTime? @map("finish_at")
+  lastUpdate     DateTime @map("last_update")
+
+  @@map("server_state")
+}
+
+model Player {
+  id         String   @id
+  createdAt  DateTime @map("created_at")
+  lastSeenAt DateTime @map("last_seen_at")
+  inventory  PlayerInventory[]
+  buildings  PlayerBuilding[]
+
+  @@map("players")
+}
+
+model PlayerInventory {
+  playerId String @map("player_id")
+  player   Player @relation(fields: [playerId], references: [id])
+  itemId   String @map("item_id")
+  item     Item   @relation(fields: [itemId], references: [id])
+  quantity Decimal
+  quality  Decimal @default(100)
+
+  @@id([playerId, itemId])
+  @@map("player_inventory")
+}
+
+model PlayerBuilding {
+  id               String   @id
+  playerId         String   @map("player_id")
+  player           Player   @relation(fields: [playerId], references: [id])
+  buildingDefId    String   @map("building_def_id")
+  buildingDef      BuildingDef @relation(fields: [buildingDefId], references: [id])
+  level            Int      @default(1)
+  specialization   String?
+  durability       Decimal  @default(100)
+  methodId         String?  @map("method_id")
+  method           ProductionMethod? @relation(fields: [methodId], references: [id])
+  lastSettledAt    DateTime @map("last_settled_at")
+  lastSettledGame  BigInt   @map("last_settled_game")
+  lastUpdate       DateTime @map("last_update")
+  lastUpdateGame   BigInt   @map("last_update_game")
+  finishAt         DateTime? @map("finish_at")
+  queue            Json
+  inputs           Json
+  outputs          Json
+  bufferedOutputs  Json     @map("buffered_outputs")
+  status           String
+
+  @@map("player_buildings")
+}

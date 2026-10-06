@@ -1,0 +1,52 @@
+import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { InventoryService } from "./inventory.service";
+
+@Controller("api/v1")
+export class InventoryController {
+  constructor(private readonly inventory: InventoryService) {}
+
+  @Get("time")
+  time() {
+    return this.inventory.time();
+  }
+
+  @Get("state")
+  state() {
+    return this.inventory.state();
+  }
+
+  @Get("inventory")
+  inventoryList() {
+    return this.inventory.inventory();
+  }
+
+  @Get("buildings")
+  buildings() {
+    return this.inventory.buildings();
+  }
+
+  @Get("buildings/:id")
+  building(@Param("id") id: string) {
+    return this.inventory.building(id);
+  }
+
+  @Post("buildings")
+  place(@Body() body: { buildingDefId: string }) {
+    return this.inventory.place(body.buildingDefId);
+  }
+
+  @Post("buildings/:id/start")
+  start(@Param("id") id: string, @Body() body: { methodId: string }) {
+    return this.inventory.start(id, body.methodId);
+  }
+
+  @Post("buildings/:id/stop")
+  stop(@Param("id") id: string) {
+    return this.inventory.stop(id);
+  }
+
+  @Post("buildings/:id/collect")
+  collect(@Param("id") id: string) {
+    return this.inventory.collect(id);
+  }
+}

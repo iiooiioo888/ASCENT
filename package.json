@@ -1,0 +1,17 @@
+{
+  "name": "ascent",
+  "private": true,
+  "version": "0.1.0",
+  "description": "崗起 / Ascent — 規則驅動生產的無限發展模擬經營",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --parallel --filter @ascent/shared --filter @ascent/api --filter @ascent/web dev",
+    "dev:api": "pnpm --filter @ascent/api start:dev",
+    "dev:web": "pnpm --filter @ascent/web dev",
+    "db:up": "docker compose up -d postgres",
+    "db:migrate": "pnpm --filter @ascent/api prisma:migrate",
+    "db:seed": "pnpm --filter @ascent/api prisma:seed",
+    "test": "pnpm --filter @ascent/shared test"
+  }
+}
