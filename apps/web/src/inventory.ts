@@ -10,12 +10,18 @@ export function inventoryQtyMap(inventory: InvRow[]): Map<string, number> {
   return map;
 }
 
+function isFiniteQty(qty: number): boolean {
+  return Number.isFinite(qty);
+}
+
 export function canAffordInputs(
   stock: Map<string, number>,
   inputs: { item_id: string; qty: number }[],
 ): boolean {
   for (const io of inputs) {
+    if (!isFiniteQty(io.qty)) return false;
     const have = stock.get(io.item_id) ?? 0;
+    if (!isFiniteQty(have)) return false;
     if (have + 1e-9 < io.qty) return false;
   }
   return true;
@@ -34,11 +40,13 @@ export function inputAvailability(
 ): InputAvailability[] {
   return inputs.map((io) => {
     const have = stock.get(io.item_id) ?? 0;
+    const short =
+      !isFiniteQty(have) || !isFiniteQty(io.qty) || have + 1e-9 < io.qty;
     return {
       item_id: io.item_id,
       need: io.qty,
       have,
-      short: have + 1e-9 < io.qty,
+      short,
     };
   });
 }
