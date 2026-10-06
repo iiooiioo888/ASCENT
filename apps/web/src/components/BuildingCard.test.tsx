@@ -8,6 +8,7 @@ import {
   growWheatDefault,
   mixFeedDefault,
 } from "../prb-demo/fixtures";
+import { demoSiloBuilding } from "../screenshot-harness/fixtures";
 import { BuildingCard } from "./BuildingCard";
 import { DEMO_SERVER_REAL_TIME } from "../test/demoTime";
 
@@ -156,6 +157,31 @@ describe("BuildingCard U7 method lock", () => {
     const select = screen.getByRole("combobox", { name: fieldMethodSelectName }) as HTMLSelectElement;
     expect(select).toBeDisabled();
     expect(select.value).toBe("method_grow_wheat_default");
+  });
+});
+
+describe("BuildingCard U12 silo (legacy mode)", () => {
+  it("does not render production action buttons for silo", () => {
+    render(
+      <BuildingCard
+        building={demoSiloBuilding}
+        options={[]}
+        inventory={baseInventory}
+        selectedId={undefined}
+        selected={undefined}
+        timeScale={60}
+        serverRealTime={DEMO_SERVER_REAL_TIME}
+        pending={false}
+        onSelectMethod={vi.fn()}
+        onStart={vi.fn()}
+        onStop={vi.fn()}
+        onCollect={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "開工" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "停止" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "收取" })).not.toBeInTheDocument();
   });
 });
 
