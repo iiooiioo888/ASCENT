@@ -1,6 +1,8 @@
 import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { BuildingCard } from "../components/BuildingCard";
+import { SiloBuildingCard } from "../components/SiloBuildingCard";
+import { DEMO_SERVER_REAL_TIME } from "../test/demoTime";
 import { Inventory } from "../components/Inventory";
 import { BUILDING_STATE_CHANGED_COPY } from "../format";
 import "../style.css";
@@ -33,6 +35,7 @@ function Harness() {
           selectedId={methodId}
           selected={selected}
           timeScale={60}
+          serverRealTime={DEMO_SERVER_REAL_TIME}
           actionError="資源不足：水"
           pending={false}
           onSelectMethod={setMethodId}
@@ -40,20 +43,7 @@ function Harness() {
           onStop={() => undefined}
           onCollect={() => undefined}
         />
-        <BuildingCard
-          building={demoSiloBuilding}
-          options={[]}
-          inventory={demoInventory}
-          selectedId={undefined}
-          selected={undefined}
-          timeScale={60}
-          actionError="此建築不能使用該方式"
-          pending={false}
-          onSelectMethod={() => undefined}
-          onStart={() => undefined}
-          onStop={() => undefined}
-          onCollect={() => undefined}
-        />
+        <SiloBuildingCard building={demoSiloBuilding} pending={false} />
         <BuildingCard
           building={demoMillBuilding}
           options={demoMillMethods}
@@ -61,6 +51,7 @@ function Harness() {
           selectedId={millMethodId}
           selected={millSelected}
           timeScale={60}
+          serverRealTime={DEMO_SERVER_REAL_TIME}
           actionError={BUILDING_STATE_CHANGED_COPY}
           pending={false}
           onSelectMethod={() => undefined}

@@ -94,5 +94,17 @@ export function productionProgressAriaLabel(buildingName: string, percent: numbe
   return `${buildingName}生產進度 ${percent}%`;
 }
 
-/** Decorative industry chain strip (U15). */
-export const INDUSTRY_CHAIN_ARIA_LABEL = "產業鏈：田、磨坊、爐至麵包";
+/** Decorative industry chain strip (U15, P3-3 含飼料支線). */
+export const INDUSTRY_CHAIN_ARIA_LABEL = "產業鏈：田、磨坊、爐至麵包，磨坊可產飼料";
+
+/** TODO(product): 待確認 — 倉卡說明（U12 精簡卡） */
+export const SILO_CARD_BODY = "MVP 純展示倉：不開工，只佔建築槽。";
+
+/** TODO(product): 待確認 — 時間換算 HUD chip 文案（P3-1） */
+export function timeScaleHudChip(timeScale: number): string {
+  if (timeScale === 60) return "⚖ 1 現實秒＝1 遊戲分";
+  return `⚖ 1 現實秒＝${timeScale} 遊戲秒`;
+}
+
+/** Secondary game-clock label prefix (P3-1). */
+export const GAME_TIME_CHIP_PREFIX = "遊戲時";

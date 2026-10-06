@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { fmtBuffered, fmtIo, realRemainSec, statusLabel } from "../format";
+import { fmtBuffered, fmtIo, statusLabel } from "../format";
+import { useProgressTick } from "../hooks/useProgressTick";
+import { jobProgressPercent, jobRemainRealSec } from "../productionProgress";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
 import type { Building, InvRow, Method } from "../types";
@@ -13,6 +15,7 @@ type Props = {
   selectedId: string | undefined;
   selected: Method | undefined;
   timeScale: number;
+  serverRealTime: string;
   actionError?: string;
   actionSuccess?: string;
   pending: boolean;
@@ -29,6 +32,7 @@ export function BuildingCard({
   selectedId,
   selected,
   timeScale,
+  serverRealTime,
   actionError,
   actionSuccess,
   pending,
@@ -40,8 +44,12 @@ export function BuildingCard({
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
   const job = b.queue[0];
-  const progress = job ? Math.min(100, (job.elapsedGameSec / job.durationGameSec) * 100) : 0;
-  const remain = realRemainSec(job, timeScale);
+  const smoothProgress = b.status === "running" && !!job;
+  const nowMs = useProgressTick(smoothProgress);
+  const progress = job
+    ? jobProgressPercent(job, timeScale, serverRealTime, nowMs)
+    : 0;
+  const remain = job ? jobRemainRealSec(job, timeScale, serverRealTime, nowMs) : 0;
 
   const methodLocked = b.status === "running" || b.status === "ready";
   const displayMethodId = methodLocked && b.methodId ? b.methodId : selectedId;

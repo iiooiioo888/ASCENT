@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BuildingCard } from "../components/BuildingCard";
+import { DEMO_SERVER_REAL_TIME } from "../test/demoTime";
 import { Inventory } from "../components/Inventory";
 import { StopConfirmDialog } from "../components/StopConfirmDialog";
 import "../style.css";
@@ -21,6 +22,7 @@ function Demo() {
           selectedId={growWheatDefault.id}
           selected={growWheatDefault}
           timeScale={60}
+          serverRealTime={DEMO_SERVER_REAL_TIME}
           actionError="資源不足：水"
           pending={false}
           onSelectMethod={() => undefined}

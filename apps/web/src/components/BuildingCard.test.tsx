@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { BuildingCard } from "./BuildingCard";
 import { demoFieldIdle, growWheatDefault } from "../prb-demo/fixtures";
+import { DEMO_SERVER_REAL_TIME } from "../test/demoTime";
 
 const baseInventory = [
   {
@@ -26,6 +27,7 @@ describe("BuildingCard a11y (U15)", () => {
         selectedId={growWheatDefault.id}
         selected={growWheatDefault}
         timeScale={60}
+        serverRealTime={DEMO_SERVER_REAL_TIME}
         pending={false}
         onSelectMethod={vi.fn()}
         onStart={vi.fn()}
@@ -39,11 +41,12 @@ describe("BuildingCard a11y (U15)", () => {
   });
 
   it("exposes progressbar when running", () => {
+    const serverRealTime = new Date(Date.now() - 30_000).toISOString();
     const running = {
       ...demoFieldIdle,
       status: "running" as const,
       methodId: growWheatDefault.id,
-      queue: [{ elapsedGameSec: 1800, durationGameSec: 3600 }],
+      queue: [{ elapsedGameSec: 0, durationGameSec: 3600 }],
     };
     render(
       <BuildingCard
@@ -53,6 +56,7 @@ describe("BuildingCard a11y (U15)", () => {
         selectedId={growWheatDefault.id}
         selected={growWheatDefault}
         timeScale={60}
+        serverRealTime={serverRealTime}
         pending={false}
         onSelectMethod={vi.fn()}
         onStart={vi.fn()}
@@ -74,6 +78,7 @@ describe("BuildingCard a11y (U15)", () => {
         selectedId={growWheatDefault.id}
         selected={growWheatDefault}
         timeScale={60}
+        serverRealTime={DEMO_SERVER_REAL_TIME}
         actionError="資源不足：水"
         pending={false}
         onSelectMethod={vi.fn()}

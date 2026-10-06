@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BuildingCard } from "../components/BuildingCard";
+import { DEMO_SERVER_REAL_TIME } from "../test/demoTime";
 import { DepletionNotice } from "../components/DepletionNotice";
 import { Inventory } from "../components/Inventory";
 import {
@@ -46,6 +47,7 @@ function Demo() {
           selectedId={growWheatDefault.id}
           selected={growWheatDefault}
           timeScale={60}
+          serverRealTime={DEMO_SERVER_REAL_TIME}
           pending={false}
           onSelectMethod={() => undefined}
           onStart={() => undefined}
@@ -59,6 +61,7 @@ function Demo() {
           selectedId={mixFeedDefault.id}
           selected={mixFeedDefault}
           timeScale={60}
+          serverRealTime={DEMO_SERVER_REAL_TIME}
           pending={false}
           onSelectMethod={() => undefined}
           onStart={() => undefined}
