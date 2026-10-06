@@ -5,6 +5,7 @@ import {
   FEATURE_OFFLINE_SUMMARY,
   isUnseededWorldClockError,
   itemPurposeHint,
+  methodSelectAriaLabel,
   methodPurposeHint,
   OFFLINE_SUMMARY_FOOTNOTE,
   OFFLINE_SUMMARY_PENDING_TAG,
@@ -24,6 +25,10 @@ describe("productCopy", () => {
     expect(CONNECTION_INTERRUPTED_BANNER).toContain("連線中斷");
     expect(isUnseededWorldClockError("尚未種子世界時鐘")).toBe(true);
     expect(isUnseededWorldClockError("無法連接")).toBe(false);
+  });
+
+  it("U15 method select aria label helper", () => {
+    expect(methodSelectAriaLabel("田")).toBe("選擇田的生產方式");
   });
 
   it("U11 offline summary flag and pending copy", () => {
