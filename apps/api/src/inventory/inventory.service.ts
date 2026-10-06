@@ -11,6 +11,11 @@ import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { SimulationService } from "../simulation/simulation.service";
 import { isMethodAllowedForBuilding } from "./building-method-access";
+import {
+  BUILDING_STATE_CONFLICT_MESSAGE,
+  SETTLEMENT_CONFLICT_MESSAGE,
+  throwIfStateConflict,
+} from "./building-state-update";
 import { SettlementMutex } from "./settlement-mutex";
 
 function toGameInt(sec: number): bigint {
@@ -160,8 +165,8 @@ export class InventoryService {
         { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
         now.getTime(),
       );
-      return this.prisma.playerBuilding.update({
-        where: { id: buildingId },
+      const started = await this.prisma.playerBuilding.updateMany({
+        where: { id: buildingId, status: "idle" },
         data: {
           methodId: method.id,
           status: "running",
@@ -173,6 +178,11 @@ export class InventoryService {
           lastUpdate: now,
           lastUpdateGame: toGameInt(game),
         },
+      });
+      throwIfStateConflict(started.count);
+      return this.prisma.playerBuilding.findUniqueOrThrow({
+        where: { id: buildingId },
+        include: { buildingDef: true, method: true },
       });
     });
   }
@@ -188,8 +198,9 @@ export class InventoryService {
         { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
         now.getTime(),
       );
-      return this.prisma.playerBuilding.update({
-        where: { id: buildingId },
+      const expectedStatus = building.status;
+      const stopped = await this.prisma.playerBuilding.updateMany({
+        where: { id: buildingId, status: expectedStatus },
         data: {
           status: building.status === "ready" ? "ready" : "idle",
           methodId: building.status === "ready" ? building.methodId : null,
@@ -199,6 +210,11 @@ export class InventoryService {
           lastUpdate: now,
           lastUpdateGame: toGameInt(game),
         },
+      });
+      throwIfStateConflict(stopped.count);
+      return this.prisma.playerBuilding.findUniqueOrThrow({
+        where: { id: buildingId },
+        include: { buildingDef: true, method: true },
       });
     });
   }
@@ -210,14 +226,13 @@ export class InventoryService {
       if (!building) throw new NotFoundException("建築不存在");
       if (building.status !== "ready") throw new BadRequestException("尚無可收取產出");
       const buffered = (building.bufferedOutputs as Record<string, number>) ?? {};
-      await this.add(buffered);
       const now = new Date();
       const clock = await this.requireState();
       const game = this.sim.displayGameTime(
         { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
         now.getTime(),
       );
-      return this.prisma.playerBuilding.update({
+      const claimed = await this.prisma.playerBuilding.updateMany({
         where: { id: buildingId, status: "ready" },
         data: {
           status: "idle",
@@ -229,6 +244,12 @@ export class InventoryService {
           lastUpdate: now,
           lastUpdateGame: toGameInt(game),
         },
+      });
+      throwIfStateConflict(claimed.count);
+      await this.add(buffered);
+      return this.prisma.playerBuilding.findUniqueOrThrow({
+        where: { id: buildingId },
+        include: { buildingDef: true, method: true },
       });
     });
   }
@@ -286,7 +307,7 @@ export class InventoryService {
         return;
       }
     }
-    throw new BadRequestException("建築結算衝突，請重試");
+    throwIfStateConflict(0, SETTLEMENT_CONFLICT_MESSAGE);
   }
 
   private async add(gain: Record<string, number>) {

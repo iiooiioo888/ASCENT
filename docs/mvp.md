@@ -93,6 +93,8 @@ MVP 結算時機（無 Redis／BullMQ）：
 
 仍須：伺服器唯一權威、純函數可重播、同一區間不重複入帳、先裁切現實差再 × 60。細則：[GDD 0002](gdd/0002-time-and-settlement.md)。之後若有登入，改為登入時補結算；MVP 無登入，以進頁代替。
 
+**併發（工程 MVP）：** `SettlementMutex` 與 `lastSettledAt` 樂觀寫入僅保證**單一 Node 進程**內不重複結算／收取；`start`／`stop`／`collect` 狀態競爭回 **409 Conflict**。水平多實例部署須另加 DB 列鎖或單寫者（本切片未做，見 ADR 0001 分期）。
+
 ---
 
 ## 農業切片（占位，不是數值定案）

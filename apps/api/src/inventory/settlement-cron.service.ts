@@ -47,6 +47,7 @@ export class SettlementCronService implements OnModuleInit, OnModuleDestroy {
     const handle = setInterval(() => void this.coarseTick(), ms);
     this.schedulerRegistry.addInterval(JOB_NAME, handle);
     this.scheduledMs = ms;
+    this.logger.log(`背景結算間隔已設為 ${ms}ms（tickIntervalRealMs）`);
   }
 
   async coarseTick() {
