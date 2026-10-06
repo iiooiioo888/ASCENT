@@ -1,8 +1,15 @@
 import { ITEM_META, itemLabel } from "./meta";
-import { isStaleBuildingActionError } from "./stale-building-action";
 
-/** Shown on building card after HTTP 409 (concurrent start/stop/collect). */
-export const BUILDING_STATE_CHANGED_COPY = "狀態已變更，已重新整理";
+import { BUILDING_ACTION_ERROR_COPY } from "./building-action-error";
+
+export {
+  BUILDING_ACTION_ERROR_COPY,
+  formatActionError,
+  isStaleBuildingActionError,
+  toBuildingActionErrorView,
+} from "./building-action-error";
+
+export const BUILDING_STATE_CHANGED_COPY = BUILDING_ACTION_ERROR_COPY.STATE_CHANGED;
 
 /** Integers show no decimals; otherwise up to 2 decimal places, trailing zeros trimmed. */
 export function formatQuantity(qty: number): string {
@@ -34,14 +41,6 @@ export function formatUserError(raw: unknown): string {
   msg = msg.replace(/^Error:\s*/i, "");
   msg = msg.replace(ITEM_ID_PATTERN, (id) => itemLabel(id));
   return msg;
-}
-
-/** Player-facing copy for failed building actions (card-level). */
-export function formatActionError(raw: unknown): string {
-  if (isStaleBuildingActionError(raw)) {
-    return BUILDING_STATE_CHANGED_COPY;
-  }
-  return formatUserError(raw);
 }
 
 export function fmtGame(sec: number) {

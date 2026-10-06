@@ -23,7 +23,7 @@ function Demo() {
           selected={growWheatDefault}
           timeScale={60}
           serverRealTime={DEMO_SERVER_REAL_TIME}
-          actionError="資源不足：水"
+          actionError={{ message: "資源不足：水" }}
           pending={false}
           onSelectMethod={() => undefined}
           onStart={() => undefined}

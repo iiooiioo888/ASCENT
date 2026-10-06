@@ -4,6 +4,7 @@ import { fmtBuffered, fmtIo, statusLabel } from "../format";
 import { useProgressTick } from "../hooks/useProgressTick";
 import { jobProgressPercent, jobRemainRealSec } from "../productionProgress";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
+import type { BuildingActionErrorView } from "../building-action-error";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
 import type { Building, InvRow, Method } from "../types";
 import {
@@ -22,7 +23,7 @@ type Props = {
   selected: Method | undefined;
   timeScale: number;
   serverRealTime: string;
-  actionError?: string;
+  actionError?: BuildingActionErrorView;
   actionSuccess?: string;
   pending: boolean;
   onSelectMethod: (methodId: string) => void;
@@ -149,8 +150,8 @@ export function BuildingCard({
         )}
 
         {actionError ? (
-          <p className="plot-action-error" role="alert">
-            {actionError}
+          <p className="plot-action-error" role="alert" title={actionError.hint}>
+            {actionError.message}
           </p>
         ) : null}
         {actionSuccess && !actionError ? (

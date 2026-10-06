@@ -1,3 +1,4 @@
+import type { BuildingActionErrorView } from "../building-action-error";
 import { statusLabel } from "../format";
 import { BUILDING_ICON } from "../meta";
 import { SILO_CARD_BODY } from "../productCopy";
@@ -5,7 +6,7 @@ import type { Building } from "../types";
 
 type Props = {
   building: Building;
-  actionError?: string;
+  actionError?: BuildingActionErrorView;
   pending: boolean;
 };
 
@@ -29,8 +30,8 @@ export function SiloBuildingCard({ building: b, actionError, pending }: Props) {
         </div>
         <p className="jobline silo-copy">{SILO_CARD_BODY}</p>
         {actionError ? (
-          <p className="plot-action-error" role="alert">
-            {actionError}
+          <p className="plot-action-error" role="alert" title={actionError.hint}>
+            {actionError.message}
           </p>
         ) : null}
       </fieldset>

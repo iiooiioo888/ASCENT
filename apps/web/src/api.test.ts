@@ -43,7 +43,28 @@ describe("api", () => {
       expect(err).toBeInstanceOf(ApiError);
       expect((err as ApiError).status).toBe(400);
       expect((err as ApiError).message).toBe("尚無可收取產出");
+      expect((err as ApiError).code).toBeUndefined();
       return true;
+    });
+  });
+
+  it("parses optional body.code on ApiError", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        mockResponse(400, {
+          statusCode: 400,
+          message: "狀態已變更",
+          code: "building_not_ready_to_collect",
+          error: "Bad Request",
+        }),
+      ),
+    );
+
+    await expect(api("/api/v1/buildings/pb_field/collect")).rejects.toMatchObject({
+      status: 400,
+      message: "狀態已變更",
+      code: "building_not_ready_to_collect",
     });
   });
 
@@ -54,15 +75,15 @@ describe("api", () => {
         mockResponse(409, {
           statusCode: 409,
           message: "建築狀態已變更，請重新整理",
+          code: "building_state_conflict",
           error: "Conflict",
         }),
       ),
     );
 
-    await expect(api("/api/v1/buildings/pb_field/collect")).rejects.toSatisfy((err: unknown) => {
-      expect(err).toBeInstanceOf(ApiError);
-      expect((err as ApiError).status).toBe(409);
-      return true;
+    await expect(api("/api/v1/buildings/pb_field/collect")).rejects.toMatchObject({
+      status: 409,
+      code: "building_state_conflict",
     });
   });
 });

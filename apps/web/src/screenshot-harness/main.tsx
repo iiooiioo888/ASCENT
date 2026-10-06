@@ -36,7 +36,7 @@ function Harness() {
           selected={selected}
           timeScale={60}
           serverRealTime={DEMO_SERVER_REAL_TIME}
-          actionError="資源不足：水"
+          actionError={{ message: "資源不足：水" }}
           pending={false}
           onSelectMethod={setMethodId}
           onStart={() => undefined}
@@ -52,7 +52,7 @@ function Harness() {
           selected={millSelected}
           timeScale={60}
           serverRealTime={DEMO_SERVER_REAL_TIME}
-          actionError={BUILDING_STATE_CHANGED_COPY}
+          actionError={{ message: BUILDING_STATE_CHANGED_COPY }}
           pending={false}
           onSelectMethod={() => undefined}
           onStart={() => undefined}
