@@ -4,7 +4,7 @@ import { BuildingCard } from "./components/BuildingCard";
 import { DepletionNotice } from "./components/DepletionNotice";
 import { Inventory } from "./components/Inventory";
 import { isResourceDepleted } from "./depletion";
-import { formatActionError, formatUserError, fmtGame, isApiConflict } from "./format";
+import { formatActionError, formatUserError, fmtGame } from "./format";
 import { BUILDING_ICON } from "./meta";
 import {
   BRAND_DISPLAY_NAME,
@@ -15,6 +15,7 @@ import {
   SLICE_FLOW_BANNER,
   SLICE_GOAL_BANNER,
 } from "./productCopy";
+import { isStaleBuildingActionError } from "./stale-building-action";
 import type { GameState, Method } from "./types";
 
 export default function App() {
@@ -82,7 +83,7 @@ export default function App() {
         });
         await refresh();
       } catch (e) {
-        if (isApiConflict(e)) {
+        if (isStaleBuildingActionError(e)) {
           await refresh().catch(() => undefined);
         }
         setActionErrors((prev) => ({ ...prev, [actionKey]: formatActionError(e) }));
