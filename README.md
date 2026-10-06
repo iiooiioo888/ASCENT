@@ -160,7 +160,7 @@ pnpm dev
 | 6. 套用 migration | `pnpm --filter @ascent/api exec -- prisma migrate deploy` | `Applying migration \`20261006000000_init\``，無 error |
 | 7. 種子 | `pnpm db:seed` | `種子完成：8 物品、2 屬性定義、5 規則、7 方式` |
 | 8. 啟 API | `pnpm dev:api` | `Nest application successfully started`；監聽 `3000` |
-| 9. 驗證 HTTP | 另開終端機：<br>`curl -s http://localhost:3000/api/v1/state \| jq .player.id`<br>`curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/v1/buildings/pb_player_local_bdef_field/collect` | 前者輸出 `"player_local"`；後者種子建築為 **`idle`**，對 `collect` 目前回 **`400`**（body：`尚無可收取產出`）。**PR #8 合併後**同一情況會改為 **`409`**。要測成功收取需先 `start` 生產至 `ready` 再 `collect` |
+| 9. 驗證 HTTP | 另開終端機：<br>`curl -s http://localhost:3000/api/v1/state \| jq '.buildings \| length'`<br>`curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/v1/buildings/pb_player_local_bdef_field/collect` | `GET /state` 回 `{ time, inventory, buildings, methods, buildingDefs }`（**無** `player` 欄）；種子後 `buildings` 長度為 **`3`**。`collect` 在種子 **`idle`** 建築上目前 **`400`**（`尚無可收取產出`）；**PR #8 合併後**改 **`409`**。成功收取需先 `start` 至 `ready` |
 
 **常見失敗與處理**
 
