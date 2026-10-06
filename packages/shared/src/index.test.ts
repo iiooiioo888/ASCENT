@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  GAME_CONFIG,
   GAME_DAY_GAME_SEC,
   MAX_OFFLINE_GAME_SEC,
   MAX_OFFLINE_REAL_SEC,
   TIME_SCALE,
   displayGameTime,
+  gameConfigFromDb,
   generateMethods,
   items,
   rules,
@@ -12,6 +14,26 @@ import {
   settleWindow,
   validateCatalog,
 } from "./index";
+
+describe("遊戲設定", () => {
+  it("DB 缺列時回退常數", () => {
+    expect(gameConfigFromDb(null)).toEqual(GAME_CONFIG);
+  });
+
+  it("DB 欄位缺失或非法時逐欄回退常數", () => {
+    expect(
+      gameConfigFromDb({
+        timeScale: Number.NaN,
+        maxOfflineRealSec: undefined,
+      }),
+    ).toEqual(GAME_CONFIG);
+  });
+
+  it("timeScale 非正數時回退常數", () => {
+    expect(gameConfigFromDb({ timeScale: 0 })).toEqual(GAME_CONFIG);
+    expect(gameConfigFromDb({ timeScale: -10, tickIntervalRealMs: 0 })).toEqual(GAME_CONFIG);
+  });
+});
 
 describe("時間契約", () => {
   it("1 真實秒 = 60 遊戲秒", () => {
@@ -145,5 +167,39 @@ describe("規則生成與驗證", () => {
       },
     });
     expect(errors.some((e) => e.code === "V-OFFLINE")).toBe(true);
+  });
+
+  it("gameDayGameSec 非 86400 → V-OFFLINE", () => {
+    const methods = generateMethods(rules);
+    const errors = validateCatalog({
+      items,
+      rules,
+      methods,
+      config: {
+        timeScale: 60,
+        maxOfflineRealSec: MAX_OFFLINE_REAL_SEC,
+        maxOfflineGameSec: MAX_OFFLINE_GAME_SEC,
+        gameDayGameSec: 3600,
+        tickIntervalRealMs: 5000,
+      },
+    });
+    expect(errors.some((e) => e.message.includes("gameDayGameSec"))).toBe(true);
+  });
+
+  it("tickIntervalRealMs 非 5000 → V-OFFLINE", () => {
+    const methods = generateMethods(rules);
+    const errors = validateCatalog({
+      items,
+      rules,
+      methods,
+      config: {
+        timeScale: 60,
+        maxOfflineRealSec: MAX_OFFLINE_REAL_SEC,
+        maxOfflineGameSec: MAX_OFFLINE_GAME_SEC,
+        gameDayGameSec: 86400,
+        tickIntervalRealMs: 1000,
+      },
+    });
+    expect(errors.some((e) => e.message.includes("tickIntervalRealMs"))).toBe(true);
   });
 });

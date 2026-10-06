@@ -1,3 +1,4 @@
+# 工程 MVP 預設用 SQLite（apps/api/.env）；此 Postgres 供切換 provider 後使用（見根 README）。
 services:
   postgres:
     image: postgres:16-alpine
@@ -9,6 +10,11 @@ services:
       - "5432:5432"
     volumes:
       - ascent_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ascent -d ascent"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # 目標棧保留；MVP 不啟動
   # redis:
