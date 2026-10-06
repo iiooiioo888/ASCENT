@@ -46,9 +46,24 @@ describe("canAffordInputs", () => {
     expect(canAffordInputs(stock, [{ item_id: "item_water", qty: 1 }])).toBe(false);
   });
 
-  it("current behavior: non-numeric quantity string is treated as affordable (NaN compare)", () => {
+  it("returns false when stock quantity parsed from string is NaN", () => {
     const stock = inventoryQtyMap([row("item_water", "not-a-number")]);
-    expect(canAffordInputs(stock, [{ item_id: "item_water", qty: 1 }])).toBe(true);
+    expect(canAffordInputs(stock, [{ item_id: "item_water", qty: 1 }])).toBe(false);
+  });
+
+  it("returns false when required input qty is not finite", () => {
+    const stock = inventoryQtyMap([row("item_water", "10")]);
+    expect(canAffordInputs(stock, [{ item_id: "item_water", qty: Number.NaN }])).toBe(false);
+  });
+
+  it("returns false when stock map holds NaN for an item", () => {
+    const stock = new Map<string, number>([["item_water", Number.NaN]]);
+    expect(canAffordInputs(stock, [{ item_id: "item_water", qty: 1 }])).toBe(false);
+  });
+
+  it("returns false when stock map holds Infinity", () => {
+    const stock = new Map<string, number>([["item_water", Number.POSITIVE_INFINITY]]);
+    expect(canAffordInputs(stock, [{ item_id: "item_water", qty: 1 }])).toBe(false);
   });
 
   it("returns true when stock meets all inputs", () => {
@@ -62,6 +77,15 @@ describe("canAffordInputs", () => {
         { item_id: "item_seed_wheat", qty: 1 },
       ]),
     ).toBe(true);
+  });
+});
+
+describe("inputAvailability", () => {
+  it("marks row short when have is NaN from bad inventory string", () => {
+    const rows = inputAvailability(inventoryQtyMap([row("item_water", "oops")]), [
+      { item_id: "item_water", qty: 1 },
+    ]);
+    expect(rows[0]?.short).toBe(true);
   });
 });
 
