@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { canStopBuilding } from "../building-actions";
+import { canStopBuilding, showProductionActionButtons } from "../building-actions";
 import { fmtBuffered, fmtIo, statusLabel } from "../format";
 import { useProgressTick } from "../hooks/useProgressTick";
 import { jobProgressPercent, jobRemainRealSec } from "../productionProgress";
@@ -70,6 +70,7 @@ export function BuildingCard({
   const runningMethod = b.methodId ? options.find((m) => m.id === b.methodId) : undefined;
   const purposeHint = methodPurposeHint(displayMethod?.id);
   const progressPercent = Math.round(b.status === "ready" ? 100 : progress);
+  const showActions = showProductionActionButtons(b);
   const methodSelectId = `method-select-${b.id}`;
   const buildingIconLabel = b.buildingDef.name;
 
@@ -158,26 +159,28 @@ export function BuildingCard({
           </p>
         ) : null}
 
-        <div className="actions">
-          <button
-            type="button"
-            disabled={!options.length || b.status !== "idle" || !selected || !affordSelected}
-            onClick={onStart}
-          >
-            開工
-          </button>
-          <button
-            type="button"
-            className="ghost"
-            disabled={!canStopBuilding(b.status)}
-            onClick={() => setStopConfirmOpen(true)}
-          >
-            停止
-          </button>
-          <button type="button" className="collect" disabled={b.status !== "ready"} onClick={onCollect}>
-            收取
-          </button>
-        </div>
+        {showActions ? (
+          <div className="actions">
+            <button
+              type="button"
+              disabled={!options.length || b.status !== "idle" || !selected || !affordSelected}
+              onClick={onStart}
+            >
+              開工
+            </button>
+            <button
+              type="button"
+              className="ghost"
+              disabled={!canStopBuilding(b.status)}
+              onClick={() => setStopConfirmOpen(true)}
+            >
+              停止
+            </button>
+            <button type="button" className="collect" disabled={b.status !== "ready"} onClick={onCollect}>
+              收取
+            </button>
+          </div>
+        ) : null}
         {job || b.status === "ready" ? (
           <div
             className="bar"
