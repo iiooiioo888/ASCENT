@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   diffOfflineSnapshot,
+  isOfflineSummaryEnabled,
   OFFLINE_SNAPSHOT_SCHEMA_VERSION,
   parseStoredSnapshot,
   saveStoredSnapshot,
@@ -107,5 +108,48 @@ describe("diffOfflineSnapshot", () => {
     const state = minimalState([fieldBuilding("pb_field", "ready", buffered)]);
     const snap = snapshotFromGameState(state);
     expect(diffOfflineSnapshot(snap, state)).toBeNull();
+  });
+
+  it("reports inventory-only increases not explained by buffered outputs", () => {
+    const before = minimalState([fieldBuilding("pb_field", "idle")], [inv("item_water", "80")]);
+    const snap = snapshotFromGameState(before);
+    const after = minimalState([fieldBuilding("pb_field", "idle")], [inv("item_water", "90")]);
+    const result = diffOfflineSnapshot(snap, after);
+    expect(result?.lines.some((l) => l.text.includes("背包") && l.text.includes("水"))).toBe(true);
+  });
+
+  it("after dismiss-equivalent snapshot update, same completion is not shown again", () => {
+    const after = minimalState([
+      fieldBuilding("pb_field", "ready", { item_wheat: 2, item_straw: 1 }),
+    ]);
+    const dismissedSnap = snapshotFromGameState(after);
+    expect(diffOfflineSnapshot(dismissedSnap, after)).toBeNull();
+  });
+});
+
+describe("isOfflineSummaryEnabled", () => {
+  it("only enables mode A", () => {
+    expect(isOfflineSummaryEnabled("A")).toBe(true);
+    expect(isOfflineSummaryEnabled("off")).toBe(false);
+  });
+});
+
+describe("parseStoredSnapshot edge cases", () => {
+  it("rejects non-finite buffered output quantities", () => {
+    const bad = {
+      v: OFFLINE_SNAPSHOT_SCHEMA_VERSION,
+      savedAt: "2026-01-01T00:00:00.000Z",
+      inventory: {},
+      buildings: {
+        pb_field: {
+          buildingDefId: "bdef_field",
+          buildingName: "田",
+          status: "running",
+          methodId: "method_grow_wheat_default",
+          bufferedOutputs: { item_wheat: Number.NaN },
+        },
+      },
+    };
+    expect(parseStoredSnapshot(JSON.stringify(bad))).toBeNull();
   });
 });
