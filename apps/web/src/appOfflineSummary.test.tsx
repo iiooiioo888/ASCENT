@@ -66,15 +66,22 @@ async function importApp() {
   return mod.default;
 }
 
+function resetDocumentVisibility() {
+  Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" });
+}
+
 describe("App offline summary (PR-E U11)", () => {
   beforeEach(() => {
     apiMock.mockReset();
     localStorage.clear();
+    resetDocumentVisibility();
     vi.resetModules();
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    localStorage.clear();
+    resetDocumentVisibility();
   });
 
   it("shows summary only after GET /state succeeds, not on initial load failure", async () => {
@@ -189,15 +196,17 @@ describe("App offline summary (PR-E U11)", () => {
     const App = await importApp();
     render(<App />);
     await waitFor(() => expect(screen.getByText("田")).toBeInTheDocument());
-    expect(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY)).toBeTruthy();
+    await waitFor(() => expect(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY)).toBeTruthy());
 
     localStorage.removeItem(OFFLINE_SNAPSHOT_STORAGE_KEY);
     Object.defineProperty(document, "visibilityState", { configurable: true, value: "hidden" });
     document.dispatchEvent(new Event("visibilitychange"));
-    Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" });
-
-    const stored = parseStoredSnapshot(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY));
-    expect(stored?.buildings.pb_field.status).toBe("idle");
+    await waitFor(() => {
+      expect(parseStoredSnapshot(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY))?.buildings.pb_field.status).toBe(
+        "idle",
+      );
+    });
+    resetDocumentVisibility();
   });
 
   it("persists snapshot on pagehide when no summary is open", async () => {
@@ -207,12 +216,17 @@ describe("App offline summary (PR-E U11)", () => {
     const App = await importApp();
     render(<App />);
     await waitFor(() => expect(screen.getByText("田")).toBeInTheDocument());
+    await waitFor(() => expect(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY)).toBeTruthy());
 
     localStorage.removeItem(OFFLINE_SNAPSHOT_STORAGE_KEY);
+    expect(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY)).toBeNull();
+
     window.dispatchEvent(new Event("pagehide"));
-    expect(parseStoredSnapshot(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY))?.buildings.pb_field.status).toBe(
-      "idle",
-    );
+    await waitFor(() => {
+      expect(parseStoredSnapshot(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY))?.buildings.pb_field.status).toBe(
+        "idle",
+      );
+    });
   });
 });
 
@@ -220,7 +234,13 @@ describe("FEATURE_OFFLINE_SUMMARY off", () => {
   beforeEach(() => {
     apiMock.mockReset();
     localStorage.clear();
+    resetDocumentVisibility();
     vi.resetModules();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+    resetDocumentVisibility();
   });
 
   async function importAppWithSummaryOff() {
