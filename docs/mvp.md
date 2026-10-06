@@ -89,9 +89,11 @@ MVP 結算時機（無 Redis／BullMQ）：
 1. `GET` 庫存或建築（進頁即結算）。
 2. `POST` 開工／停止／收取。
 3. 可選：前端定時輪詢同一 GET。
-4. 可選：**NestJS cron**（`@nestjs/schedule`），呼叫與 `inventory` **同一**結算入口。不是遊戲秒迴圈，也不取代懶結算。（已實作：`SettlementCronService` 每 5 現實秒呼叫 `settleAll`。）
+4. 可選：**NestJS 定時器**（`@nestjs/schedule`），間隔讀 `game_config.tickIntervalRealMs`，呼叫與 `inventory` **同一**結算入口。不是遊戲秒迴圈，也不取代懶結算。（已實作：`SettlementCronService` 動態排程並呼叫 `settleAll`。）
 
 仍須：伺服器唯一權威、純函數可重播、同一區間不重複入帳、先裁切現實差再 × 60。細則：[GDD 0002](gdd/0002-time-and-settlement.md)。之後若有登入，改為登入時補結算；MVP 無登入，以進頁代替。
+
+**併發（工程 MVP）：** `SettlementMutex` 與 `lastSettledAt` 樂觀寫入僅保證**單一 Node 進程**內不重複結算／收取；`start`／`stop`／`collect` 狀態競爭回 **409 Conflict**。水平多實例部署須另加 DB 列鎖或單寫者（本切片未做，見 ADR 0001 分期）。
 
 ---
 
@@ -161,7 +163,7 @@ MVP 結算時機（無 Redis／BullMQ）：
 - [x] 農業 5–10 物品、3–5 建築、5–10 由規則生成的方式，驗證器可過（`POST /api/v1/validate`、種子、`packages/shared` 測試）。
 - [x] 開工後經過對應遊戲秒，收取使庫存增加；客戶端預覽不得寫回。
 - [x] 離線（或把 `lastSettledAt` 撥早）再進頁，補算不超過 8 現實小時（`maxOfflineRealSec=28800`，遊戲秒上限 `1728000`）。
-- [x] 同一結算區間重放不雙計（`settleWindow` 冪等；`ready` 狀態不重複入帳產出）。
+- [x] 同一結算區間重放不雙計（`settleWindow` 冪等；API 以 `SettlementMutex` 序列化結算／收取，並以 `lastSettledAt` 樂觀寫入；`ready` 狀態不重複入帳產出）。
 - [x] 重開應用／重進頁後庫存與建築狀態仍在（Prisma 持久化）。
 - [x] 無登入頁、無市場、無排行榜。
 - [x] 無 Redis、無 WebSocket 仍能完成上述閉環。
