@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "screenshot:pr-a": "node scripts/capture-pr-a-screenshot.mjs",
-    "screenshot:pr-b": "node scripts/capture-pr-b-screenshot.mjs"
+    "screenshot:pr-b": "node scripts/capture-pr-b-screenshot.mjs",
+    "screenshot:pr-c": "node scripts/capture-pr-c-screenshot.mjs"
   },
   "dependencies": {
     "react": "^19.0.0",

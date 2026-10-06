@@ -138,6 +138,48 @@ body {
   color: #ffd2c0;
   background: rgba(80, 24, 12, 0.55);
 }
+.banner.goal,
+.banner-goal {
+  border-style: solid;
+  border-color: rgba(228, 195, 106, 0.55);
+  background: rgba(28, 22, 10, 0.62);
+}
+.banner-muted {
+  font-size: 0.85rem;
+  color: #dcc9a8;
+  border-style: dotted;
+}
+.banner.depletion {
+  border-style: solid;
+  border-color: rgba(200, 150, 80, 0.65);
+  background: rgba(48, 32, 14, 0.72);
+}
+.depletion-title {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--gold);
+  letter-spacing: 0.06em;
+}
+.depletion-body {
+  margin: 0;
+  line-height: 1.45;
+  color: #efe2c4;
+}
+.purpose-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  color: #c9b48a;
+  font-style: italic;
+}
+.item-purpose {
+  width: 100%;
+  flex-basis: 100%;
+  margin-top: 0.15rem;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  color: #b8a078;
+  text-align: center;
+}
 
 .pack {
   margin: 1rem 1.2rem;

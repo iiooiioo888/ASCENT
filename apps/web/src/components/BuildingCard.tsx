@@ -3,6 +3,7 @@ import { fmtBuffered, fmtIo, realRemainSec, statusLabel } from "../format";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
 import type { Building, InvRow, Method } from "../types";
+import { methodPurposeHint } from "../productCopy";
 import { StopConfirmDialog } from "./StopConfirmDialog";
 
 type Props = {
@@ -51,6 +52,7 @@ export function BuildingCard({
   const anyShort = inputRows.some((r) => r.short);
 
   const runningMethod = b.methodId ? options.find((m) => m.id === b.methodId) : undefined;
+  const purposeHint = methodPurposeHint(displayMethod?.id);
 
   const handleStopConfirm = () => {
     setStopConfirmOpen(false);
@@ -109,6 +111,7 @@ export function BuildingCard({
                     )}
                   </div>
                   <div>產出 {fmtIo(displayMethod.outputs)}</div>
+                  {purposeHint ? <p className="purpose-hint">{purposeHint}</p> : null}
                 </>
               ) : null}
             </div>
