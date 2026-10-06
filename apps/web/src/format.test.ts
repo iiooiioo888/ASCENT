@@ -34,12 +34,13 @@ describe("formatUserError", () => {
 });
 
 describe("formatActionError", () => {
-  it("maps HTTP 409 to refreshed copy", () => {
+  it("maps stale HTTP 409 to refreshed copy", () => {
     expect(formatActionError(new ApiError("建築狀態已變更，請重新整理", 409))).toBe(BUILDING_STATE_CHANGED_COPY);
   });
 
-  it("passes through method-not-allowed HTTP 400", () => {
+  it("passes through non-stale HTTP 400", () => {
     expect(formatActionError(new ApiError("此建築不能使用該方式", 400))).toBe("此建築不能使用該方式");
+    expect(formatActionError(new ApiError("資源不足：item_water", 400))).toBe("資源不足：水");
   });
 });
 

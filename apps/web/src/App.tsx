@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import { BuildingCard } from "./components/BuildingCard";
 import { Inventory } from "./components/Inventory";
-import { formatActionError, formatUserError, fmtGame, isApiConflict } from "./format";
+import { formatActionError, formatUserError, fmtGame } from "./format";
+import { isStaleBuildingActionError } from "./stale-building-action";
 import { BUILDING_ICON } from "./meta";
 import type { GameState, Method } from "./types";
 
@@ -66,7 +67,7 @@ export default function App() {
         });
         await refresh();
       } catch (e) {
-        if (isApiConflict(e)) {
+        if (isStaleBuildingActionError(e)) {
           await refresh().catch(() => undefined);
         }
         setActionErrors((prev) => ({ ...prev, [actionKey]: formatActionError(e) }));
