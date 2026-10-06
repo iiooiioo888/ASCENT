@@ -16,10 +16,11 @@ export function defaultMarketSnapshotForTests(overrides?: Partial<MarketSnapshot
 
 export function withMarketApiRoute(
   handler: (path: string, init?: RequestInit) => Promise<unknown>,
+  getMarket: () => MarketSnapshot = () => defaultMarketSnapshotForTests(),
 ): (path: string, init?: RequestInit) => Promise<unknown> {
   return async (path, init) => {
     if (path === "/api/v1/market") {
-      return defaultMarketSnapshotForTests();
+      return getMarket();
     }
     return handler(path, init);
   };

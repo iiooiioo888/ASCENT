@@ -6,7 +6,7 @@ import { SiloBuildingCard } from "./components/SiloBuildingCard";
 import { ConnectionStatusBar } from "./components/ConnectionStatusBar";
 import { DepletionNotice } from "./components/DepletionNotice";
 import { Inventory } from "./components/Inventory";
-import { MarketPanel, marketPendingKey } from "./components/MarketPanel";
+import { MarketPanel, marketPendingKey, type MarketTabFocusRequest } from "./components/MarketPanel";
 import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
 import { LoadingScreen } from "./components/LoadingScreen";
 import type { BuildingActionErrorView } from "./building-action-error";
@@ -14,7 +14,21 @@ import { mapBuildingActionError } from "./building-action-error";
 import type { MarketActionErrorView } from "./market-action-error";
 import { mapMarketActionError } from "./market-action-error";
 import { fetchMarket, postMarketBuy, postMarketSell, type MarketSnapshot } from "./market";
+import {
+  canAffordAnyMarketBuy,
+  formatMarketTradeSuccess,
+  hudGoldChipLabel,
+  MARKET_PANEL_ANCHOR_ID,
+  resolveHudGold,
+} from "./market-feedback";
 import { nextPollFailureCount, shouldShowConnectionLost } from "./connectionPoll";
+import {
+  buildingScrollAnchorId,
+  findFieldBuilding,
+  pickSaveSeedMethodId,
+  resolveWellScrollAnchorId,
+  SCROLL_HIGHLIGHT_MS,
+} from "./depletion-scroll";
 import { isResourceDepleted } from "./depletion";
 import { FEATURE_SHOW_DEPLETION_EMPTY_STATE, FEATURE_SHOW_SILO_PLACEMENT, FEATURE_SILO_CARD_MODE } from "./featureFlags";
 import { formatUserError, fmtGameClockChip } from "./format";
@@ -31,6 +45,7 @@ import {
   SLICE_GOAL_BANNER,
   timeScaleHudChip,
 } from "./productCopy";
+import { FIELD_BUILDING_DEF_ID, WELL_BUILDING_DEF_ID } from "./resource-loop-copy";
 import { isSiloBuilding, isSiloBuildingDef } from "./silo";
 import {
   collectHighlightItemIds,
@@ -58,6 +73,8 @@ export default function App() {
   const [highlightItems, setHighlightItems] = useState<Set<string>>(() => new Set());
   const successTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const [picked, setPicked] = useState<Record<string, string>>({});
+  const [highlightDefId, setHighlightDefId] = useState<string | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingKeysRef = useRef(new Set<string>());
   const [pendingKeys, setPendingKeys] = useState<Set<string>>(() => new Set());
   const stateRef = useRef<GameState | null>(null);
@@ -66,6 +83,9 @@ export default function App() {
   const [offlineSummary, setOfflineSummary] = useState<OfflineSummaryResult | null>(null);
   const [marketSnapshot, setMarketSnapshot] = useState<MarketSnapshot | null>(null);
   const [marketPanelError, setMarketPanelError] = useState<MarketActionErrorView | null>(null);
+  const [marketSuccessToast, setMarketSuccessToast] = useState<string | null>(null);
+  const marketToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [marketTabFocusRequest, setMarketTabFocusRequest] = useState<MarketTabFocusRequest | undefined>();
 
   stateRef.current = state;
 
@@ -169,6 +189,23 @@ export default function App() {
     refreshMarket().catch(() => undefined);
   }, [state, refreshMarket]);
 
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    };
+  }, []);
+
+  const flashHighlight = useCallback((buildingDefId: string) => {
+    setHighlightDefId(buildingDefId);
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = setTimeout(() => setHighlightDefId(null), SCROLL_HIGHLIGHT_MS);
+  }, []);
+
+  const scrollToAnchor = useCallback((anchorId: string) => {
+    document.getElementById(anchorId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    document.getElementById(anchorId)?.focus({ preventScroll: true });
+  }, []);
+
   const methodsByRule = useMemo(() => {
     const m = new Map<string, Method[]>();
     for (const method of state?.methods ?? []) {
@@ -188,6 +225,69 @@ export default function App() {
     if (!state) return [];
     return sortInventoryRows(state.inventory);
   }, [state]);
+
+  const hudGold = useMemo(
+    () => (state ? resolveHudGold(marketSnapshot?.gold, state.inventory) : 0),
+    [marketSnapshot?.gold, state],
+  );
+
+  const marketCtaProminent = useMemo(
+    () => canAffordAnyMarketBuy(hudGold, marketSnapshot?.prices),
+    [hudGold, marketSnapshot?.prices],
+  );
+
+  const goToWell = useCallback(() => {
+    if (!state) return;
+    flashHighlight(WELL_BUILDING_DEF_ID);
+    scrollToAnchor(resolveWellScrollAnchorId(state.buildings));
+  }, [flashHighlight, scrollToAnchor, state]);
+
+  const goToSaveSeed = useCallback(() => {
+    if (!state) return;
+    flashHighlight(FIELD_BUILDING_DEF_ID);
+    const field = findFieldBuilding(state.buildings);
+    if (field) {
+      const saveSeedId = pickSaveSeedMethodId(field, methodsByRule);
+      if (saveSeedId) {
+        setPicked((prev) => ({ ...prev, [field.id]: saveSeedId }));
+      }
+      scrollToAnchor(buildingScrollAnchorId(field.id));
+    }
+  }, [flashHighlight, methodsByRule, scrollToAnchor, state]);
+
+  const goToMarket = useCallback(
+    (opts?: { preferBuyTab?: boolean }) => {
+      if (opts?.preferBuyTab) {
+        setMarketTabFocusRequest({ tab: "buy", seq: Date.now() });
+      }
+      scrollToAnchor(MARKET_PANEL_ANCHOR_ID);
+    },
+    [scrollToAnchor],
+  );
+
+  const showMarketSuccess = useCallback((message: string, tradedItemId: string) => {
+    if (marketToastTimerRef.current) {
+      clearTimeout(marketToastTimerRef.current);
+      marketToastTimerRef.current = null;
+    }
+    setMarketSuccessToast(message);
+    setHighlightItems((prev) => {
+      const next = new Set(prev);
+      next.add("item_gold");
+      next.add(tradedItemId);
+      return next;
+    });
+    marketToastTimerRef.current = setTimeout(() => {
+      marketToastTimerRef.current = null;
+      setMarketSuccessToast(null);
+      setHighlightItems((prev) => {
+        const next = new Set(prev);
+        next.delete("item_gold");
+        next.delete(tradedItemId);
+        return next;
+      });
+    }, SUCCESS_FEEDBACK_MS);
+  }, []);
 
   const setPending = useCallback((key: string, on: boolean) => {
     const next = new Set(pendingKeysRef.current);
@@ -293,6 +393,12 @@ export default function App() {
       const actionKey = marketPendingKey(side, itemId);
       if (pendingKeysRef.current.has(actionKey)) return;
 
+      const unitPrice =
+        side === "sell"
+          ? (marketSnapshot?.prices.sell[itemId] ?? 0)
+          : (marketSnapshot?.prices.buy[itemId] ?? 0);
+      const goldAmount = unitPrice * quantity;
+
       setPending(actionKey, true);
       setMarketPanelError(null);
 
@@ -302,6 +408,7 @@ export default function App() {
         } else {
           await postMarketBuy(itemId, quantity);
         }
+        showMarketSuccess(formatMarketTradeSuccess(side, itemId, quantity, goldAmount), itemId);
         await refresh();
         await refreshMarket();
       } catch (e) {
@@ -315,7 +422,7 @@ export default function App() {
         setPending(actionKey, false);
       }
     },
-    [refresh, refreshMarket, setPending],
+    [marketSnapshot, refresh, refreshMarket, setPending, showMarketSuccess],
   );
 
   const retryInitialLoad = useCallback(() => {
@@ -330,6 +437,7 @@ export default function App() {
     return () => {
       for (const t of timers.values()) clearTimeout(t);
       timers.clear();
+      if (marketToastTimerRef.current) clearTimeout(marketToastTimerRef.current);
     };
   }, []);
 
@@ -360,6 +468,9 @@ export default function App() {
             {fmtGameClockChip(state.time.displayGameTime, GAME_TIME_CHIP_PREFIX)}
           </span>
           <span className="chip">{timeScaleHudChip(state.time.timeScale)}</span>
+          <span className="chip chip-gold" data-testid="hud-gold-chip">
+            {hudGoldChipLabel(hudGold)}
+          </span>
           <span className="chip">{OFFLINE_PROGRESS_HUD_CHIP}</span>
         </div>
       </header>
@@ -370,7 +481,13 @@ export default function App() {
       {offlineSummary ? (
         <OfflineSummaryNotice summary={offlineSummary} onDismiss={dismissOfflineSummary} />
       ) : null}
-      <DepletionNotice visible={FEATURE_SHOW_DEPLETION_EMPTY_STATE && resourceDepleted} />
+      <DepletionNotice
+        visible={FEATURE_SHOW_DEPLETION_EMPTY_STATE && resourceDepleted}
+        onGoWell={goToWell}
+        onGoSaveSeed={goToSaveSeed}
+        onGoMarket={() => goToMarket({ preferBuyTab: marketCtaProminent })}
+        marketCtaProminent={marketCtaProminent}
+      />
 
       <Inventory inventory={sortedInventory} highlightItemIds={highlightItems} />
 
@@ -378,6 +495,8 @@ export default function App() {
         market={marketSnapshot}
         panelError={marketPanelError}
         pendingKeys={pendingKeys}
+        successToast={marketSuccessToast}
+        tabFocusRequest={marketTabFocusRequest}
         onSell={(itemId, quantity) => marketTrade("sell", itemId, quantity)}
         onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
       />
@@ -406,6 +525,8 @@ export default function App() {
           return (
             <BuildingCard
               key={b.id}
+              scrollAnchorId={buildingScrollAnchorId(b.id)}
+              highlight={highlightDefId === b.buildingDefId}
               building={b}
               options={options}
               inventory={state.inventory}
@@ -432,7 +553,11 @@ export default function App() {
           const actionKey = `place:${d.id}`;
           const pending = pendingKeys.has(actionKey);
           return (
-            <div key={d.id} className={`plot empty${pending ? " pending" : ""}`}>
+            <div
+              key={d.id}
+              id={`plot-unplaced-${d.id}`}
+              className={`plot empty${pending ? " pending" : ""}${highlightDefId === d.id ? " scroll-highlight" : ""}`}
+            >
               <fieldset className="plot-body" disabled={pending}>
                 <div className="bicon" role="img" aria-label={d.name}>
                   {BUILDING_ICON[d.id] ?? "🪵"}

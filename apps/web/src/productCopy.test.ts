@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   BRAND_DISPLAY_NAME,
   CONNECTION_INTERRUPTED_BANNER,
+  DEPLETION_CTA_MARKET,
+  DEPLETION_CTA_SAVE_SEED,
+  DEPLETION_CTA_WELL,
+  DEPLETION_EMPTY_BODY,
+  DEPLETION_EMPTY_TITLE,
   FEATURE_OFFLINE_SUMMARY,
   FEATURE_SHOW_DEPLETION_EMPTY_STATE,
   isUnseededWorldClockError,
@@ -76,5 +81,13 @@ describe("productCopy", () => {
 
   it("FEATURE_SHOW_DEPLETION_EMPTY_STATE defaults on in test env", () => {
     expect(FEATURE_SHOW_DEPLETION_EMPTY_STATE).toBe(true);
+  });
+
+  it("exposes resource-loop depletion banner placeholders (§5.2)", () => {
+    expect(DEPLETION_EMPTY_TITLE).toBe("生產已暫停：種子或水不足");
+    expect(DEPLETION_EMPTY_BODY).toBe("用水井汲水，或用小麥留種後即可繼續。");
+    expect(DEPLETION_CTA_WELL).toBe("前往水井");
+    expect(DEPLETION_CTA_SAVE_SEED).toBe("查看留種");
+    expect(DEPLETION_CTA_MARKET).toBe("前往商行");
   });
 });
