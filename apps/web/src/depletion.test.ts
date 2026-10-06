@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { canAffordInputs, inventoryQtyMap } from "./inventory";
 import { hasAffordableStart, isResourceDepleted } from "./depletion";
 import type { Building, InvRow, Method } from "./types";
 
@@ -68,6 +69,16 @@ describe("isResourceDepleted", () => {
 
   it("is true when stock quantity is negative — aligns with isValidQty", () => {
     const inventory = [row("item_seed_wheat", "1"), row("item_water", "-1")];
+    expect(isResourceDepleted([fieldBuilding("idle")], inventory, methodsByRule)).toBe(true);
+  });
+});
+
+describe("isValidQty regression (U6 ↔ U2 canAffordInputs)", () => {
+  it("water=-1 must not count as affordable (regression if isValidQty is removed)", () => {
+    const inventory = [row("item_seed_wheat", "10"), row("item_water", "-1")];
+    const stock = inventoryQtyMap(inventory);
+    expect(canAffordInputs(stock, growWheat.inputs)).toBe(false);
+    expect(hasAffordableStart([fieldBuilding("idle")], inventory, methodsByRule)).toBe(false);
     expect(isResourceDepleted([fieldBuilding("idle")], inventory, methodsByRule)).toBe(true);
   });
 });
