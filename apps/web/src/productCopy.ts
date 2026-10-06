@@ -8,6 +8,9 @@ export const BRAND_DISPLAY_NAME = "崛起";
 
 export const BRAND_SUBTITLE = "農業切片 · 莊園";
 
+/** Browser tab title; keep in sync via `main.tsx` (single source with HUD brand). */
+export const DOCUMENT_TITLE = `${BRAND_DISPLAY_NAME} · 農莊`;
+
 /** TODO(product): 待確認 — 策劃簽核離線 HUD 文案（不承諾離線摘要行為，見 PR-E） */
 export const OFFLINE_PROGRESS_HUD_CHIP = "🌙 離線最多補算 8 小時";
 

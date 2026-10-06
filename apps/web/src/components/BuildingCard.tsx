@@ -5,7 +5,12 @@ import { jobProgressPercent, jobRemainRealSec } from "../productionProgress";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
 import type { Building, InvRow, Method } from "../types";
-import { methodPurposeHint, methodSelectAriaLabel, productionProgressAriaLabel } from "../productCopy";
+import {
+  methodPurposeHint,
+  methodSelectAriaLabel,
+  productionProgressAriaLabel,
+  SILO_CARD_BODY,
+} from "../productCopy";
 import { StopConfirmDialog } from "./StopConfirmDialog";
 
 type Props = {
@@ -138,7 +143,7 @@ export function BuildingCard({
             </div>
           </>
         ) : (
-          <div className="recipe">倉不開工，只佔建築槽。</div>
+          <div className="recipe">{SILO_CARD_BODY}</div>
         )}
 
         {actionError ? (
