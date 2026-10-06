@@ -29,15 +29,42 @@ export const DEPLETION_EMPTY_TITLE = "本切片資源已用盡";
 export const DEPLETION_EMPTY_BODY =
   "目前所有已放置建築的生產方式都缺料，且沒有進行中或待收取的工作。完整版可能會有水源或育種途徑；若需繼續遊玩，請等待策劃／核心開發更新資料。";
 
-/** When false, hide the depletion banner (logic still testable). TODO(product): 待確認 — 是否永遠顯示耗盡提示 */
-export const FEATURE_SHOW_DEPLETION_EMPTY_STATE = true;
+/** TODO(product): 待確認 — 各生產方式用途提示（U13） */
+export const METHOD_PURPOSE_HINTS: Partial<Record<string, string>> = {
+  method_mix_feed_default: "飼料：目前沒有下游用途，可先略過。",
+};
+
+/** TODO(product): 待確認 — 背包物品用途提示（U13） */
+export const ITEM_PURPOSE_HINTS: Partial<Record<string, string>> = {
+  item_feed: "目前沒有下游用途。",
+  item_bread: "終產；本切片目標是做出並留存麵包。",
+};
+
+/** Parses Vite env booleans (case-insensitive, trimmed). Empty/whitespace → default; unknown tokens → default. */
+export function parseViteBooleanEnv(raw: string | undefined, defaultValue: boolean): boolean {
+  if (raw === undefined || raw.trim() === "") return defaultValue;
+  const v = raw.trim().toLowerCase();
+  if (v === "0" || v === "false" || v === "no" || v === "off") return false;
+  if (v === "1" || v === "true" || v === "yes" || v === "on") return true;
+  return defaultValue;
+}
+
+/**
+ * When false, hide the depletion banner (logic still testable).
+ * Override at build/dev time: `VITE_FEATURE_SHOW_DEPLETION_EMPTY_STATE=false`.
+ * TODO(product): 待確認 — 是否永遠顯示耗盡提示
+ */
+export const FEATURE_SHOW_DEPLETION_EMPTY_STATE = parseViteBooleanEnv(
+  import.meta.env.VITE_FEATURE_SHOW_DEPLETION_EMPTY_STATE,
+  true,
+);
 
 /** TODO(product): 待確認 — 離線摘要方案 A/B（A＝localStorage 比對；off＝關閉；B＝日後 API 摘要） */
 export type OfflineSummaryFeatureMode = "A" | "off";
 
 export const FEATURE_OFFLINE_SUMMARY: OfflineSummaryFeatureMode = "A";
 
-/** TODO(product): 待確認 — 離線歸來摘要標題（U11 方案 A，文案待策劃） */
+/** TODO(product): 待確認 — 離線歸來摘要標題與整段排版（UX §E 示例以「離開期間：…」描述；標題／內文分工待策劃定案） */
 export const OFFLINE_SUMMARY_TITLE = "離開期間";
 
 /** Small tag shown beside the summary title while product picks A vs API (B). */
@@ -48,17 +75,6 @@ export const OFFLINE_SUMMARY_DISMISS_LABEL = "知道了";
 /** Wording aligned with OFFLINE_PROGRESS_BANNER — no backend settlement promise. */
 export const OFFLINE_SUMMARY_FOOTNOTE =
   "此為本機上次畫面與目前狀態的前端比對，並非後端結算紀錄。離線最多補算 8 現實小時；每座建築同一時間只做一單，完成後需回來收取。";
-
-/** TODO(product): 待確認 — 各生產方式用途提示（U13） */
-export const METHOD_PURPOSE_HINTS: Partial<Record<string, string>> = {
-  method_mix_feed_default: "飼料：目前冇下游用途，可先略過。",
-};
-
-/** TODO(product): 待確認 — 背包物品用途提示（U13） */
-export const ITEM_PURPOSE_HINTS: Partial<Record<string, string>> = {
-  item_feed: "目前冇下游用途。",
-  item_bread: "終產；本切片目標係做出並留存麵包。",
-};
 
 export function methodPurposeHint(methodId: string | undefined): string | undefined {
   if (!methodId) return undefined;

@@ -11,7 +11,7 @@ import { LoadingScreen } from "./components/LoadingScreen";
 import { nextPollFailureCount, shouldShowConnectionLost } from "./connectionPoll";
 import { isResourceDepleted } from "./depletion";
 import { FEATURE_SHOW_DEPLETION_EMPTY_STATE, FEATURE_SHOW_SILO_PLACEMENT, FEATURE_SILO_CARD_MODE } from "./featureFlags";
-import { formatActionError, formatUserError, fmtGameClockChip, isApiConflict } from "./format";
+import { formatActionError, formatUserError, fmtGameClockChip } from "./format";
 import { sortInventoryRows } from "./inventorySort";
 import { BUILDING_ICON } from "./meta";
 import {
@@ -26,6 +26,7 @@ import {
   timeScaleHudChip,
 } from "./productCopy";
 import { isSiloBuilding, isSiloBuildingDef } from "./silo";
+import { isStaleBuildingActionError } from "./stale-building-action";
 import {
   collectHighlightItemIds,
   formatCollectSuccess,
@@ -254,7 +255,7 @@ export default function App() {
         }
         await refresh();
       } catch (e) {
-        if (isApiConflict(e)) {
+        if (isStaleBuildingActionError(e)) {
           await refresh().catch(() => undefined);
         }
         setActionErrors((prev) => ({ ...prev, [actionKey]: formatActionError(e) }));
