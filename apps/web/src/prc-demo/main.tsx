@@ -1,19 +1,35 @@
-import { StrictMode } from "react";
+import { StrictMode, useMemo } from "react";
 import { createRoot } from "react-dom/client";
 import { BuildingCard } from "../components/BuildingCard";
 import { DepletionNotice } from "../components/DepletionNotice";
 import { Inventory } from "../components/Inventory";
+import { isResourceDepleted } from "../depletion";
 import {
   BRAND_DISPLAY_NAME,
+  FEATURE_SHOW_DEPLETION_EMPTY_STATE,
   OFFLINE_PROGRESS_BANNER,
   OFFLINE_PROGRESS_HUD_CHIP,
   SLICE_FLOW_BANNER,
   SLICE_GOAL_BANNER,
 } from "../productCopy";
 import "../style.css";
-import { demoDepletedInventory, demoFieldIdle, demoMillIdle, growWheatDefault, mixFeedDefault } from "./fixtures";
+import {
+  demoDepletedBuildings,
+  demoDepletedInventory,
+  demoFieldIdle,
+  demoMethodsByRule,
+  demoMillIdle,
+  growWheatDefault,
+  mixFeedDefault,
+} from "./fixtures";
 
 function Demo() {
+  const methodsByRule = useMemo(() => demoMethodsByRule(), []);
+  const resourceDepleted = useMemo(
+    () => isResourceDepleted(demoDepletedBuildings, demoDepletedInventory, methodsByRule),
+    [methodsByRule],
+  );
+
   return (
     <div className="world" data-screenshot-harness>
       <header className="hud">
@@ -34,7 +50,7 @@ function Demo() {
       <p className="banner banner-goal">{SLICE_GOAL_BANNER}</p>
       <p className="banner">{SLICE_FLOW_BANNER}</p>
       <p className="banner banner-muted">{OFFLINE_PROGRESS_BANNER}</p>
-      <DepletionNotice visible />
+      <DepletionNotice visible={FEATURE_SHOW_DEPLETION_EMPTY_STATE && resourceDepleted} />
 
       <Inventory inventory={demoDepletedInventory} />
 
