@@ -2,6 +2,7 @@ import {
   GAME_DAY_GAME_SEC,
   MAX_OFFLINE_GAME_SEC,
   MAX_OFFLINE_REAL_SEC,
+  TICK_INTERVAL_REAL_MS,
   TIME_SCALE,
 } from "./config";
 import type {
@@ -20,6 +21,7 @@ export type CatalogSnapshot = {
     maxOfflineRealSec: number;
     maxOfflineGameSec: number;
     gameDayGameSec: number;
+    tickIntervalRealMs?: number;
   };
 };
 
@@ -45,6 +47,18 @@ export function validateCatalog(snap: CatalogSnapshot): ValidationError[] {
   }
   if (cfg.maxOfflineGameSec !== MAX_OFFLINE_GAME_SEC) {
     errors.push({ code: "V-OFFLINE", message: "maxOfflineGameSec 必須為 1728000" });
+  }
+  if (cfg.gameDayGameSec !== GAME_DAY_GAME_SEC) {
+    errors.push({ code: "V-OFFLINE", message: "gameDayGameSec 必須為 86400" });
+  }
+  if (cfg.tickIntervalRealMs !== undefined && cfg.tickIntervalRealMs !== TICK_INTERVAL_REAL_MS) {
+    errors.push({ code: "V-OFFLINE", message: "tickIntervalRealMs 必須為 5000" });
+  }
+  if (cfg.maxOfflineGameSec !== cfg.maxOfflineRealSec * cfg.timeScale) {
+    errors.push({
+      code: "V-OFFLINE",
+      message: "maxOfflineGameSec 必須等於 maxOfflineRealSec × timeScale",
+    });
   }
   if (cfg.maxOfflineRealSec === GAME_DAY_GAME_SEC || cfg.maxOfflineGameSec === GAME_DAY_GAME_SEC) {
     errors.push({ code: "V-OFFLINE", message: "不得用 86400 當入帳 cap" });
