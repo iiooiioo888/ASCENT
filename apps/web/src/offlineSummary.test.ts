@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   diffOfflineSnapshot,
+  isOfflineSummaryEnabled,
   OFFLINE_SNAPSHOT_SCHEMA_VERSION,
+  OFFLINE_SNAPSHOT_STORAGE_KEY,
   parseStoredSnapshot,
   saveStoredSnapshot,
   snapshotFromGameState,
@@ -62,6 +64,27 @@ describe("offlineSummary storage", () => {
     expect(parseStoredSnapshot(JSON.stringify({ v: OFFLINE_SNAPSHOT_SCHEMA_VERSION + 99 }))).toBeNull();
   });
 
+  it("rejects missing fields and non-finite numbers without throwing", () => {
+    const base = snapshotFromGameState(minimalState([fieldBuilding("pb_field", "idle")]));
+    expect(parseStoredSnapshot(JSON.stringify({ ...base, savedAt: 1 }))).toBeNull();
+    expect(parseStoredSnapshot(JSON.stringify({ ...base, inventory: { item_water: Number.NaN } }))).toBeNull();
+    expect(
+      parseStoredSnapshot(
+        JSON.stringify({
+          ...base,
+          buildings: {
+            pb_field: { ...base.buildings.pb_field, bufferedOutputs: { item_wheat: Number.POSITIVE_INFINITY } },
+          },
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  it("isOfflineSummaryEnabled respects flag", () => {
+    expect(isOfflineSummaryEnabled("A")).toBe(true);
+    expect(isOfflineSummaryEnabled("off")).toBe(false);
+  });
+
   it("saveStoredSnapshot writes readable payload", () => {
     const data: Record<string, string> = {};
     const storage = {
@@ -107,5 +130,33 @@ describe("diffOfflineSnapshot", () => {
     const state = minimalState([fieldBuilding("pb_field", "ready", buffered)]);
     const snap = snapshotFromGameState(state);
     expect(diffOfflineSnapshot(snap, state)).toBeNull();
+  });
+
+  it("does not treat running → idle as completion", () => {
+    const snap = snapshotFromGameState(minimalState([fieldBuilding("pb_field", "running")]));
+    const after = minimalState([fieldBuilding("pb_field", "idle")]);
+    expect(diffOfflineSnapshot(snap, after)).toBeNull();
+  });
+
+  it("ignores buildings removed from state since snapshot", () => {
+    const snap = snapshotFromGameState(minimalState([fieldBuilding("pb_field", "running")]));
+    const after = minimalState([]);
+    expect(diffOfflineSnapshot(snap, after)).toBeNull();
+  });
+
+  it("ignores buildings added after snapshot (no false completion)", () => {
+    const snap = snapshotFromGameState(minimalState([fieldBuilding("pb_field", "idle")]));
+    const after = minimalState([
+      fieldBuilding("pb_field", "idle"),
+      fieldBuilding("pb_mill", "ready", { item_flour: 1 }),
+    ]);
+    expect(diffOfflineSnapshot(snap, after)).toBeNull();
+  });
+
+  it("reports unexplained inventory gains when no running→ready line", () => {
+    const snap = snapshotFromGameState(minimalState([fieldBuilding("pb_field", "idle")], [inv("item_water", "10")]));
+    const after = minimalState([fieldBuilding("pb_field", "idle")], [inv("item_water", "12")]);
+    const result = diffOfflineSnapshot(snap, after);
+    expect(result?.lines.some((l) => l.text.includes("背包"))).toBe(true);
   });
 });
