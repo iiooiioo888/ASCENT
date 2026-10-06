@@ -157,7 +157,8 @@ export function diffOfflineSnapshot(
       const pending = fmtBuffered(b.bufferedOutputs);
       lines.push({
         buildingId: b.id,
-        text: `${b.buildingDef.name}：已完成，待收取 ${pending}`,
+        // UX acceptance (U11):「田完成，待收取 🌾×2…」— title「離開期間」由 OfflineSummaryNotice 顯示
+        text: `${b.buildingDef.name}完成，待收取 ${pending}`,
       });
     }
   }
