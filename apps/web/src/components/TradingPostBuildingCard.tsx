@@ -2,6 +2,7 @@ import { useEffect, useId, useRef } from "react";
 import type { MarketActionErrorView } from "../market-action-error";
 import type { CommoditiesSnapshot } from "../commodities";
 import type { MarketSnapshot } from "../market";
+import type { RetailSnapshot } from "../retail";
 import { MARKET_COPY } from "../marketCopy";
 import { BUILDING_ICON } from "../meta";
 import type { Building, OpsCostsSnapshot } from "../types";
@@ -21,12 +22,16 @@ type Props = {
   opsCosts?: OpsCostsSnapshot | null;
   commodities?: CommoditiesSnapshot | null;
   commoditiesTabVisible?: boolean;
+  retail?: RetailSnapshot | null;
+  retailTabVisible?: boolean;
+  onRetailTabOpen?: () => void;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
   onCommodityBuy?: (commodityId: string, quantity: number) => void;
   onCommoditySell?: (commodityId: string, quantity: number) => void;
   landPurchaseUi?: LandPurchaseUiState | null;
   onPurchaseField?: () => void;
+  onRetailAccept?: (offerId: string) => void;
 };
 
 /** v1.2：莊外商行建築卡 — 點「交易」展開買賣 panel，無生產動作。 */
@@ -43,12 +48,16 @@ export function TradingPostBuildingCard({
   opsCosts,
   commodities,
   commoditiesTabVisible,
+  retail,
+  retailTabVisible,
+  onRetailTabOpen,
   onSell,
   onBuy,
   onCommodityBuy,
   onCommoditySell,
   landPurchaseUi,
   onPurchaseField,
+  onRetailAccept,
 }: Props) {
   const panelRef = useRef<HTMLElement>(null);
   const panelHeadingId = useId();
@@ -100,12 +109,16 @@ export function TradingPostBuildingCard({
             opsCosts={opsCosts}
             commodities={commodities}
             commoditiesTabVisible={commoditiesTabVisible}
+            retail={retail}
+            retailTabVisible={retailTabVisible}
+            onRetailTabOpen={onRetailTabOpen}
             onSell={onSell}
             onBuy={onBuy}
             onCommodityBuy={onCommodityBuy}
             onCommoditySell={onCommoditySell}
             landPurchaseUi={landPurchaseUi}
             onPurchaseField={onPurchaseField}
+            onRetailAccept={onRetailAccept}
           />
         ) : null}
       </div>
