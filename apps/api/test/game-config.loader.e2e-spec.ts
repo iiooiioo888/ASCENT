@@ -11,6 +11,7 @@ describe("gameConfigFromRow / gameConfigFromDb", () => {
         maxOfflineGameSec: 8888,
         tickIntervalRealMs: 777,
         marketPrices: null,
+        opsDepth: null,
       }),
     ).toEqual({
       timeScale: 42,

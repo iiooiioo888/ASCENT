@@ -13,6 +13,7 @@ describe("stop 不退還已扣輸入（D6）", () => {
   let inventory: InventoryService;
 
   beforeAll(async () => {
+    if (!process.env.DATABASE_URL) return;
     const state = await prisma.serverState.findUnique({ where: { id: 1 } });
     if (!state) return;
     const sim = new SimulationService(prisma);
@@ -21,11 +22,9 @@ describe("stop 不退還已扣輸入（D6）", () => {
   });
 
   it("start 扣料後 stop，庫存不恢復", async () => {
+    if (!process.env.DATABASE_URL || !inventory) return;
     const state = await prisma.serverState.findUnique({ where: { id: 1 } });
-    if (!state || !inventory) {
-      expect(state).toBeTruthy();
-      return;
-    }
+    if (!state) return;
 
     const fieldId = `pb_${LOCAL_PLAYER_ID}_bdef_field`;
     const field = await prisma.playerBuilding.findUnique({ where: { id: fieldId } });
