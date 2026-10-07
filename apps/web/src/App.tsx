@@ -84,8 +84,10 @@ export default function App() {
 
   const goToWell = useCallback(() => {
     if (!state) return;
+    const anchor = resolveWellScrollAnchorId(state.buildings);
+    if (!anchor) return;
     flashHighlight(WELL_BUILDING_DEF_ID);
-    scrollToAnchor(resolveWellScrollAnchorId(state.buildings));
+    scrollToAnchor(anchor);
   }, [flashHighlight, scrollToAnchor, state]);
 
   const goToSaveSeed = useCallback(() => {
@@ -155,7 +157,10 @@ export default function App() {
     );
   }
 
-  const unplaced = state.buildingDefs.filter((d) => !state.buildings.some((b) => b.buildingDefId === d.id));
+  const unplaced = state.buildingDefs.filter(
+    (d) =>
+      d.id !== WELL_BUILDING_DEF_ID && !state.buildings.some((b) => b.buildingDefId === d.id),
+  );
 
   return (
     <div className="world">

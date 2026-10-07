@@ -57,7 +57,7 @@ describe("productCopy", () => {
   it("exposes resource-loop depletion banner placeholders (§5.2)", () => {
     expect(DEPLETION_EMPTY_TITLE).toBe("生產已暫停：種子或水不足");
     expect(DEPLETION_EMPTY_BODY).toBe("用水井汲水，或用小麥留種後即可繼續。");
-    expect(DEPLETION_CTA_WELL).toBe("前往水井");
-    expect(DEPLETION_CTA_SAVE_SEED).toBe("查看留種");
+    expect(DEPLETION_CTA_WELL).toBe("用水井汲水");
+    expect(DEPLETION_CTA_SAVE_SEED).toBe("用小麥留種");
   });
 });

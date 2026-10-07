@@ -29,10 +29,10 @@ export const DEPLETION_EMPTY_TITLE = "生產已暫停：種子或水不足";
 export const DEPLETION_EMPTY_BODY = "用水井汲水，或用小麥留種後即可繼續。";
 
 /** TODO(product): 待確認 — 耗盡橫幅 CTA */
-export const DEPLETION_CTA_WELL = "前往水井";
+export const DEPLETION_CTA_WELL = "用水井汲水";
 
 /** TODO(product): 待確認 — 耗盡橫幅 CTA */
-export const DEPLETION_CTA_SAVE_SEED = "查看留種";
+export const DEPLETION_CTA_SAVE_SEED = "用小麥留種";
 
 /** TODO(product): 待確認 — 各生產方式用途提示（U13） */
 export const METHOD_PURPOSE_HINTS: Partial<Record<string, string>> = {

@@ -15,10 +15,10 @@ export function unplacedPlotAnchorId(buildingDefId: string): string {
   return `plot-unplaced-${buildingDefId}`;
 }
 
-/** Scroll target for「前往水井」— placed well card or unplaced well plot. */
-export function resolveWellScrollAnchorId(buildings: Building[]): string {
+/** Scroll target for「用水井汲水」— placed well only (v1.1: well is pre-placed at game start). */
+export function resolveWellScrollAnchorId(buildings: Building[]): string | undefined {
   const placed = buildings.find((b) => b.buildingDefId === WELL_BUILDING_DEF_ID);
-  return placed ? buildingScrollAnchorId(placed.id) : unplacedPlotAnchorId(WELL_BUILDING_DEF_ID);
+  return placed ? buildingScrollAnchorId(placed.id) : undefined;
 }
 
 export function findFieldBuilding(buildings: Building[]): Building | undefined {

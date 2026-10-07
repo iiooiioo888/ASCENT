@@ -31,9 +31,9 @@ describe("depletion scroll anchors", () => {
     expect(resolveWellScrollAnchorId(buildings)).toBe("building-b_well");
   });
 
-  it("resolves well scroll to unplaced plot when well not placed", () => {
+  it("returns undefined when well is not placed (no unplaced fallback)", () => {
     const buildings = [building({ id: "b_field", buildingDefId: FIELD_BUILDING_DEF_ID })];
-    expect(resolveWellScrollAnchorId(buildings)).toBe("plot-unplaced-bdef_well");
+    expect(resolveWellScrollAnchorId(buildings)).toBeUndefined();
   });
 
   it("picks save-seed method only when listed on field options", () => {
