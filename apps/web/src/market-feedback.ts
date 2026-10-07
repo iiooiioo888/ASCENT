@@ -1,7 +1,7 @@
 import type { MarketPriceBook } from "@ascent/shared";
 import { formatQuantity } from "./format";
 import { inventoryQtyMap } from "./inventory";
-import { hudGoldChip, successBuy, successSell } from "./marketCopy";
+import { hudGoldChip, successBuy, successSell, successSellNet } from "./marketCopy";
 import { itemLabel } from "./meta";
 import type { InvRow } from "./types";
 
@@ -30,15 +30,29 @@ export function canAffordAnyMarketBuy(gold: number, prices: MarketPriceBook | un
   return Number.isFinite(min) && gold >= min;
 }
 
+export type MarketSellSuccessAmounts = {
+  netGold: number;
+  transportFee?: number;
+};
+
 export function formatMarketTradeSuccess(
   side: "sell" | "buy",
   itemId: string,
   quantity: number,
   goldAmount: number,
+  sellAmounts?: MarketSellSuccessAmounts,
 ): string {
   const item = itemLabel(itemId);
   const q = formatQuantity(quantity);
   const n = formatQuantity(goldAmount);
+  if (side === "sell" && sellAmounts) {
+    const net = formatQuantity(sellAmounts.netGold);
+    const fee =
+      sellAmounts.transportFee !== undefined && sellAmounts.transportFee > 0
+        ? formatQuantity(sellAmounts.transportFee)
+        : undefined;
+    return successSellNet(item, q, net, fee);
+  }
   return side === "sell" ? successSell(item, q, n) : successBuy(item, q, n);
 }
 

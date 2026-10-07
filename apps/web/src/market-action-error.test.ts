@@ -13,6 +13,10 @@ describe("mapMarketActionError", () => {
     expect(mapMarketActionError(new ApiError("資源不足：item_gold", 400)).message).toBe(MARKET_COPY.needGold);
   });
 
+  it("maps transport fee too high", () => {
+    expect(mapMarketActionError(new ApiError("運費過高", 400)).message).toBe("運費高於售價，無法賣出");
+  });
+
   it("maps invalid quantity", () => {
     expect(mapMarketActionError(new ApiError("數量無效", 400)).message).toBe(MARKET_COPY.invalidQuantity);
   });

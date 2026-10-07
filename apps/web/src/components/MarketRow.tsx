@@ -1,6 +1,8 @@
 import { formatQuantity } from "../format";
 import { ITEM_META, itemLabel } from "../meta";
 import { MARKET_COPY } from "../marketCopy";
+import { OPS_DEPTH_COPY } from "../ops-depth-copy";
+import type { SellTransportPreview } from "../ops-depth";
 
 type Props = {
   itemId: string;
@@ -10,6 +12,7 @@ type Props = {
   quantity: number;
   goldBalance: number;
   pending: boolean;
+  sellPreview?: SellTransportPreview | null;
   onQuantityChange: (next: number) => void;
   onAction: () => void;
 };
@@ -22,6 +25,7 @@ export function MarketRow({
   quantity,
   goldBalance,
   pending,
+  sellPreview,
   onQuantityChange,
   onAction,
 }: Props) {
@@ -30,7 +34,8 @@ export function MarketRow({
   const maxQty = side === "sell" ? Math.max(0, Math.floor(holding)) : Math.max(1, Math.floor(goldBalance / unitPrice));
   const outOfStock = side === "sell" && holding <= 0;
   const insufficientGold = side === "buy" && goldBalance < unitPrice * quantity;
-  const disabled = pending || outOfStock || insufficientGold || quantity < 1;
+  const transportTooHigh = side === "sell" && !!sellPreview?.transportTooHigh;
+  const disabled = pending || outOfStock || insufficientGold || transportTooHigh || quantity < 1;
 
   const clamp = (n: number) => Math.max(1, Math.min(maxQty || 1, n));
 
@@ -41,6 +46,7 @@ export function MarketRow({
         side,
         outOfStock ? "out-of-stock" : "",
         insufficientGold ? "insufficient-gold" : "",
+        transportTooHigh ? "transport-too-high" : "",
         pending ? "pending" : "",
       ]
         .filter(Boolean)
@@ -60,6 +66,19 @@ export function MarketRow({
             <span className="market-row-price">
               {side === "sell" ? `單價 🪙${formatQuantity(unitPrice)}` : null}
             </span>
+            {side === "sell" && sellPreview && sellPreview.transportFee > 0 ? (
+              <span className="market-row-fee" data-testid="market-row-sell-fee">
+                {OPS_DEPTH_COPY.haul} −🪙{formatQuantity(sellPreview.transportFee)}
+              </span>
+            ) : null}
+            {side === "sell" && sellPreview ? (
+              <span
+                className={`market-row-net${transportTooHigh ? " shortage" : ""}`}
+                data-testid="market-row-sell-net"
+              >
+                {OPS_DEPTH_COPY.net} 🪙{formatQuantity(sellPreview.netGold)}
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
@@ -86,8 +105,8 @@ export function MarketRow({
             +
           </button>
         </div>
-        <div className="market-subtotal" aria-label="小計">
-          🪙{formatQuantity(subtotal)}
+        <div className="market-subtotal" aria-label={side === "sell" ? "售價小計" : "小計"}>
+          {side === "sell" ? `售價 🪙${formatQuantity(subtotal)}` : `🪙${formatQuantity(subtotal)}`}
         </div>
         <button
           type="button"
@@ -101,6 +120,11 @@ export function MarketRow({
 
       {outOfStock ? <p className="market-row-hint">{MARKET_COPY.needStock}</p> : null}
       {insufficientGold && !outOfStock ? <p className="market-row-hint">{MARKET_COPY.needGold}</p> : null}
+      {transportTooHigh && !outOfStock ? (
+        <p className="market-row-hint" data-testid="market-row-transport-hint">
+          {OPS_DEPTH_COPY.sellTransportTooHigh}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -23,6 +23,8 @@ export const MARKET_COPY = {
   notTradable: "此物品不可交易",
   settlementConflict: "建築結算衝突，請重試",
   successSellTemplate: "已售出 {item}×{q}，＋🪙{n}",
+  successSellNetTemplate: "已售出 {item}×{q}，實收 🪙{n}",
+  successSellNetWithFeeTemplate: "已售出 {item}×{q}，實收 🪙{n}（運費 🪙{fee}）",
   successBuyTemplate: "已購入 {item}×{q}，－🪙{n}",
 } as const;
 
@@ -35,6 +37,20 @@ export function successSell(item: string, q: string, n: string): string {
     .replace("{item}", item)
     .replace("{q}", q)
     .replace("{n}", n);
+}
+
+export function successSellNet(item: string, q: string, net: string, fee?: string): string {
+  if (fee && fee !== "0") {
+    return MARKET_COPY.successSellNetWithFeeTemplate
+      .replace("{item}", item)
+      .replace("{q}", q)
+      .replace("{n}", net)
+      .replace("{fee}", fee);
+  }
+  return MARKET_COPY.successSellNetTemplate
+    .replace("{item}", item)
+    .replace("{q}", q)
+    .replace("{n}", net);
 }
 
 export function successBuy(item: string, q: string, n: string): string {

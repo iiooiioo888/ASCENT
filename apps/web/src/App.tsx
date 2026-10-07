@@ -433,18 +433,26 @@ export default function App() {
         side === "sell"
           ? (marketSnapshot?.prices.sell[itemId] ?? 0)
           : (marketSnapshot?.prices.buy[itemId] ?? 0);
-      const goldAmount = unitPrice * quantity;
+      const grossGold = unitPrice * quantity;
 
       setPending(actionKey, true);
       setMarketPanelError(null);
 
       try {
         if (side === "sell") {
-          await postMarketSell(itemId, quantity);
+          const result = await postMarketSell(itemId, quantity);
+          const netGold = result.netGoldDelta ?? result.goldDelta ?? grossGold;
+          showMarketSuccess(
+            formatMarketTradeSuccess(side, itemId, quantity, grossGold, {
+              netGold,
+              transportFee: result.transportFee,
+            }),
+            itemId,
+          );
         } else {
           await postMarketBuy(itemId, quantity);
+          showMarketSuccess(formatMarketTradeSuccess(side, itemId, quantity, grossGold), itemId);
         }
-        showMarketSuccess(formatMarketTradeSuccess(side, itemId, quantity, goldAmount), itemId);
         await refresh();
         await refreshMarket();
       } catch (e) {
@@ -577,6 +585,7 @@ export default function App() {
                 pendingKeys={pendingKeys}
                 successToast={marketSuccessToast}
                 tabFocusRequest={marketTabFocusRequest}
+                opsCosts={state.opsCosts}
                 onSell={(itemId, quantity) => marketTrade("sell", itemId, quantity)}
                 onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
               />
