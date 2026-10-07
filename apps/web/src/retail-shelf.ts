@@ -28,6 +28,7 @@ export async function fetchRetailShelfOptional(): Promise<RetailShelfSnapshot | 
 
 export async function patchRetailShelf(body: {
   enabled?: boolean;
+  followMarket?: boolean;
   ask?: number;
 }): Promise<RetailShelfSnapshot> {
   return api<RetailShelfSnapshot>("/api/v1/market/retail/shelf", {

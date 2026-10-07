@@ -42,10 +42,12 @@ type Props = {
   retailShelf?: RetailShelfSnapshot | null;
   retailShelfTabVisible?: boolean;
   retailShelfPendingEnabled?: boolean;
+  retailShelfPendingFollowMarket?: boolean;
   retailShelfPendingAsk?: boolean;
   onRetailShelfTabOpen?: () => void;
   onRetailShelfTabActiveChange?: (active: boolean) => void;
   onRetailShelfToggleEnabled?: (enabled: boolean) => void;
+  onRetailShelfToggleFollowMarket?: (followMarket: boolean) => void;
   onRetailShelfSaveAsk?: (ask: number) => void;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
@@ -69,6 +71,7 @@ export function retailPendingKey(offerId: string) {
 }
 
 export const RETAIL_SHELF_PENDING_ENABLED_KEY = "retail-shelf:enabled";
+export const RETAIL_SHELF_PENDING_FOLLOW_MARKET_KEY = "retail-shelf:follow-market";
 export const RETAIL_SHELF_PENDING_ASK_KEY = "retail-shelf:ask";
 
 export const MarketPanel = forwardRef(function MarketPanel(
@@ -90,10 +93,12 @@ export const MarketPanel = forwardRef(function MarketPanel(
     retailShelf,
     retailShelfTabVisible = false,
     retailShelfPendingEnabled = false,
+    retailShelfPendingFollowMarket = false,
     retailShelfPendingAsk = false,
     onRetailShelfTabOpen,
     onRetailShelfTabActiveChange,
     onRetailShelfToggleEnabled,
+    onRetailShelfToggleFollowMarket,
     onRetailShelfSaveAsk,
     onSell,
     onBuy,
@@ -338,8 +343,10 @@ export const MarketPanel = forwardRef(function MarketPanel(
           <RetailShelfPanel
             shelf={retailShelf ?? null}
             pendingEnabled={retailShelfPendingEnabled}
+            pendingFollowMarket={retailShelfPendingFollowMarket}
             pendingAsk={retailShelfPendingAsk}
             onToggleEnabled={(enabled) => onRetailShelfToggleEnabled?.(enabled)}
+            onToggleFollowMarket={(followMarket) => onRetailShelfToggleFollowMarket?.(followMarket)}
             onSaveAsk={(ask) => onRetailShelfSaveAsk?.(ask)}
           />
         </div>
