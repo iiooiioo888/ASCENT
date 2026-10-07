@@ -10,7 +10,10 @@ describe("市集（整合）", () => {
   let databaseUrl: string;
   let prisma: PrismaService;
   let sim: SimulationService;
+  let inventory: InventoryService;
   let market: MarketService;
+
+  const tradingPostBuildingId = "pb_player_local_bdef_trading_post";
 
   beforeAll(async () => {
     databaseUrl = createEmptyTestDatabase();
@@ -19,7 +22,7 @@ describe("市集（整合）", () => {
     await prisma.$connect();
     sim = new SimulationService(prisma);
     await sim.refreshConfig();
-    const inventory = new InventoryService(prisma, sim);
+    inventory = new InventoryService(prisma, sim);
     market = new MarketService(prisma, sim, inventory);
   });
 
@@ -41,12 +44,38 @@ describe("市集（整合）", () => {
     });
   }
 
+  it("種子後開局金幣為 10", async () => {
+    const res = await market.getMarket();
+    expect(res.gold).toBe(10);
+  });
+
   it("GET 摘要回傳價目與金幣", async () => {
     await setQty(ITEM_GOLD_ID, 5);
     const res = await market.getMarket();
     expect(res.prices.sell.item_bread).toBe(8);
     expect(res.prices.buy.item_seed_wheat).toBe(3);
     expect(res.gold).toBe(5);
+  });
+
+  it("種子預放莊外商行", async () => {
+    const building = await prisma.playerBuilding.findFirst({
+      where: { playerId: "player_local", buildingDefId: "bdef_trading_post" },
+    });
+    expect(building).not.toBeNull();
+    expect(building!.id).toBe(tradingPostBuildingId);
+  });
+
+  it("GET state 含一座莊外商行", async () => {
+    const state = await inventory.state();
+    const posts = state.buildings.filter((b) => b.buildingDefId === "bdef_trading_post");
+    expect(posts).toHaveLength(1);
+    expect(posts[0].buildingDef.code).toBe("trading_post");
+  });
+
+  it("莊外商行不可 start 生產方式", async () => {
+    await expect(inventory.start(tradingPostBuildingId, "method_grow_wheat_default")).rejects.toMatchObject({
+      response: { message: "此建築不能使用該方式", statusCode: 400 },
+    });
   });
 
   it("賣出麵包增加金幣", async () => {

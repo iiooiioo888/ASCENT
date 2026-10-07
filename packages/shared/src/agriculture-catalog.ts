@@ -153,7 +153,25 @@ export const buildingDefs: BuildingDef[] = [
     is_active: true,
     released_in_version: RELEASED_IN_VERSION,
   },
+  {
+    id: "bdef_trading_post",
+    code: "trading_post",
+    name: "莊外商行",
+    system_code: "agriculture",
+    allowed_rule_ids: [],
+    queue_limit: 1,
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
 ];
+
+/** 開局預放建築（倉 `bdef_silo` 不預放；D3 未定）。 */
+export const seedPlacedBuildingDefIds = [
+  "bdef_field",
+  "bdef_mill",
+  "bdef_oven",
+  "bdef_trading_post",
+] as const;
 
 export const startingInventory: Record<string, number> = {
   item_seed_wheat: 40,

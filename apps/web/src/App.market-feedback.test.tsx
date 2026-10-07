@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MARKET_COPY } from "./marketCopy";
-import { TRADING_POST_BUILDING_DEF_ID } from "./resource-loop-copy";
+import { TRADING_POST_BUILDING_DEF_ID } from "./tradingPost";
 import { defaultMarketSnapshotForTests, withMarketApiRoute } from "./test/marketFixture";
 import type { GameState } from "./types";
 
@@ -86,7 +86,7 @@ describe("App MK-FE-2 market feedback", () => {
 
     expect(await screen.findByTestId("hud-gold-chip")).toHaveTextContent("🪙 10");
 
-    await user.click(await screen.findByRole("button", { name: MARKET_COPY.tradeOpenCta }));
+    await user.click(await screen.findByRole("button", { name: MARKET_COPY.tradeCta }));
 
     const breadRow = await screen.findByTestId("market-row-sell-item_bread");
     await user.click(within(breadRow).getByRole("button", { name: MARKET_COPY.sellCta }));
