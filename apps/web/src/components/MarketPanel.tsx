@@ -14,10 +14,13 @@ import { CommodityRow } from "./CommodityRow";
 import { ExpandFieldPanel } from "./ExpandFieldPanel";
 import { MarketRow } from "./MarketRow";
 import { RetailOfferCard } from "./RetailOfferCard";
+import { RetailShelfPanel } from "./RetailShelfPanel";
 import type { RetailSnapshot } from "../retail";
 import { RETAIL_COPY } from "../retailCopy";
+import type { RetailShelfSnapshot } from "../retail-shelf";
+import { RETAIL_SHELF_COPY } from "../retailShelfCopy";
 
-type Tab = "sell" | "buy" | "commodities" | "expand" | "retail";
+type Tab = "sell" | "buy" | "commodities" | "expand" | "retail" | "shelf";
 
 export type MarketTabFocusRequest = { tab: Tab; seq: number };
 
@@ -36,6 +39,14 @@ type Props = {
   retailTabVisible?: boolean;
   onRetailTabOpen?: () => void;
   onRetailTabActiveChange?: (active: boolean) => void;
+  retailShelf?: RetailShelfSnapshot | null;
+  retailShelfTabVisible?: boolean;
+  retailShelfPendingEnabled?: boolean;
+  retailShelfPendingAsk?: boolean;
+  onRetailShelfTabOpen?: () => void;
+  onRetailShelfTabActiveChange?: (active: boolean) => void;
+  onRetailShelfToggleEnabled?: (enabled: boolean) => void;
+  onRetailShelfSaveAsk?: (ask: number) => void;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
   onCommodityBuy?: (commodityId: string, quantity: number) => void;
@@ -57,6 +68,9 @@ export function retailPendingKey(offerId: string) {
   return `retail:accept:${offerId}`;
 }
 
+export const RETAIL_SHELF_PENDING_ENABLED_KEY = "retail-shelf:enabled";
+export const RETAIL_SHELF_PENDING_ASK_KEY = "retail-shelf:ask";
+
 export const MarketPanel = forwardRef(function MarketPanel(
   {
     id = "market-panel",
@@ -73,6 +87,14 @@ export const MarketPanel = forwardRef(function MarketPanel(
     retailTabVisible = false,
     onRetailTabOpen,
     onRetailTabActiveChange,
+    retailShelf,
+    retailShelfTabVisible = false,
+    retailShelfPendingEnabled = false,
+    retailShelfPendingAsk = false,
+    onRetailShelfTabOpen,
+    onRetailShelfTabActiveChange,
+    onRetailShelfToggleEnabled,
+    onRetailShelfSaveAsk,
     onSell,
     onBuy,
     onCommodityBuy,
@@ -96,9 +118,16 @@ export const MarketPanel = forwardRef(function MarketPanel(
 
   useEffect(() => {
     onRetailTabActiveChange?.(tab === "retail");
-    if (tab !== "retail") return;
-    onRetailTabOpen?.();
-  }, [tab, onRetailTabOpen, onRetailTabActiveChange]);
+    onRetailShelfTabActiveChange?.(tab === "shelf");
+    if (tab === "retail") onRetailTabOpen?.();
+    if (tab === "shelf") onRetailShelfTabOpen?.();
+  }, [
+    tab,
+    onRetailTabOpen,
+    onRetailTabActiveChange,
+    onRetailShelfTabOpen,
+    onRetailShelfTabActiveChange,
+  ]);
 
   const sellIds = useMemo(() => {
     if (!market?.prices?.sell) return [];
@@ -209,7 +238,9 @@ export const MarketPanel = forwardRef(function MarketPanel(
             ? LAND_COPY.subtitle
             : tab === "retail"
               ? RETAIL_COPY.hint
-              : MARKET_COPY.hint}
+              : tab === "shelf"
+                ? RETAIL_SHELF_COPY.hint
+                : MARKET_COPY.hint}
       </p>
 
       <p
@@ -282,6 +313,18 @@ export const MarketPanel = forwardRef(function MarketPanel(
             {RETAIL_COPY.tab}
           </button>
         ) : null}
+        {retailShelfTabVisible ? (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "shelf"}
+            className={tab === "shelf" ? "active" : ""}
+            onClick={() => setTab("shelf")}
+            data-testid="market-tab-shelf"
+          >
+            {RETAIL_SHELF_COPY.tab}
+          </button>
+        ) : null}
       </div>
 
       {tab === "expand" && landPurchaseUi ? (
@@ -290,6 +333,16 @@ export const MarketPanel = forwardRef(function MarketPanel(
           pending={expandPending}
           onPurchase={() => onPurchaseField?.()}
         />
+      ) : tab === "shelf" ? (
+        <div className="market-table retail-shelf-table" role="tabpanel" data-testid="market-shelf-panel">
+          <RetailShelfPanel
+            shelf={retailShelf ?? null}
+            pendingEnabled={retailShelfPendingEnabled}
+            pendingAsk={retailShelfPendingAsk}
+            onToggleEnabled={(enabled) => onRetailShelfToggleEnabled?.(enabled)}
+            onSaveAsk={(ask) => onRetailShelfSaveAsk?.(ask)}
+          />
+        </div>
       ) : tab === "retail" ? (
         <div className="market-table retail-table" role="tabpanel" data-testid="market-retail-panel">
           {!retail ? (
