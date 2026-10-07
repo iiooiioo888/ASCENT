@@ -93,13 +93,15 @@ MVP 結算時機（無 Redis／BullMQ）：
 
 仍須：伺服器唯一權威、純函數可重播、同一區間不重複入帳、先裁切現實差再 × 60。細則：[GDD 0002](gdd/0002-time-and-settlement.md)。之後若有登入，改為登入時補結算；MVP 無登入，以進頁代替。
 
-**併發（工程 MVP）：** `SettlementMutex` 與 `lastSettledAt` 樂觀寫入僅保證**單一 Node 進程**內不重複結算／收取；`start`／`stop`／`collect` 狀態競爭回 **409 Conflict**。水平多實例部署須另加 DB 列鎖或單寫者（本切片未做，見 ADR 0001 分期）。
+**併發（工程 MVP）：** 結算／`start`／`stop`／`collect` 走同一 DB 互斥：`withSettlementTransaction` 在 **PostgreSQL** 用 `pg_advisory_xact_lock`、在 **SQLite** 於交易內首筆寫入 `server_state` 序列化多連線寫入；進程內仍保留 `SettlementMutex` 減少本機排隊。建築以 `lastSettledAt` 樂觀寫入防雙重結算；`start` 先 `updateMany` 佔用 `idle` 再扣料；`collect` 與入庫同一交易。狀態競爭回 **409 Conflict**。多實例 cron／HTTP 可並行部署同一 DB（見 `inventory-multi-instance.test.ts`）。
 
 ---
 
 ## 農業切片（占位，不是數值定案）
 
-**ID 與 DAG 已定**：[gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md)（8 物品、4 建築、5 根規則、5–10 方式）。顯示名可改；層、依賴、驗證對照不可另寫一套。產率與工時倍數仍留給開工後的數值表。結構必須合法（不跳級、DAG、方式由規則生成、繼承深度 ≤ 10）。
+**ID 與 DAG 已定**：[gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md)（8 物品、**5 建築含水井**、7 根規則、5–10 方式）。顯示名可改；層、依賴、驗證對照不可另寫一套。產率與工時倍數仍留給開工後的數值表。結構必須合法（不跳級、DAG、方式由規則生成、繼承深度 ≤ 10）。
+
+**資源循環（RL-BE-1，待確認數值）**：`bdef_well` + `rule_draw_water`（無輸入產水）、田上 `rule_save_seed`（小麥→種子）；開局預放 1 座水井（見 catalog 佔位常數 `PLACEHOLDER_*`）。不引入市場／金幣。
 
 驗證器清單（[GDD v2.0 §15](gdd/production-system-v2.md#15-驗證清單)、[GDD 0005](gdd/0005-schema-and-api.md)、[切片對照](gdd/mvp-agriculture-catalog.md)）凡與已啟用資料有關的項目，農業切片也必須能過。`V-OFFLINE` 使用本檔的 8 現實小時常數，不用舊稿 86400。
 
@@ -163,7 +165,7 @@ MVP 結算時機（無 Redis／BullMQ）：
 - [x] 農業 5–10 物品、3–5 建築、5–10 由規則生成的方式，驗證器可過（`POST /api/v1/validate`、種子、`packages/shared` 測試）。
 - [x] 開工後經過對應遊戲秒，收取使庫存增加；客戶端預覽不得寫回。
 - [x] 離線（或把 `lastSettledAt` 撥早）再進頁，補算不超過 8 現實小時（`maxOfflineRealSec=28800`，遊戲秒上限 `1728000`）。
-- [x] 同一結算區間重放不雙計（`settleWindow` 冪等；API 以 `SettlementMutex` 序列化結算／收取，並以 `lastSettledAt` 樂觀寫入；`ready` 狀態不重複入帳產出）。
+- [x] 同一結算區間重放不雙計（`settleWindow` 冪等；API 以 DB 結算鎖 + `SettlementMutex` 序列化結算／收取，並以 `lastSettledAt` 樂觀寫入；`ready` 狀態不重複入帳產出）。
 - [x] 重開應用／重進頁後庫存與建築狀態仍在（Prisma 持久化）。
 - [x] 無登入頁、無市場、無排行榜。
 - [x] 無 Redis、無 WebSocket 仍能完成上述閉環。
