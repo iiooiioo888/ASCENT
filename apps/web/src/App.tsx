@@ -1,26 +1,31 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import { BuildingCard } from "./components/BuildingCard";
-import { DepletionBanner } from "./components/DepletionBanner";
+import { DepletionNotice } from "./components/DepletionNotice";
 import { Inventory } from "./components/Inventory";
 import type { BuildingActionErrorView } from "./building-action-error";
 import { mapBuildingActionError } from "./building-action-error";
+import {
+  buildingScrollAnchorId,
+  findFieldBuilding,
+  pickSaveSeedMethodId,
+  resolveWellScrollAnchorId,
+  SCROLL_HIGHLIGHT_MS,
+} from "./depletion-scroll";
+import { isResourceDepleted } from "./depletion";
+import { FIELD_BUILDING_DEF_ID, WELL_BUILDING_DEF_ID } from "./resource-loop-copy";
 import { formatUserError, fmtGame } from "./format";
 import { BUILDING_ICON } from "./meta";
-import { isProductionDepleted } from "./production-depleted";
 import {
-  FIELD_BUILDING_DEF_ID,
-  METHOD_SAVE_SEED_ID,
-  isBuildingDefPlaceableInUi,
-  RESOURCE_LOOP_GOAL_HINT,
-  WELL_BUILDING_DEF_ID,
-} from "./resource-loop-copy";
+  BRAND_DISPLAY_NAME,
+  BRAND_SUBTITLE,
+  FEATURE_SHOW_DEPLETION_EMPTY_STATE,
+  OFFLINE_PROGRESS_BANNER,
+  OFFLINE_PROGRESS_HUD_CHIP,
+  SLICE_FLOW_BANNER,
+  SLICE_GOAL_BANNER,
+} from "./productCopy";
 import type { GameState, Method } from "./types";
-
-const MAIN_GOAL_BANNER =
-  "田種麥 → 磨坊磨粉／拌飼 → 爐和麵烤麵包。工時以遊戲秒計，現實約為六十分之一。";
-
-const SCROLL_HIGHLIGHT_MS = 2400;
 
 export default function App() {
   const [state, setState] = useState<GameState | null>(null);
@@ -72,6 +77,32 @@ export default function App() {
     return m;
   }, [state]);
 
+  const resourceDepleted = useMemo(() => {
+    if (!state) return false;
+    return isResourceDepleted(state.buildings, state.inventory, methodsByRule);
+  }, [state, methodsByRule]);
+
+  const goToWell = useCallback(() => {
+    if (!state) return;
+    const anchor = resolveWellScrollAnchorId(state.buildings);
+    if (!anchor) return;
+    flashHighlight(WELL_BUILDING_DEF_ID);
+    scrollToAnchor(anchor);
+  }, [flashHighlight, scrollToAnchor, state]);
+
+  const goToSaveSeed = useCallback(() => {
+    if (!state) return;
+    flashHighlight(FIELD_BUILDING_DEF_ID);
+    const field = findFieldBuilding(state.buildings);
+    if (field) {
+      const saveSeedId = pickSaveSeedMethodId(field, methodsByRule);
+      if (saveSeedId) {
+        setPicked((prev) => ({ ...prev, [field.id]: saveSeedId }));
+      }
+      scrollToAnchor(buildingScrollAnchorId(field.id));
+    }
+  }, [flashHighlight, methodsByRule, scrollToAnchor, state]);
+
   const setPending = useCallback((key: string, on: boolean) => {
     const next = new Set(pendingKeysRef.current);
     if (on) next.add(key);
@@ -115,28 +146,11 @@ export default function App() {
     [refresh, setPending],
   );
 
-  const goToWell = useCallback(() => {
-    if (!state) return;
-    flashHighlight(WELL_BUILDING_DEF_ID);
-    const placed = state.buildings.find((b) => b.buildingDefId === WELL_BUILDING_DEF_ID);
-    if (placed) scrollToAnchor(`building-${placed.id}`);
-  }, [flashHighlight, scrollToAnchor, state]);
-
-  const goToSaveSeed = useCallback(() => {
-    if (!state) return;
-    flashHighlight(FIELD_BUILDING_DEF_ID);
-    const field = state.buildings.find((b) => b.buildingDefId === FIELD_BUILDING_DEF_ID);
-    if (field) {
-      setPicked((prev) => ({ ...prev, [field.id]: METHOD_SAVE_SEED_ID }));
-      scrollToAnchor(`building-${field.id}`);
-    }
-  }, [flashHighlight, scrollToAnchor, state]);
-
   if (!state) {
     return (
       <div className="loading">
         <div>
-          <h1>崛起</h1>
+          <h1>{BRAND_DISPLAY_NAME}</h1>
           <p>{pollError || "農莊正在甦醒…"}</p>
         </div>
       </div>
@@ -144,9 +158,9 @@ export default function App() {
   }
 
   const unplaced = state.buildingDefs.filter(
-    (d) => isBuildingDefPlaceableInUi(d.id) && !state.buildings.some((b) => b.buildingDefId === d.id),
+    (d) =>
+      d.id !== WELL_BUILDING_DEF_ID && !state.buildings.some((b) => b.buildingDefId === d.id),
   );
-  const depleted = isProductionDepleted(state);
 
   return (
     <div className="world">
@@ -156,22 +170,25 @@ export default function App() {
             🌾
           </div>
           <div>
-            <h1>崛起</h1>
-            <small>農業切片 · 莊園</small>
+            <h1>{BRAND_DISPLAY_NAME}</h1>
+            <small>{BRAND_SUBTITLE}</small>
           </div>
         </div>
         <div className="clock">
           <span className="chip">⏳ {fmtGame(state.time.displayGameTime)}</span>
           <span className="chip">⚖ 1 : {state.time.timeScale}</span>
-          <span className="chip">🌙 離線 8 時</span>
+          <span className="chip">{OFFLINE_PROGRESS_HUD_CHIP}</span>
         </div>
       </header>
 
-      <p className="banner">
-        {MAIN_GOAL_BANNER}
-        <span className="banner-hint"> {RESOURCE_LOOP_GOAL_HINT}</span>
-      </p>
-      {depleted ? <DepletionBanner onGoWell={goToWell} onGoSaveSeed={goToSaveSeed} /> : null}
+      <p className="banner banner-goal">{SLICE_GOAL_BANNER}</p>
+      <p className="banner">{SLICE_FLOW_BANNER}</p>
+      <p className="banner banner-muted">{OFFLINE_PROGRESS_BANNER}</p>
+      <DepletionNotice
+        visible={FEATURE_SHOW_DEPLETION_EMPTY_STATE && resourceDepleted}
+        onGoWell={goToWell}
+        onGoSaveSeed={goToSaveSeed}
+      />
       {pollError ? <p className="banner error">{pollError}</p> : null}
 
       <Inventory inventory={state.inventory} />
@@ -197,7 +214,7 @@ export default function App() {
           return (
             <BuildingCard
               key={b.id}
-              scrollAnchorId={`building-${b.id}`}
+              scrollAnchorId={buildingScrollAnchorId(b.id)}
               highlight={highlightDefId === b.buildingDefId}
               building={b}
               options={options}
