@@ -52,6 +52,8 @@ describe("TradingPostBuildingCard (v1.2)", () => {
 
     expect(screen.getByRole("button", { name: MARKET_COPY.tradeCta })).toBeInTheDocument();
     expect(screen.getByText(MARKET_COPY.buildingStatus)).toBeInTheDocument();
+    expect(document.getElementById(`building-${tradingPostBuilding.id}`)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "莊外商行" })).toHaveTextContent("🏪");
     expect(screen.queryByRole("button", { name: "開工" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "停止" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "收取" })).not.toBeInTheDocument();
@@ -75,7 +77,7 @@ describe("TradingPostBuildingCard (v1.2)", () => {
     );
 
     await user.click(screen.getByRole("button", { name: MARKET_COPY.tradeCta }));
-    expect(onToggle).toHaveBeenCalled();
+    expect(onToggle).toHaveBeenCalledTimes(1);
 
     rerender(
       <TradingPostBuildingCard
@@ -89,6 +91,8 @@ describe("TradingPostBuildingCard (v1.2)", () => {
         onBuy={vi.fn()}
       />,
     );
+    await user.click(screen.getByRole("button", { name: MARKET_COPY.closeTradeCta }));
+    expect(onToggle).toHaveBeenCalledTimes(2);
 
     const panel = document.getElementById("market-panel");
     expect(panel).toBeInTheDocument();
