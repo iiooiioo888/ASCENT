@@ -17,4 +17,10 @@ describe("isMethodAllowedForBuilding", () => {
     expect(isMethodAllowedForBuilding(null, "rule_grow_wheat")).toBe(false);
     expect(isMethodAllowedForBuilding(undefined, "rule_grow_wheat")).toBe(false);
   });
+
+  it("水井與田的資源循環規則綁定", () => {
+    expect(isMethodAllowedForBuilding(["rule_draw_water"], "rule_draw_water")).toBe(true);
+    expect(isMethodAllowedForBuilding(["rule_draw_water"], "rule_grow_wheat")).toBe(false);
+    expect(isMethodAllowedForBuilding(["rule_grow_wheat", "rule_save_seed"], "rule_save_seed")).toBe(true);
+  });
 });
