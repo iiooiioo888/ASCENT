@@ -8,6 +8,7 @@ import {
   TICK_INTERVAL_REAL_MS,
   GAME_DAY_GAME_SEC,
   buildingDefs,
+  seedPlacedBuildingDefIds,
   generateMethods,
   itemTypes,
   items,
@@ -163,8 +164,7 @@ async function main() {
     });
   }
 
-  const toPlace = ["bdef_field", "bdef_mill", "bdef_oven"];
-  for (const defId of toPlace) {
+  for (const defId of seedPlacedBuildingDefIds) {
     await prisma.playerBuilding.create({
       data: {
         id: `pb_${LOCAL_PLAYER_ID}_${defId}`,
