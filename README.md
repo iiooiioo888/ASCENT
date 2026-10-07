@@ -136,13 +136,51 @@ pnpm dev
 
 或分開啟動 API／前端：`pnpm dev:api`、`pnpm dev:web`。
 
-`setup:db` 會從根目錄 `.env.example` 複製出 `apps/api/.env`（若尚不存在）、產生 Prisma Client、`db push` 並種子。Prisma 讀取的是 **`apps/api/.env`**，不是根目錄 `.env`。CLI 設定（schema 路徑、migration 目錄、seed 指令）在 **`apps/api/prisma.config.ts`**，不再使用 `package.json#prisma`（Prisma 7 將移除此欄位）。目前鎖定 **Prisma 6.19.x**；升級至 Prisma 7 需另做 driver adapter 遷移。
+`setup:db` 會從根目錄 `.env.example` 複製出 `apps/api/.env`（若尚不存在）、產生 Prisma Client、`db push` 並種子。Prisma 讀取的是 **`apps/api/.env`**，不是根目錄 `.env`。CLI 設定（schema 路徑、`DATABASE_URL`、migration 目錄、seed 指令）在 **`apps/api/prisma.config.ts`**。執行期與 seed 透過 **driver adapter**（SQLite：`@prisma/adapter-better-sqlite3`；PostgreSQL：`@prisma/adapter-pg`）建立 `PrismaClient`；Client 產生於 `apps/api/generated/prisma/`（已 gitignore）。
 
 前端：http://localhost:5173 。API：http://localhost:3000/api/v1/state 。
 
 目標主庫仍是 PostgreSQL（ADR 0001）。`prisma/migrations/` 內 SQL 對應 **PostgreSQL**（`JSONB` 等）。工程 MVP 預設在 `apps/api/prisma/schema.prisma` 使用 **SQLite**（`DATABASE_URL="file:./dev.db"`，檔案落在 **`apps/api/prisma/dev.db`**），本機無 Docker 即可 `pnpm setup:db` 可玩。
 
-若要改用 Compose 裡的 Postgres：先 `pnpm db:up`，把 `schema.prisma` 的 `provider` 改為 `postgresql`，`apps/api/.env` 的 `DATABASE_URL` 改為 `postgresql://ascent:ascent@localhost:5432/ascent`，再執行 `pnpm --filter @ascent/api exec -- prisma migrate deploy` 與 `pnpm db:seed`（不要用 `db push` 覆蓋正式 migration）。
+若要改用 Compose 裡的 Postgres，請依下方 **Postgres 本機驗證步驟**（不要用 `db push` 覆蓋正式 migration）。
+
+### Postgres 本機驗證步驟
+
+工程 MVP **預設仍為 SQLite**；下列步驟僅在要驗證 ADR 0001 目標主庫（`prisma/migrations/` 內 `JSONB`／GIN migration）時使用。完成後請依 **切回 SQLite** 還原，避免誤 commit `provider = postgresql`。
+
+**無 Docker 時**：可改用本機已安裝的 PostgreSQL（步驟 1 改為確保服務在跑，並把步驟 3 的 `DATABASE_URL` 改成你的帳密／資料庫名）；或**不跑本機 Postgres**，直接看 PR 上 CI 的 **`postgres-migrate-test`** job（等同步驟 4–6 + API 測試，無需本機容器）。
+
+| 步驟 | 命令 | 預期結果 |
+| --- | --- | --- |
+| 1. 啟動 Postgres | 在 repo 根目錄：`pnpm db:up`（需 Docker） | Docker 輸出 `healthy`；`docker compose ps` 見 `postgres` 監聽 `5432` |
+| 2. 改 provider | 編輯 `apps/api/prisma/schema.prisma`：`provider = "sqlite"` → `provider = "postgresql"` | `prisma validate` 不再報 provider 與 URL 不符 |
+| 3. 改連線 | 編輯 `apps/api/.env`：`DATABASE_URL="postgresql://ascent:ascent@localhost:5432/ascent"` | 與 `docker-compose.yml` 帳密一致（本機 Postgres 則改為你的連線字串） |
+| 4. 建置 shared | `pnpm --filter @ascent/shared build` | `packages/shared/dist` 更新（seed 依賴 `@ascent/shared`） |
+| 5. 產生 Client | `pnpm --filter @ascent/api prisma:generate` | CLI 顯示 `Generated Prisma Client … to ./generated/prisma`（目錄為 **`apps/api/generated/prisma/`**，內含 `client` 子模組；已 gitignore） |
+| 6. 套用 migration | `pnpm --filter @ascent/api exec -- prisma migrate deploy` | `Applying migration \`20261006000000_init\``，無 error |
+| 7. 種子 | `pnpm db:seed` | `種子完成：8 物品、2 屬性定義、5 規則、7 方式` |
+| 8. 啟 API | `pnpm dev:api` | `Nest application successfully started`；監聽 `3000` |
+| 9. 驗證 HTTP | 另開終端機：<br>`curl -s http://localhost:3000/api/v1/state \| jq '.buildings \| length'`<br>`curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/v1/buildings/pb_player_local_bdef_field/collect` | `GET /state` 回 `{ time, inventory, buildings, methods, buildingDefs }`（**無** `player` 欄）；種子後 `buildings` 長度為 **`3`**。`collect` 在種子 **`idle`** 建築上目前 **`400`**（`尚無可收取產出`）；**PR #8 合併後**改 **`409`**。成功收取需先 `start` 至 `ready` |
+
+**常見失敗與處理**
+
+| 現象 | 原因 | 處理 |
+| --- | --- | --- |
+| `Can't reach database server` / `ECONNREFUSED` | Postgres 未起或 port 被佔用 | `pnpm db:up`；確認 `5432` 未被其他服務占用 |
+| `P1010` / SSL 相關（雲端 Postgres） | Prisma 7 `pg` adapter SSL 預設較嚴 | 本機 Compose 通常無 SSL；雲端請依 [Prisma 7 升級指南](https://www.prisma.io/docs/guides/upgrade-prisma-orm/v7) 設定 `ssl` 或 CA |
+| migration 失敗、`JSONB`/`GIN` 語法錯誤 | 仍用 SQLite provider 或對 SQLite 跑 `migrate deploy` | 確認 provider 為 `postgresql` 且 URL 為 `postgresql://…` |
+| `db push` 警告或索引被改寫 | 對 Postgres 誤用 `db push` | Postgres 只用 **`migrate deploy`**；SQLite 本機才用 `db push` |
+| `PrismaClient` / adapter 錯誤 | 未 `generate`、未 build shared，或 `.env` 與 provider 不一致 | 重跑步驟 3–5；確認 `createPrismaAdapter()` 只接受 `file:`／`sqlite:`／`postgres(ql)://`，其他協定會 **throw** |
+| seed 後測試失敗 | 未 seed 或仍指向舊 SQLite 檔 | 確認 `.env` 為 Postgres URL 後重跑 seed |
+
+**切回 SQLite（預設 dev）**
+
+1. `docker compose stop postgres`（可選，釋放 5432）。
+2. `apps/api/prisma/schema.prisma`：`provider = "postgresql"` → `provider = "sqlite"`。
+3. `apps/api/.env`：`DATABASE_URL="file:./dev.db"`。
+4. `pnpm setup:db`（會 `generate`、`db push`、seed；SQLite 不走 `migrate deploy`）。
+
+CI 另跑 **`postgres-migrate-test`** job（GitHub Actions `postgres` service）：自動執行 **shared build**、generate、migrate deploy、seed 與 API 測試，無需本機 Docker。
 
 `packages/shared` 不得依賴 Prisma、Socket.IO 或 Redis 客戶端。權威寫入只留在 `apps/api`。否決：Fastify 當核心、Phaser 進核心、Redis 當主庫、每 tick 全量模擬。
 

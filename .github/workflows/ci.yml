@@ -48,3 +48,60 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+  postgres-migrate-test:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ascent
+          POSTGRES_PASSWORD: ascent
+          POSTGRES_DB: ascent
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ascent -d ascent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://ascent:ascent@localhost:5432/ascent
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+
+      - name: Resolve pnpm store path
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - uses: actions/cache@v5
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure schema and env for PostgreSQL
+        run: node scripts/ci-postgres-setup.mjs
+
+      - name: Generate client, migrate, seed
+        run: |
+          pnpm --filter @ascent/shared build
+          pnpm --filter @ascent/api prisma:generate
+          pnpm --filter @ascent/api exec -- prisma migrate deploy
+          pnpm db:seed
+
+      - name: Test (API)
+        run: pnpm --filter @ascent/api test

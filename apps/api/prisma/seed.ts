@@ -1,4 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../generated/prisma/client";
+import { createPrismaAdapter } from "../src/prisma/create-prisma-adapter";
 import {
   LOCAL_PLAYER_ID,
   MAX_OFFLINE_GAME_SEC,
@@ -16,7 +17,7 @@ import {
   validateCatalog,
 } from "@ascent/shared";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ adapter: createPrismaAdapter() });
 
 async function main() {
   const methods = generateMethods(rules);

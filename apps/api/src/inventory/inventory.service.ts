@@ -7,7 +7,7 @@ import {
   type BuildingStatus,
   type ItemIo,
 } from "@ascent/shared";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { SimulationService } from "../simulation/simulation.service";
 import { isMethodAllowedForBuilding } from "./building-method-access";
