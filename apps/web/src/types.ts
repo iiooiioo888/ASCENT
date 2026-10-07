@@ -23,6 +23,10 @@ export type Building = {
   bufferedOutputs: Record<string, number>;
   /** 休地結束遊戲秒（僅休地中由 API 回傳） */
   fallowUntil?: number;
+  /** AFK-BE-1：自動循環開關（GET /state） */
+  autoEnabled?: boolean;
+  /** AFK-BE-1：自動暫停原因（中文，API 原文） */
+  autoPauseReason?: string | null;
 };
 
 export type WorkforceSnapshot = {

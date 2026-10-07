@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isBuildingAutoEnabled, showBuildingAutoToggle } from "../building-auto";
 import { canStopBuilding, showProductionActionButtons } from "../building-actions";
 import { fmtIo, statusLabel } from "../format";
 import { BuildingJobProgress } from "./BuildingJobProgress";
@@ -35,6 +36,9 @@ type Props = {
   onStart: () => void;
   onStop: () => void;
   onCollect: () => void;
+  autoPending?: boolean;
+  autoActionError?: BuildingActionErrorView;
+  onAutoToggle?: (autoEnabled: boolean) => void;
   highlight?: boolean;
   scrollAnchorId?: string;
   goldBalance?: number;
@@ -60,6 +64,9 @@ export function BuildingCard({
   onStart,
   onStop,
   onCollect,
+  autoPending = false,
+  autoActionError,
+  onAutoToggle,
   highlight = false,
   scrollAnchorId,
   goldBalance = 0,
@@ -100,6 +107,8 @@ export function BuildingCard({
   const purposeHint = methodPurposeHint(displayMethod?.id);
   const inFallow = isFieldFallow(b.buildingDefId, b.fallowUntil);
   const showActions = showProductionActionButtons(b);
+  const showAuto = showBuildingAutoToggle(b) && onAutoToggle != null;
+  const autoOn = isBuildingAutoEnabled(b);
   const yieldMult =
     environmentYieldMult != null && selected && isFieldGrowRuleId(selected.ruleId)
       ? environmentYieldMult
@@ -119,8 +128,36 @@ export function BuildingCard({
   return (
     <article
       id={scrollAnchorId}
-      className={`plot ${b.status}${pending ? " pending" : ""}${highlight ? " scroll-highlight" : ""}`}
+      className={`plot ${b.status}${pending ? " pending" : ""}${autoPending ? " auto-pending" : ""}${highlight ? " scroll-highlight" : ""}`}
     >
+      {showAuto ? (
+        <div className="plot-auto-bar">
+          <button
+            type="button"
+            className={`auto-toggle${autoOn ? " on" : ""}`}
+            role="switch"
+            aria-checked={autoOn}
+            aria-label={`${b.buildingDef.name}自動生產`}
+            disabled={autoPending}
+            onClick={() => onAutoToggle(!autoOn)}
+          >
+            <span className="auto-toggle-track" aria-hidden="true">
+              <span className="auto-toggle-thumb" />
+            </span>
+            <span className="auto-toggle-label">自動</span>
+          </button>
+          {b.autoPauseReason ? (
+            <p className="auto-pause-reason" data-testid="auto-pause-reason">
+              {b.autoPauseReason}
+            </p>
+          ) : null}
+          {autoActionError ? (
+            <p className="plot-action-error plot-auto-error" role="alert" title={autoActionError.hint}>
+              {autoActionError.message}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       <fieldset className="plot-body" disabled={pending}>
         <div className="plot-head">
           <div style={{ display: "flex", gap: "0.7rem", alignItems: "center" }}>

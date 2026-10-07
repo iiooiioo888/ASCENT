@@ -371,6 +371,110 @@ describe("BuildingCard a11y (U15)", () => {
   });
 });
 
+describe("BuildingCard AFK auto toggle", () => {
+  it("shows auto switch default off and calls PATCH handler when enabled", async () => {
+    const user = userEvent.setup();
+    const onAutoToggle = vi.fn();
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={{ ...demoFieldIdle, autoEnabled: false }}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        inventory={baseInventory}
+        onAutoToggle={onAutoToggle}
+      />,
+    );
+    const toggle = screen.getByRole("switch", { name: "田自動生產" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    await user.click(toggle);
+    expect(onAutoToggle).toHaveBeenCalledWith(true);
+  });
+
+  it("reflects auto on state and turns off when clicked", async () => {
+    const user = userEvent.setup();
+    const onAutoToggle = vi.fn();
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={{ ...demoFieldIdle, autoEnabled: true }}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        inventory={baseInventory}
+        onAutoToggle={onAutoToggle}
+      />,
+    );
+    const toggle = screen.getByRole("switch", { name: "田自動生產" });
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+    await user.click(toggle);
+    expect(onAutoToggle).toHaveBeenCalledWith(false);
+  });
+
+  it("shows API pause reason text", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={{
+          ...demoFieldIdle,
+          autoEnabled: true,
+          autoPauseReason: "自動已暫停：物料不足",
+        }}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        inventory={baseInventory}
+        onAutoToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId("auto-pause-reason")).toHaveTextContent("自動已暫停：物料不足");
+  });
+
+  it("hides auto toggle without onAutoToggle handler", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoFieldIdle}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        inventory={baseInventory}
+      />,
+    );
+    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+  });
+
+  it("shows auto action errors separately from production errors", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoFieldIdle}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        inventory={baseInventory}
+        actionError={{ message: "資源不足：水" }}
+        autoActionError={{ message: "操作失敗，請重試" }}
+        onAutoToggle={vi.fn()}
+      />,
+    );
+    const alerts = screen.getAllByRole("alert");
+    expect(alerts.map((el) => el.textContent)).toEqual(["操作失敗，請重試", "資源不足：水"]);
+  });
+
+  it("disables only auto switch while auto pending", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoFieldIdle}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        inventory={baseInventory}
+        autoPending={true}
+        onAutoToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("switch", { name: "田自動生產" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "開工" })).not.toBeDisabled();
+  });
+});
+
 describe("BuildingCard environment fallow", () => {
   it("休地時禁用開工並顯示倒數", () => {
     render(
