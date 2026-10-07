@@ -9,6 +9,6 @@ describe("SiloBuildingCard (U12)", () => {
     expect(screen.queryByRole("button", { name: "開工" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "停止" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "收取" })).not.toBeInTheDocument();
-    expect(screen.getByText(/純展示倉/)).toBeInTheDocument();
+    expect(screen.getByText(/倉庫已隱藏/)).toBeInTheDocument();
   });
 });

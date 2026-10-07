@@ -125,7 +125,7 @@ export function productionProgressAriaLabel(buildingName: string, percent: numbe
 export const INDUSTRY_CHAIN_ARIA_LABEL = "產業鏈：田、磨坊、爐至麵包，磨坊可產飼料";
 
 /** TODO(product): 待確認 — 倉卡說明（U12 精簡卡） */
-export const SILO_CARD_BODY = "MVP 純展示倉：不開工，只佔建築槽。";
+export const SILO_CARD_BODY = "倉庫已隱藏：僅保留既有建築展示，無法再放置。";
 
 /** TODO(product): 待確認 — 時間換算 HUD chip 文案（P3-1） */
 export function timeScaleHudChip(timeScale: number): string {

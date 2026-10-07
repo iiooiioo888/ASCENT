@@ -122,8 +122,13 @@ const REGISTRY: Readonly<Record<string, RegistryEntry>> = {
     copy: OPS_DEPTH_COPY.workforceCap,
     shouldRefresh: false,
   },
+<<<<<<< HEAD
   土地休耕中: {
     copy: "土地休耕中",
+=======
+  "倉庫已隱藏，無法放置": {
+    copy: "倉庫已隱藏，無法放置",
+>>>>>>> 405d7b4 (fix(web): P-D3 隱藏放倉 UI，擴田槽位排除倉庫)
     shouldRefresh: false,
   },
 };

@@ -702,7 +702,10 @@ export default function App() {
           const selected = options.find((m) => m.id === selectedId);
           const actionKey = b.id;
 
-          if (isSiloBuilding(b) && FEATURE_SILO_CARD_MODE === "simplified") {
+          if (
+            isSiloBuilding(b) &&
+            (!FEATURE_SHOW_SILO_PLACEMENT || FEATURE_SILO_CARD_MODE === "simplified")
+          ) {
             return (
               <SiloBuildingCard
                 key={b.id}

@@ -24,9 +24,9 @@ export function resolveSiloCardMode(): SiloCardMode {
   return "simplified";
 }
 
-/** TODO(product): 待確認 — 是否顯示「放置倉」空地卡（false＝隱藏放置入口） */
+/** P-D3 LOCKED：倉庫隱藏、不佔槽；預設不顯示放置入口（env `true` 可恢復舊行為）。 */
 export function resolveShowSiloPlacement(): boolean {
-  return parseViteBooleanEnv(import.meta.env.VITE_FEATURE_SHOW_SILO_PLACEMENT, true);
+  return parseViteBooleanEnv(import.meta.env.VITE_FEATURE_SHOW_SILO_PLACEMENT, false);
 }
 
 export const FEATURE_SILO_CARD_MODE = resolveSiloCardMode();

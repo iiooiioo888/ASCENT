@@ -2,10 +2,10 @@
 export const LAND_COPY = {
   tab: "擴田",
   title: "購買農田",
-  subtitle: "用金幣加購一塊可開工的田，佔一個建築欄位。",
+  subtitle: "用金幣加購一塊可開工的田，佔一個建築槽（倉庫不計入槽位）。",
   priceLabel: "價格",
   fieldStatus: "農田",
-  slotStatus: "建築欄位",
+  slotStatus: "佔槽建築",
   cta: "擴田",
   pending: "處理中…",
   success: "已擴田，－🪙{n}",
@@ -18,8 +18,8 @@ export function landFieldStatusLabel(fieldCount: number, fieldCap: number): stri
   return `${fieldCount}／${fieldCap}`;
 }
 
-export function landSlotStatusLabel(buildingCount: number, buildingSlotCap: number): string {
-  return `${buildingCount}／${buildingSlotCap}`;
+export function landSlotStatusLabel(slottedBuildingCount: number, buildingSlotCap: number): string {
+  return `${slottedBuildingCount}／${buildingSlotCap}`;
 }
 
 export function landPurchaseSuccess(pricePaid: number): string {

@@ -6,10 +6,10 @@ describe("featureFlags defaults (U12 placeholders)", () => {
     vi.resetModules();
   });
 
-  it("defaults to simplified silo card and visible placement", async () => {
+  it("defaults to simplified silo card and hidden silo placement (P-D3)", async () => {
     const { FEATURE_SILO_CARD_MODE, FEATURE_SHOW_SILO_PLACEMENT } = await import("./featureFlags");
     expect(FEATURE_SILO_CARD_MODE).toBe("simplified");
-    expect(FEATURE_SHOW_SILO_PLACEMENT).toBe(true);
+    expect(FEATURE_SHOW_SILO_PLACEMENT).toBe(false);
   });
 
   it("resolveShowSiloPlacement uses parseViteBooleanEnv (FALSE accepted)", async () => {

@@ -342,7 +342,7 @@ describe("MarketPanel", () => {
     const user = userEvent.setup();
     const onPurchaseField = vi.fn();
     const landPurchaseUi = evaluateLandPurchaseUi(
-      { fieldCount: 1, fieldCap: 2, buildingCount: 5, buildingSlotCap: 6 },
+      { fieldCount: 1, fieldCap: 2, slottedBuildingCount: 5, buildingSlotCap: 6 },
       10,
     );
 
@@ -368,7 +368,7 @@ describe("MarketPanel", () => {
   it("disables expand when blocked", async () => {
     const user = userEvent.setup();
     const landPurchaseUi = evaluateLandPurchaseUi(
-      { fieldCount: 1, fieldCap: 2, buildingCount: 5, buildingSlotCap: 6 },
+      { fieldCount: 1, fieldCap: 2, slottedBuildingCount: 5, buildingSlotCap: 6 },
       5,
     );
 

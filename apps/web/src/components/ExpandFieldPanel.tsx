@@ -35,7 +35,7 @@ export function ExpandFieldPanel({ ui, pending, onPurchase }: Props) {
               </span>
               <span className="land-purchase-meta-sep" aria-hidden>·</span>
               <span data-testid="land-slot-status">
-                {LAND_COPY.slotStatus} {landSlotStatusLabel(stats.buildingCount, stats.buildingSlotCap)}
+                {LAND_COPY.slotStatus} {landSlotStatusLabel(stats.slottedBuildingCount, stats.buildingSlotCap)}
               </span>
             </p>
             {priceGold != null ? (
