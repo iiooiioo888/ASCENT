@@ -121,6 +121,8 @@ model GameConfig {
   opsDepth           Json? @map("ops_depth")
   /** ENV：休地／天氣倍率與切換（覆写 shared DEFAULT_ENVIRONMENT_CONFIG）。 */
   environment        Json? @map("environment")
+  // TODO(product): JSON 覆寫 DEFAULT_RETAIL_CONFIG。
+  retailConfig       Json? @map("retail_config")
 
   @@map("game_config")
 }
@@ -154,8 +156,17 @@ model Player {
   inventory      PlayerInventory[]
   buildings      PlayerBuilding[]
   equityHoldings PlayerEquityHolding[]
+  retailState    PlayerRetailState?
 
   @@map("players")
+}
+
+model PlayerRetailState {
+  playerId String @id @map("player_id")
+  player   Player @relation(fields: [playerId], references: [id])
+  offers   Json   @default("[]")
+
+  @@map("player_retail_state")
 }
 
 model PlayerInventory {
