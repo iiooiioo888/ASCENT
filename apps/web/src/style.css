@@ -773,6 +773,15 @@ dialog.offline-summary-dialog::backdrop {
   color: #e8d9b8;
   font-variant-numeric: tabular-nums;
 }
+.retail-stock-banner {
+  margin: 0.35rem 0 0.6rem;
+  font-size: 0.9rem;
+}
+
+.retail-offer-controls {
+  margin-top: 0.5rem;
+}
+
 .commodity-row-actions {
   display: flex;
   flex-wrap: wrap;

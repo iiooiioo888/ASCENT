@@ -13,8 +13,11 @@ import { LAND_PURCHASE_PENDING_KEY, type LandPurchaseUiState } from "../land-pur
 import { CommodityRow } from "./CommodityRow";
 import { ExpandFieldPanel } from "./ExpandFieldPanel";
 import { MarketRow } from "./MarketRow";
+import { RetailOfferCard } from "./RetailOfferCard";
+import type { RetailSnapshot } from "../retail";
+import { RETAIL_COPY } from "../retailCopy";
 
-type Tab = "sell" | "buy" | "commodities" | "expand";
+type Tab = "sell" | "buy" | "commodities" | "expand" | "retail";
 
 export type MarketTabFocusRequest = { tab: Tab; seq: number };
 
@@ -29,12 +32,17 @@ type Props = {
   opsCosts?: OpsCostsSnapshot | null;
   commodities?: CommoditiesSnapshot | null;
   commoditiesTabVisible?: boolean;
+  retail?: RetailSnapshot | null;
+  retailTabVisible?: boolean;
+  onRetailTabOpen?: () => void;
+  onRetailTabActiveChange?: (active: boolean) => void;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
   onCommodityBuy?: (commodityId: string, quantity: number) => void;
   onCommoditySell?: (commodityId: string, quantity: number) => void;
   landPurchaseUi?: LandPurchaseUiState | null;
   onPurchaseField?: () => void;
+  onRetailAccept?: (offerId: string) => void;
 };
 
 function pendingKey(side: "sell" | "buy", itemId: string) {
@@ -43,6 +51,10 @@ function pendingKey(side: "sell" | "buy", itemId: string) {
 
 export function commodityPendingKey(side: "buy" | "sell", commodityId: string) {
   return `commodity:${side}:${commodityId}`;
+}
+
+export function retailPendingKey(offerId: string) {
+  return `retail:accept:${offerId}`;
 }
 
 export const MarketPanel = forwardRef(function MarketPanel(
@@ -57,12 +69,17 @@ export const MarketPanel = forwardRef(function MarketPanel(
     opsCosts,
     commodities,
     commoditiesTabVisible = false,
+    retail,
+    retailTabVisible = false,
+    onRetailTabOpen,
+    onRetailTabActiveChange,
     onSell,
     onBuy,
     onCommodityBuy,
     onCommoditySell,
     landPurchaseUi,
     onPurchaseField,
+    onRetailAccept,
   }: Props,
   ref: Ref<HTMLElement>,
 ) {
@@ -76,6 +93,12 @@ export const MarketPanel = forwardRef(function MarketPanel(
     if (!tabFocusRequest) return;
     setTab(tabFocusRequest.tab);
   }, [tabFocusRequest]);
+
+  useEffect(() => {
+    onRetailTabActiveChange?.(tab === "retail");
+    if (tab !== "retail") return;
+    onRetailTabOpen?.();
+  }, [tab, onRetailTabOpen, onRetailTabActiveChange]);
 
   const sellIds = useMemo(() => {
     if (!market?.prices?.sell) return [];
@@ -184,7 +207,9 @@ export const MarketPanel = forwardRef(function MarketPanel(
           ? COMMODITY_COPY.hint
           : tab === "expand"
             ? LAND_COPY.subtitle
-            : MARKET_COPY.hint}
+            : tab === "retail"
+              ? RETAIL_COPY.hint
+              : MARKET_COPY.hint}
       </p>
 
       <p
@@ -245,6 +270,18 @@ export const MarketPanel = forwardRef(function MarketPanel(
             {LAND_COPY.tab}
           </button>
         ) : null}
+        {retailTabVisible ? (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "retail"}
+            className={tab === "retail" ? "active" : ""}
+            onClick={() => setTab("retail")}
+            data-testid="market-tab-retail"
+          >
+            {RETAIL_COPY.tab}
+          </button>
+        ) : null}
       </div>
 
       {tab === "expand" && landPurchaseUi ? (
@@ -253,6 +290,36 @@ export const MarketPanel = forwardRef(function MarketPanel(
           pending={expandPending}
           onPurchase={() => onPurchaseField?.()}
         />
+      ) : tab === "retail" ? (
+        <div className="market-table retail-table" role="tabpanel" data-testid="market-retail-panel">
+          {!retail ? (
+            <p className="market-loading">{RETAIL_COPY.loading}</p>
+          ) : (
+            <>
+              <p className="commodity-panel-subtitle">{RETAIL_COPY.subtitle}</p>
+              <p className="banner-muted retail-stock-banner" data-testid="retail-bread-stock">
+                {RETAIL_COPY.stockBanner(retail.breadQty)}
+              </p>
+              {retail.breadQty <= 0 ? (
+                <p className="market-empty" data-testid="retail-empty-stock">{RETAIL_COPY.emptyStock}</p>
+              ) : null}
+              {retail.offers.length === 0 ? (
+                <p className="market-empty" data-testid="retail-empty-offers">{RETAIL_COPY.emptyOffers}</p>
+              ) : (
+                retail.offers.map((offer) => (
+                  <RetailOfferCard
+                    key={offer.offerId}
+                    offer={offer}
+                    breadQty={retail.breadQty}
+                    pending={pendingKeys.has(retailPendingKey(offer.offerId))}
+                    onAccept={() => onRetailAccept?.(offer.offerId)}
+                  />
+                ))
+              )}
+              <p className="commodity-disclaimer banner-muted">{RETAIL_COPY.haulNote}</p>
+            </>
+          )}
+        </div>
       ) : tab === "commodities" ? (
         <div className="market-table commodity-table" role="tabpanel" data-testid="market-commodities-panel">
           {!commodities ? (

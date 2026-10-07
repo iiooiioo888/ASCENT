@@ -9,7 +9,26 @@ import { OPS_DEPTH_COPY } from "../ops-depth-copy";
 import type { OpsCostsSnapshot } from "../types";
 import type { CommoditiesSnapshot } from "../commodities";
 import { COMMODITY_COPY } from "../commodityCopy";
-import { MarketPanel } from "./MarketPanel";
+import type { RetailSnapshot } from "../retail";
+import { RETAIL_COPY } from "../retailCopy";
+import { MarketPanel, retailPendingKey } from "./MarketPanel";
+
+function makeRetail(overrides?: Partial<RetailSnapshot>): RetailSnapshot {
+  return {
+    breadQty: 2,
+    slotCount: 3,
+    offers: [
+      {
+        offerId: "offer-1",
+        skuId: "item_bread",
+        qty: 2,
+        bidGold: 9,
+        buyerLabel: "路過村民",
+      },
+    ],
+    ...overrides,
+  };
+}
 
 function makeCommodities(overrides?: Partial<CommoditiesSnapshot>): CommoditiesSnapshot {
   return {
@@ -401,5 +420,109 @@ describe("MarketPanel", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(MARKET_COPY.genericError);
+  });
+
+  it("hides retail tab when not visible", () => {
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        retail={makeRetail()}
+        retailTabVisible={false}
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByTestId("market-tab-retail")).not.toBeInTheDocument();
+  });
+
+  it("shows retail offers and disables accept when bread is insufficient", async () => {
+    const user = userEvent.setup();
+    const onAccept = vi.fn();
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        retail={makeRetail({ breadQty: 1 })}
+        retailTabVisible
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+        onRetailAccept={onAccept}
+      />,
+    );
+
+    await user.click(screen.getByTestId("market-tab-retail"));
+    expect(screen.getByTestId("market-retail-panel")).toBeInTheDocument();
+    const card = screen.getByTestId("retail-offer-offer-1");
+    expect(within(card).getByTestId("retail-offer-preview")).toHaveTextContent(
+      RETAIL_COPY.preview(18),
+    );
+    const acceptBtn = within(card).getByTestId("retail-offer-accept");
+    expect(acceptBtn).toBeDisabled();
+    expect(within(card).getByTestId("retail-offer-need-stock")).toHaveTextContent(
+      RETAIL_COPY.needStock,
+    );
+  });
+
+  it("calls onRetailAccept when stock is sufficient", async () => {
+    const user = userEvent.setup();
+    const onAccept = vi.fn();
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        retail={makeRetail({ breadQty: 5 })}
+        retailTabVisible
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+        onRetailAccept={onAccept}
+      />,
+    );
+
+    await user.click(screen.getByTestId("market-tab-retail"));
+    await user.click(screen.getByTestId("retail-offer-accept"));
+    expect(onAccept).toHaveBeenCalledWith("offer-1");
+  });
+
+  it("shows retail empty states", async () => {
+    const user = userEvent.setup();
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        retail={makeRetail({ breadQty: 0, offers: [] })}
+        retailTabVisible
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByTestId("market-tab-retail"));
+    expect(screen.getByTestId("retail-empty-stock")).toHaveTextContent(RETAIL_COPY.emptyStock);
+    expect(screen.getByTestId("retail-empty-offers")).toHaveTextContent(RETAIL_COPY.emptyOffers);
+  });
+
+  it("disables retail accept while pending", async () => {
+    const user = userEvent.setup();
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set([retailPendingKey("offer-1")])}
+        retail={makeRetail({ breadQty: 5 })}
+        retailTabVisible
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+        onRetailAccept={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByTestId("market-tab-retail"));
+    expect(screen.getByTestId("retail-offer-accept")).toBeDisabled();
   });
 });

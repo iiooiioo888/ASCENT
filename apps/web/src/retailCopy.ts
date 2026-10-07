@@ -1,0 +1,20 @@
+/** 零售 tab 文案（ux-spec-retail §6.2）。 */
+export const RETAIL_COPY = {
+  tab: "零售",
+  title: "莊頭零售",
+  subtitle: "接客單賣麵包 · 本地客售",
+  hint: "零售＝賣畀到訪客；批發固定價請用「賣出」tab。",
+  haulNote: "本地零售免運。",
+  loading: "載入客單…",
+  offerQty: (n: number) => `要 ${n} 個`,
+  bid: (n: number) => `出價 🪙${n}／個`,
+  preview: (n: number) => `預估實收 🪙${n}`,
+  accept: "接單",
+  needStock: "麵包不足",
+  expired: "客單已失效",
+  emptyOffers: "客流稀少，稍後再來。",
+  emptyStock: "尚未有麵包。做出麵包再開舖接客。",
+  success: (qty: number, gold: number) => `已售出麵包×${qty}，＋🪙${gold}`,
+  genericError: "零售操作失敗，請稍後再試。",
+  stockBanner: (qty: number) => `麵包庫存 ${qty}`,
+} as const;

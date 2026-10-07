@@ -10,6 +10,7 @@ import { Inventory } from "./components/Inventory";
 import {
   commodityPendingKey,
   marketPendingKey,
+  retailPendingKey,
   type MarketTabFocusRequest,
 } from "./components/MarketPanel";
 import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
@@ -21,7 +22,14 @@ import { mapBuildingActionError } from "./building-action-error";
 import type { MarketActionErrorView } from "./market-action-error";
 import { mapMarketActionError } from "./market-action-error";
 import { mapCommodityActionError } from "./commodity-action-error";
+import { mapRetailActionError } from "./retail-action-error";
 import { COMMODITY_COPY } from "./commodityCopy";
+import { RETAIL_COPY } from "./retailCopy";
+import {
+  fetchRetailOptional,
+  postRetailAccept,
+  type RetailSnapshot,
+} from "./retail";
 import {
   enabledCommodityListings,
   fetchCommoditiesOptional,
@@ -46,7 +54,11 @@ import {
 } from "./market-feedback";
 import { sortBuildingDefs } from "./buildingSort";
 import { nextPollFailureCount, shouldShowConnectionLost } from "./connectionPoll";
-import { MARKET_POLL_INTERVAL_MS, STATE_POLL_INTERVAL_MS } from "./gamePoll";
+import {
+  MARKET_POLL_INTERVAL_MS,
+  RETAIL_POLL_INTERVAL_MS,
+  STATE_POLL_INTERVAL_MS,
+} from "./gamePoll";
 import { normalizeGameState } from "./gameStateNormalize";
 import {
   buildingScrollAnchorId,
@@ -122,6 +134,9 @@ export default function App() {
   const [marketOpenBuildingId, setMarketOpenBuildingId] = useState<string | null>(null);
   const [commoditiesSnapshot, setCommoditiesSnapshot] = useState<CommoditiesSnapshot | null>(null);
   const [commoditiesTabVisible, setCommoditiesTabVisible] = useState(false);
+  const [retailSnapshot, setRetailSnapshot] = useState<RetailSnapshot | null>(null);
+  const [retailTabVisible, setRetailTabVisible] = useState(false);
+  const [retailTabActive, setRetailTabActive] = useState(false);
   const [hireError, setHireError] = useState<BuildingActionErrorView | null>(null);
   const HIRE_ACTION_KEY = "workforce:hire";
 
@@ -155,16 +170,27 @@ export default function App() {
     return snapshot;
   }, []);
 
+  const refreshRetail = useCallback(async () => {
+    const snapshot = await fetchRetailOptional();
+    setRetailSnapshot(snapshot);
+    setRetailTabVisible(snapshot !== null);
+    return snapshot;
+  }, []);
+
   const refreshMarketData = useCallback(async () => {
     const [market, commodities] = await Promise.all([
       fetchMarket().catch(() => null),
       fetchCommoditiesOptional().catch(() => null),
     ]);
     if (market) setMarketSnapshot(market);
-    setCommoditiesSnapshot(commodities);
+    if (commodities != null && Array.isArray(commodities.listings)) {
+      setCommoditiesSnapshot(commodities);
+    } else {
+      setCommoditiesSnapshot(null);
+    }
     setCommoditiesTabVisible((prev) => {
       const next =
-        commodities !== null &&
+        commodities != null &&
         Array.isArray(commodities.listings) &&
         enabledCommodityListings(commodities).length > 0;
       return prev === next ? prev : next;
@@ -265,9 +291,22 @@ export default function App() {
   }, [gamePollingActive, refreshMarketData]);
 
   useEffect(() => {
-    if (!marketOpenBuildingId) return;
+    if (!marketOpenBuildingId) {
+      setRetailTabActive(false);
+      return;
+    }
     void refreshMarketData();
-  }, [marketOpenBuildingId, refreshMarketData]);
+    void refreshRetail();
+  }, [marketOpenBuildingId, refreshMarketData, refreshRetail]);
+
+  useEffect(() => {
+    if (!marketOpenBuildingId || !retailTabActive) return undefined;
+    void refreshRetail();
+    const t = setInterval(() => {
+      void refreshRetail();
+    }, RETAIL_POLL_INTERVAL_MS);
+    return () => clearInterval(t);
+  }, [marketOpenBuildingId, retailTabActive, refreshRetail]);
 
   useEffect(() => {
     return () => {
@@ -606,6 +645,36 @@ export default function App() {
     }
   }, [refresh, refreshMarket, setPending, showMarketSuccess]);
 
+  const retailAccept = useCallback(
+    async (offerId: string) => {
+      const actionKey = retailPendingKey(offerId);
+      if (pendingKeysRef.current.has(actionKey)) return;
+
+      setPending(actionKey, true);
+      setMarketPanelError(null);
+
+      try {
+        const result = await postRetailAccept(offerId);
+        const goldAmount = result.goldDelta;
+        showMarketSuccess(RETAIL_COPY.success(result.quantity, goldAmount), "item_bread");
+        await refresh();
+        await refreshMarket();
+        await refreshRetail();
+      } catch (e) {
+        const mapped = mapRetailActionError(e);
+        if (mapped.shouldRefresh) {
+          await refresh().catch(() => undefined);
+          await refreshMarket().catch(() => undefined);
+          await refreshRetail().catch(() => undefined);
+        }
+        setMarketPanelError({ message: mapped.message, hint: mapped.hint });
+      } finally {
+        setPending(actionKey, false);
+      }
+    },
+    [refresh, refreshMarket, refreshRetail, setPending, showMarketSuccess],
+  );
+
   const retryInitialLoad = useCallback(() => {
     if (loadRetrying) return;
     setLoadRetrying(true);
@@ -732,12 +801,19 @@ export default function App() {
                 opsCosts={state.opsCosts}
                 commodities={commoditiesSnapshot}
                 commoditiesTabVisible={commoditiesTabVisible}
+                retail={retailSnapshot}
+                retailTabVisible={retailTabVisible}
+                onRetailTabOpen={() => {
+                  refreshRetail().catch(() => undefined);
+                }}
+                onRetailTabActiveChange={setRetailTabActive}
                 onSell={(itemId, quantity) => marketTrade("sell", itemId, quantity)}
                 onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
                 onCommodityBuy={(commodityId, quantity) => commodityTrade("buy", commodityId, quantity)}
                 onCommoditySell={(commodityId, quantity) => commodityTrade("sell", commodityId, quantity)}
                 landPurchaseUi={landPurchaseUi}
                 onPurchaseField={() => void purchaseField()}
+                onRetailAccept={retailAccept}
               />
             );
           }
