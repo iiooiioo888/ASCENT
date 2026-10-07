@@ -4,7 +4,7 @@ export const OPS_DEPTH_COPY = {
   hire: "僱工",
   hirePreview: (cost: number) => `支付 🪙${cost}，工位＋1`,
   needHands: "人手不足：請僱工或等待完工",
-  workforceCap: "工位已滿",
+  workforceCap: "已達僱工上限",
   needGold: "金幣不足",
   wage: "工資",
   haul: "運費",

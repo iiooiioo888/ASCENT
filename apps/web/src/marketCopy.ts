@@ -14,7 +14,7 @@ export const MARKET_COPY = {
   buyTab: "買入",
   sellCta: "賣出",
   buyCta: "買入",
-  emptySell: "尚無可賣貨物。先去田裡與爐灶生產吧。",
+  emptySell: "先做出麵包或飼料再來換補給。",
   needGold: "金幣不足",
   needStock: "無存貨",
   hint: "麵包與飼料可在此換金幣，再買種子與水。",
