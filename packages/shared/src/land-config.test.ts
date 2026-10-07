@@ -3,8 +3,11 @@ import {
   FIELD_CAP,
   FIELD_BUILDING_DEF_ID,
   PLAYER_BUILDING_SLOT_CAP,
+  SILO_BUILDING_DEF_ID,
   allowsAnotherInstanceOfDef,
+  buildingCountsTowardSlotCap,
   canPurchaseField,
+  countBuildingsOccupyingSlots,
   countPlayerFields,
   fieldPurchasePriceGold,
 } from "./land-config";
@@ -24,17 +27,32 @@ describe("land-config", () => {
     expect(countPlayerFields(buildings)).toBe(2);
   });
 
+  it("倉不佔槽", () => {
+    expect(buildingCountsTowardSlotCap(SILO_BUILDING_DEF_ID)).toBe(false);
+    const buildings = [
+      { buildingDefId: FIELD_BUILDING_DEF_ID },
+      { buildingDefId: SILO_BUILDING_DEF_ID },
+      { buildingDefId: "bdef_mill" },
+    ];
+    expect(countBuildingsOccupyingSlots(buildings)).toBe(2);
+  });
+
   it("canPurchaseField 於開局狀態可買", () => {
-    const r = canPurchaseField({ fieldCount: 1, buildingCount: 5 });
+    const r = canPurchaseField({ fieldCount: 1, slottedBuildingCount: 5 });
     expect(r).toEqual({ ok: true, priceGold: 10 });
   });
 
+  it("有倉仍可按佔槽數擴田", () => {
+    const r = canPurchaseField({ fieldCount: 1, slottedBuildingCount: 5 });
+    expect(r.ok).toBe(true);
+  });
+
   it("田達上限拒買", () => {
-    expect(canPurchaseField({ fieldCount: FIELD_CAP, buildingCount: 5 }).ok).toBe(false);
+    expect(canPurchaseField({ fieldCount: FIELD_CAP, slottedBuildingCount: 5 }).ok).toBe(false);
   });
 
   it("建築槽滿拒買", () => {
-    const r = canPurchaseField({ fieldCount: 1, buildingCount: PLAYER_BUILDING_SLOT_CAP });
+    const r = canPurchaseField({ fieldCount: 1, slottedBuildingCount: PLAYER_BUILDING_SLOT_CAP });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toBe("BUILDING_SLOTS_FULL");
   });

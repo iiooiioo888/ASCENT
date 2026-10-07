@@ -7,7 +7,9 @@ import {
   LOCAL_PLAYER_ID,
   PLAYER_BUILDING_SLOT_CAP,
   allowsAnotherInstanceOfDef,
+  SILO_BUILDING_DEF_ID,
   canPurchaseField,
+  countBuildingsOccupyingSlots,
   countPlayerFields,
   iosToRecord,
   isFieldGrowRuleId,
@@ -125,7 +127,7 @@ export class InventoryService {
     const environment = this.sim.environmentSnapshot(weatherState, currentGame);
     const buildingsOut = buildings.map((b) => withBuildingEnvironmentFields(b, currentGame));
     const fieldCount = countPlayerFields(buildings);
-    const buildingCount = buildings.length;
+    const buildingCount = countBuildingsOccupyingSlots(buildings);
     return {
       time,
       inventory,
@@ -185,6 +187,9 @@ export class InventoryService {
     if (buildingDefId === FIELD_BUILDING_DEF_ID) {
       throw new BadRequestException(LAND_ERROR_COPY.FIELD_USE_PURCHASE_API);
     }
+    if (buildingDefId === SILO_BUILDING_DEF_ID) {
+      throw new BadRequestException(LAND_ERROR_COPY.SILO_PLACEMENT_FORBIDDEN);
+    }
     const def = await this.prisma.buildingDef.findFirst({ where: { id: buildingDefId, isActive: true } });
     if (!def) throw new BadRequestException("未知建築");
     const now = new Date();
@@ -228,8 +233,8 @@ export class InventoryService {
           select: { buildingDefId: true },
         });
         const fieldCount = countPlayerFields(buildings);
-        const buildingCount = buildings.length;
-        const gate = canPurchaseField({ fieldCount, buildingCount });
+        const slottedBuildingCount = countBuildingsOccupyingSlots(buildings);
+        const gate = canPurchaseField({ fieldCount, slottedBuildingCount });
         if (!gate.ok) {
           throw new BadRequestException(LAND_ERROR_COPY[gate.reason]);
         }
@@ -252,7 +257,7 @@ export class InventoryService {
     buildingDefId: string,
     existing: { buildingDefId: string }[],
   ): void {
-    if (existing.length >= PLAYER_BUILDING_SLOT_CAP) {
+    if (countBuildingsOccupyingSlots(existing) >= PLAYER_BUILDING_SLOT_CAP) {
       throw new BadRequestException(LAND_ERROR_COPY.BUILDING_SLOTS_FULL);
     }
     const sameDef = existing.filter((b) => b.buildingDefId === buildingDefId).length;

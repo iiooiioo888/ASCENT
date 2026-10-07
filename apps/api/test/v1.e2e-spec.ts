@@ -233,12 +233,12 @@ describe("API v1（整合）", () => {
   });
 
   describe("建築寫入與錯誤路徑", () => {
-    it("POST /buildings 放置建築", async () => {
+    it("POST /buildings 拒絕放置倉（P-D3 隱藏）", async () => {
       const res = await request(app.getHttpServer())
         .post("/api/v1/buildings")
         .send({ buildingDefId: "bdef_silo" })
-        .expect(201);
-      expect(res.body.buildingDefId).toBe("bdef_silo");
+        .expect(400);
+      expect(res.body.message).toContain("倉庫已隱藏");
     });
 
     it("POST start 資源不足 → 400", async () => {
@@ -260,12 +260,26 @@ describe("API v1（整合）", () => {
     });
 
     it("POST start 於倉庫（allowed_rule_ids 為空）→ 400", async () => {
-      const placed = await request(app.getHttpServer())
-        .post("/api/v1/buildings")
-        .send({ buildingDefId: "bdef_silo" })
-        .expect(201);
+      const now = new Date();
+      const siloId = "pb_player_local_bdef_silo_e2e";
+      await prisma.playerBuilding.create({
+        data: {
+          id: siloId,
+          playerId: "player_local",
+          buildingDefId: "bdef_silo",
+          lastSettledAt: now,
+          lastSettledGame: 0,
+          lastUpdate: now,
+          lastUpdateGame: 0,
+          queue: [],
+          inputs: {},
+          outputs: {},
+          bufferedOutputs: {},
+          status: "idle",
+        },
+      });
       await request(app.getHttpServer())
-        .post(`/api/v1/buildings/${placed.body.id}/start`)
+        .post(`/api/v1/buildings/${siloId}/start`)
         .send({ methodId: growMethodId })
         .expect(400);
     });
