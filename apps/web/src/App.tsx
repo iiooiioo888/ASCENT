@@ -1,11 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import { BuildingCard } from "./components/BuildingCard";
+import { DepletionNotice } from "./components/DepletionNotice";
 import { Inventory } from "./components/Inventory";
 import type { BuildingActionErrorView } from "./building-action-error";
 import { mapBuildingActionError } from "./building-action-error";
+import { isResourceDepleted } from "./depletion";
 import { formatUserError, fmtGame } from "./format";
 import { BUILDING_ICON } from "./meta";
+import {
+  BRAND_DISPLAY_NAME,
+  BRAND_SUBTITLE,
+  FEATURE_SHOW_DEPLETION_EMPTY_STATE,
+  OFFLINE_PROGRESS_BANNER,
+  OFFLINE_PROGRESS_HUD_CHIP,
+  SLICE_FLOW_BANNER,
+  SLICE_GOAL_BANNER,
+} from "./productCopy";
 import type { GameState, Method } from "./types";
 
 export default function App() {
@@ -39,6 +50,11 @@ export default function App() {
     }
     return m;
   }, [state]);
+
+  const resourceDepleted = useMemo(() => {
+    if (!state) return false;
+    return isResourceDepleted(state.buildings, state.inventory, methodsByRule);
+  }, [state, methodsByRule]);
 
   const setPending = useCallback((key: string, on: boolean) => {
     const next = new Set(pendingKeysRef.current);
@@ -87,7 +103,7 @@ export default function App() {
     return (
       <div className="loading">
         <div>
-          <h1>崛起</h1>
+          <h1>{BRAND_DISPLAY_NAME}</h1>
           <p>{pollError || "農莊正在甦醒…"}</p>
         </div>
       </div>
@@ -104,18 +120,21 @@ export default function App() {
             🌾
           </div>
           <div>
-            <h1>崛起</h1>
-            <small>農業切片 · 莊園</small>
+            <h1>{BRAND_DISPLAY_NAME}</h1>
+            <small>{BRAND_SUBTITLE}</small>
           </div>
         </div>
         <div className="clock">
           <span className="chip">⏳ {fmtGame(state.time.displayGameTime)}</span>
           <span className="chip">⚖ 1 : {state.time.timeScale}</span>
-          <span className="chip">🌙 離線 8 時</span>
+          <span className="chip">{OFFLINE_PROGRESS_HUD_CHIP}</span>
         </div>
       </header>
 
-      <p className="banner">田種麥 → 磨坊磨粉／拌飼 → 爐和麵烤麵包。工時以遊戲秒計，現實約為六十分之一。</p>
+      <p className="banner banner-goal">{SLICE_GOAL_BANNER}</p>
+      <p className="banner">{SLICE_FLOW_BANNER}</p>
+      <p className="banner banner-muted">{OFFLINE_PROGRESS_BANNER}</p>
+      <DepletionNotice visible={FEATURE_SHOW_DEPLETION_EMPTY_STATE && resourceDepleted} />
       {pollError ? <p className="banner error">{pollError}</p> : null}
 
       <Inventory inventory={state.inventory} />

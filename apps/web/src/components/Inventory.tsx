@@ -1,5 +1,6 @@
 import { formatQuantity } from "../format";
 import { ITEM_META } from "../meta";
+import { itemPurposeHint } from "../productCopy";
 import type { InvRow } from "../types";
 
 type Props = {
@@ -14,11 +15,13 @@ export function Inventory({ inventory }: Props) {
         {inventory.map((row) => {
           const qty = Number(row.quantity);
           const meta = ITEM_META[row.itemId] ?? { name: row.item.code, icon: "📦" };
+          const purpose = itemPurposeHint(row.itemId);
           return (
             <div key={row.itemId} className={qty <= 0 ? "item empty" : "item"}>
               <div className="icon">{meta.icon}</div>
               <div className="name">{meta.name}</div>
               <div className="qty">{formatQuantity(qty)}</div>
+              {purpose ? <div className="item-purpose">{purpose}</div> : null}
             </div>
           );
         })}
