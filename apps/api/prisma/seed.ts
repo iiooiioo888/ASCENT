@@ -1,7 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import {
   DEFAULT_MARKET_PRICES,
+  EQUITY_CONFIG,
   LOCAL_PLAYER_ID,
+  seedPriceHistoryAtBase,
   MAX_OFFLINE_GAME_SEC,
   MAX_OFFLINE_REAL_SEC,
   TIME_SCALE,
@@ -13,7 +15,6 @@ import {
   itemTypes,
   items,
   rules,
-  seedPlacedBuildingDefIds,
   startingInventory,
   validateCatalog,
 } from "@ascent/shared";
@@ -29,6 +30,8 @@ async function main() {
 
   const now = new Date();
 
+  await prisma.playerEquityHolding.deleteMany();
+  await prisma.equityTickerState.deleteMany();
   await prisma.playerBuilding.deleteMany();
   await prisma.playerInventory.deleteMany();
   await prisma.player.deleteMany();
@@ -161,6 +164,19 @@ async function main() {
         playerId: LOCAL_PLAYER_ID,
         itemId,
         quantity: qty,
+      },
+    });
+  }
+
+  const seedNow = Date.now();
+  for (const listing of EQUITY_CONFIG.listings) {
+    const history = seedPriceHistoryAtBase(listing.basePrice, seedNow);
+    await prisma.equityTickerState.create({
+      data: {
+        equityId: listing.id,
+        netBuyVolume: 0,
+        currentPrice: listing.basePrice,
+        priceHistory: history,
       },
     });
   }
