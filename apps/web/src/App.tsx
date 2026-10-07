@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import { BuildingCard } from "./components/BuildingCard";
 import { IndustryChain } from "./components/IndustryChain";
 import { SiloBuildingCard } from "./components/SiloBuildingCard";
+import { TradingPostBuildingCard } from "./components/TradingPostBuildingCard";
 import { ConnectionStatusBar } from "./components/ConnectionStatusBar";
 import { DepletionNotice } from "./components/DepletionNotice";
 import { Inventory } from "./components/Inventory";
@@ -26,7 +27,8 @@ import {
   buildingScrollAnchorId,
   findFieldBuilding,
   pickSaveSeedMethodId,
-  isWellPlacementUiHidden,
+  isPreplacedBuildingPlotHidden,
+  resolveTradingPostScrollAnchorId,
   resolveWellScrollAnchorId,
   SCROLL_HIGHLIGHT_MS,
 } from "./depletion-scroll";
@@ -46,8 +48,13 @@ import {
   SLICE_GOAL_BANNER,
   timeScaleHudChip,
 } from "./productCopy";
-import { FIELD_BUILDING_DEF_ID, WELL_BUILDING_DEF_ID } from "./resource-loop-copy";
+import {
+  FIELD_BUILDING_DEF_ID,
+  TRADING_POST_BUILDING_DEF_ID,
+  WELL_BUILDING_DEF_ID,
+} from "./resource-loop-copy";
 import { isSiloBuilding, isSiloBuildingDef } from "./silo";
+import { isTradingPostBuilding } from "./trading-post";
 import {
   collectHighlightItemIds,
   formatCollectSuccess,
@@ -87,6 +94,7 @@ export default function App() {
   const [marketSuccessToast, setMarketSuccessToast] = useState<string | null>(null);
   const marketToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [marketTabFocusRequest, setMarketTabFocusRequest] = useState<MarketTabFocusRequest | undefined>();
+  const [marketPanelOpen, setMarketPanelOpen] = useState(false);
 
   stateRef.current = state;
 
@@ -260,12 +268,17 @@ export default function App() {
 
   const goToMarket = useCallback(
     (opts?: { preferBuyTab?: boolean }) => {
+      if (!state) return;
+      setMarketPanelOpen(true);
       if (opts?.preferBuyTab) {
         setMarketTabFocusRequest({ tab: "buy", seq: Date.now() });
       }
-      scrollToAnchor(MARKET_PANEL_ANCHOR_ID);
+      flashHighlight(TRADING_POST_BUILDING_DEF_ID);
+      const buildingAnchor = resolveTradingPostScrollAnchorId(state.buildings);
+      if (buildingAnchor) scrollToAnchor(buildingAnchor);
+      requestAnimationFrame(() => scrollToAnchor(MARKET_PANEL_ANCHOR_ID));
     },
-    [scrollToAnchor],
+    [flashHighlight, scrollToAnchor, state],
   );
 
   const showMarketSuccess = useCallback((message: string, tradedItemId: string) => {
@@ -449,7 +462,7 @@ export default function App() {
   }
 
   const unplaced = state.buildingDefs.filter((d) => {
-    if (isWellPlacementUiHidden(d.id)) return false;
+    if (isPreplacedBuildingPlotHidden(d.id)) return false;
     if (!FEATURE_SHOW_SILO_PLACEMENT && isSiloBuildingDef(d.id)) return false;
     return !state.buildings.some((b) => b.buildingDefId === d.id);
   });
@@ -495,16 +508,6 @@ export default function App() {
 
       <Inventory inventory={sortedInventory} highlightItemIds={highlightItems} />
 
-      <MarketPanel
-        market={marketSnapshot}
-        panelError={marketPanelError}
-        pendingKeys={pendingKeys}
-        successToast={marketSuccessToast}
-        tabFocusRequest={marketTabFocusRequest}
-        onSell={(itemId, quantity) => marketTrade("sell", itemId, quantity)}
-        onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
-      />
-
       <IndustryChain buildings={state.buildings} />
 
       <section className="settlement">
@@ -523,6 +526,31 @@ export default function App() {
                 actionError={actionErrors[actionKey]}
                 pending={pendingKeys.has(actionKey)}
               />
+            );
+          }
+
+          if (isTradingPostBuilding(b)) {
+            return (
+              <Fragment key={b.id}>
+                <TradingPostBuildingCard
+                  building={b}
+                  scrollAnchorId={buildingScrollAnchorId(b.id)}
+                  highlight={highlightDefId === b.buildingDefId}
+                  marketOpen={marketPanelOpen}
+                  onToggleMarket={() => setMarketPanelOpen((open) => !open)}
+                />
+                {marketPanelOpen ? (
+                  <MarketPanel
+                    market={marketSnapshot}
+                    panelError={marketPanelError}
+                    pendingKeys={pendingKeys}
+                    successToast={marketSuccessToast}
+                    tabFocusRequest={marketTabFocusRequest}
+                    onSell={(itemId, quantity) => marketTrade("sell", itemId, quantity)}
+                    onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
+                  />
+                ) : null}
+              </Fragment>
             );
           }
 

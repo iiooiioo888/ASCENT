@@ -2,11 +2,18 @@ import { describe, expect, it } from "vitest";
 import {
   buildingScrollAnchorId,
   pickSaveSeedMethodId,
+  isPreplacedBuildingPlotHidden,
   isWellPlacementUiHidden,
+  resolveTradingPostScrollAnchorId,
   resolveWellScrollAnchorId,
   unplacedPlotAnchorId,
 } from "./depletion-scroll";
-import { FIELD_BUILDING_DEF_ID, METHOD_SAVE_SEED_ID, WELL_BUILDING_DEF_ID } from "./resource-loop-copy";
+import {
+  FIELD_BUILDING_DEF_ID,
+  METHOD_SAVE_SEED_ID,
+  TRADING_POST_BUILDING_DEF_ID,
+  WELL_BUILDING_DEF_ID,
+} from "./resource-loop-copy";
 import type { Building, Method } from "./types";
 
 const building = (partial: Partial<Building> & Pick<Building, "id" | "buildingDefId">): Building => ({
@@ -37,9 +44,19 @@ describe("depletion scroll anchors", () => {
     expect(resolveWellScrollAnchorId(buildings)).toBeNull();
   });
 
-  it("hides unplaced well placement card in App filter", () => {
+  it("hides unplaced preplaced building plots in App filter (well + trading post)", () => {
+    expect(isPreplacedBuildingPlotHidden(WELL_BUILDING_DEF_ID)).toBe(true);
+    expect(isPreplacedBuildingPlotHidden(TRADING_POST_BUILDING_DEF_ID)).toBe(true);
+    expect(isPreplacedBuildingPlotHidden(FIELD_BUILDING_DEF_ID)).toBe(false);
     expect(isWellPlacementUiHidden(WELL_BUILDING_DEF_ID)).toBe(true);
-    expect(isWellPlacementUiHidden(FIELD_BUILDING_DEF_ID)).toBe(false);
+  });
+
+  it("resolves trading post scroll to placed building only (v1.2)", () => {
+    const buildings = [
+      building({ id: "b_shop", buildingDefId: TRADING_POST_BUILDING_DEF_ID }),
+    ];
+    expect(resolveTradingPostScrollAnchorId(buildings)).toBe("building-b_shop");
+    expect(resolveTradingPostScrollAnchorId([])).toBeNull();
   });
 
   it("picks save-seed method only when listed on field options", () => {

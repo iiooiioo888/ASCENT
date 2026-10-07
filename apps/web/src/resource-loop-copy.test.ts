@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   FIELD_BUILDING_DEF_ID,
   METHOD_SAVE_SEED_ID,
+  TRADING_POST_BUILDING_DEF_ID,
   WELL_BUILDING_DEF_ID,
 } from "./resource-loop-copy";
 

@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MARKET_COPY } from "./marketCopy";
+import { TRADING_POST_BUILDING_DEF_ID } from "./resource-loop-copy";
 import { defaultMarketSnapshotForTests, withMarketApiRoute } from "./test/marketFixture";
 import type { GameState } from "./types";
 
@@ -31,6 +32,15 @@ function makeState(overrides?: Partial<GameState>): GameState {
         status: "idle",
         buildingDefId: "bdef_field",
         buildingDef: { name: "田", allowedRuleIds: ["rule_grow_wheat"] },
+        methodId: null,
+        queue: [],
+        bufferedOutputs: {},
+      },
+      {
+        id: "pb_trading_post",
+        status: "idle",
+        buildingDefId: TRADING_POST_BUILDING_DEF_ID,
+        buildingDef: { name: "莊外商行", allowedRuleIds: [] },
         methodId: null,
         queue: [],
         bufferedOutputs: {},
@@ -75,6 +85,8 @@ describe("App MK-FE-2 market feedback", () => {
     render(<App />);
 
     expect(await screen.findByTestId("hud-gold-chip")).toHaveTextContent("🪙 10");
+
+    await user.click(await screen.findByRole("button", { name: MARKET_COPY.tradeOpenCta }));
 
     const breadRow = await screen.findByTestId("market-row-sell-item_bread");
     await user.click(within(breadRow).getByRole("button", { name: MARKET_COPY.sellCta }));
