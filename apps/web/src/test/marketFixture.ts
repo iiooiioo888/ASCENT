@@ -23,7 +23,11 @@ export function withMarketApiRoute(
     if (path === "/api/v1/market") {
       return getMarket();
     }
-    if (path === "/api/v1/market/commodities" || path === "/api/v1/market/retail") {
+    if (
+      path === "/api/v1/market/commodities" ||
+      path === "/api/v1/market/retail" ||
+      path === "/api/v1/market/retail/shelf"
+    ) {
       throw new ApiError("not found", 404);
     }
     return handler(path, init);

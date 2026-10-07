@@ -11,7 +11,24 @@ import type { CommoditiesSnapshot } from "../commodities";
 import { COMMODITY_COPY } from "../commodityCopy";
 import type { RetailSnapshot } from "../retail";
 import { RETAIL_COPY } from "../retailCopy";
-import { MarketPanel, retailPendingKey } from "./MarketPanel";
+import type { RetailShelfSnapshot } from "../retail-shelf";
+import { RETAIL_SHELF_COPY } from "../retailShelfCopy";
+import {
+  MarketPanel,
+  RETAIL_SHELF_PENDING_ASK_KEY,
+  RETAIL_SHELF_PENDING_ENABLED_KEY,
+  retailPendingKey,
+} from "./MarketPanel";
+
+function makeShelf(overrides?: Partial<RetailShelfSnapshot>): RetailShelfSnapshot {
+  return {
+    enabled: false,
+    ask: 8,
+    todayRevenueGold: 3,
+    skuId: "item_bread",
+    ...overrides,
+  };
+}
 
 function makeRetail(overrides?: Partial<RetailSnapshot>): RetailSnapshot {
   return {
@@ -505,6 +522,103 @@ describe("MarketPanel", () => {
     await user.click(screen.getByTestId("market-tab-retail"));
     expect(screen.getByTestId("retail-empty-stock")).toHaveTextContent(RETAIL_COPY.emptyStock);
     expect(screen.getByTestId("retail-empty-offers")).toHaveTextContent(RETAIL_COPY.emptyOffers);
+  });
+
+  it("hides shelf tab when not visible", () => {
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        retailShelf={makeShelf()}
+        retailShelfTabVisible={false}
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByTestId("market-tab-shelf")).not.toBeInTheDocument();
+  });
+
+  it("shows shelf tab with toggle, ask, and revenue", async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+    const onSaveAsk = vi.fn();
+
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        retailShelf={makeShelf({ enabled: true, ask: 10, todayRevenueGold: 15 })}
+        retailShelfTabVisible
+        onRetailShelfToggleEnabled={onToggle}
+        onRetailShelfSaveAsk={onSaveAsk}
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByTestId("market-tab-shelf"));
+    expect(screen.getByTestId("market-shelf-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("retail-shelf-today-revenue")).toHaveTextContent(
+      RETAIL_SHELF_COPY.todayRevenue(15),
+    );
+    expect(screen.getByTestId("retail-shelf-ask-value")).toHaveTextContent("10");
+
+    await user.click(screen.getByTestId("retail-shelf-enabled"));
+    expect(onToggle).toHaveBeenCalledWith(false);
+
+    await user.click(screen.getByRole("button", { name: "提高標價" }));
+    await user.click(screen.getByTestId("retail-shelf-ask-apply"));
+    expect(onSaveAsk).toHaveBeenCalledWith(11);
+  });
+
+  it("disables shelf controls while pending", async () => {
+    const user = userEvent.setup();
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set([RETAIL_SHELF_PENDING_ENABLED_KEY, RETAIL_SHELF_PENDING_ASK_KEY])}
+        retailShelf={makeShelf({ enabled: true })}
+        retailShelfTabVisible
+        retailShelfPendingEnabled
+        retailShelfPendingAsk
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByTestId("market-tab-shelf"));
+    expect(screen.getByTestId("retail-shelf-enabled")).toBeDisabled();
+    expect(screen.getByTestId("retail-shelf-ask-apply")).toBeDisabled();
+  });
+
+  it("retail customer tab still works alongside shelf tab", async () => {
+    const user = userEvent.setup();
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        retail={makeRetail({ breadQty: 5 })}
+        retailTabVisible
+        retailShelf={makeShelf()}
+        retailShelfTabVisible
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("market-tab-retail")).toBeInTheDocument();
+    expect(screen.getByTestId("market-tab-shelf")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("market-tab-retail"));
+    expect(screen.getByTestId("market-retail-panel")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("market-tab-shelf"));
+    expect(screen.getByTestId("market-shelf-panel")).toBeInTheDocument();
   });
 
   it("disables retail accept while pending", async () => {

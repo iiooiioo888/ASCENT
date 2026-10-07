@@ -11,6 +11,8 @@ import {
   commodityPendingKey,
   marketPendingKey,
   retailPendingKey,
+  RETAIL_SHELF_PENDING_ASK_KEY,
+  RETAIL_SHELF_PENDING_ENABLED_KEY,
   type MarketTabFocusRequest,
 } from "./components/MarketPanel";
 import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
@@ -23,13 +25,21 @@ import type { MarketActionErrorView } from "./market-action-error";
 import { mapMarketActionError } from "./market-action-error";
 import { mapCommodityActionError } from "./commodity-action-error";
 import { mapRetailActionError } from "./retail-action-error";
+import { mapRetailShelfActionError } from "./retail-shelf-action-error";
 import { COMMODITY_COPY } from "./commodityCopy";
 import { RETAIL_COPY } from "./retailCopy";
+import { RETAIL_SHELF_COPY } from "./retailShelfCopy";
 import {
   fetchRetailOptional,
   postRetailAccept,
   type RetailSnapshot,
 } from "./retail";
+import {
+  fetchRetailShelfOptional,
+  mergeRetailShelfFromState,
+  patchRetailShelf,
+  type RetailShelfSnapshot,
+} from "./retail-shelf";
 import {
   enabledCommodityListings,
   fetchCommoditiesOptional,
@@ -138,19 +148,29 @@ export default function App() {
   const [retailSnapshot, setRetailSnapshot] = useState<RetailSnapshot | null>(null);
   const [retailTabVisible, setRetailTabVisible] = useState(false);
   const [retailTabActive, setRetailTabActive] = useState(false);
+  const [retailShelfSnapshot, setRetailShelfSnapshot] = useState<RetailShelfSnapshot | null>(null);
+  const [retailShelfTabVisible, setRetailShelfTabVisible] = useState(false);
   const [hireError, setHireError] = useState<BuildingActionErrorView | null>(null);
   const HIRE_ACTION_KEY = "workforce:hire";
 
   stateRef.current = state;
 
+  const applyRetailShelfFromState = useCallback((game: GameState) => {
+    if (!game.retailShelf) return;
+    setRetailShelfSnapshot((prev) => mergeRetailShelfFromState(prev, game.retailShelf));
+    setRetailShelfTabVisible(true);
+  }, []);
+
   const refresh = useCallback(async () => {
     const next = await api<GameState>("/api/v1/state");
-    setState(normalizeGameState(next));
+    const normalized = normalizeGameState(next);
+    setState(normalized);
+    applyRetailShelfFromState(normalized);
     pollFailuresRef.current = 0;
     setConnectionLost(false);
     setLoadError("");
-    return next;
-  }, []);
+    return normalized;
+  }, [applyRetailShelfFromState]);
 
   const refreshMarket = useCallback(async () => {
     const snapshot = await fetchMarket();
@@ -175,6 +195,17 @@ export default function App() {
     const snapshot = await fetchRetailOptional();
     setRetailSnapshot(snapshot);
     setRetailTabVisible(snapshot !== null);
+    return snapshot;
+  }, []);
+
+  const refreshRetailShelf = useCallback(async () => {
+    const snapshot = await fetchRetailShelfOptional();
+    if (snapshot) {
+      setRetailShelfSnapshot(snapshot);
+      setRetailShelfTabVisible(true);
+    } else if (!stateRef.current?.retailShelf) {
+      setRetailShelfTabVisible(false);
+    }
     return snapshot;
   }, []);
 
@@ -298,7 +329,8 @@ export default function App() {
     }
     void refreshMarketData();
     void refreshRetail();
-  }, [marketOpenBuildingId, refreshMarketData, refreshRetail]);
+    void refreshRetailShelf();
+  }, [marketOpenBuildingId, refreshMarketData, refreshRetail, refreshRetailShelf]);
 
   useEffect(() => {
     if (!marketOpenBuildingId || !retailTabActive) return undefined;
@@ -680,6 +712,40 @@ export default function App() {
     [refresh, refreshMarket, refreshRetail, setPending, showMarketSuccess],
   );
 
+  const patchRetailShelfSetting = useCallback(
+    async (patch: { enabled?: boolean; ask?: number }) => {
+      const enabledPatch = patch.enabled !== undefined;
+      const actionKey = enabledPatch ? RETAIL_SHELF_PENDING_ENABLED_KEY : RETAIL_SHELF_PENDING_ASK_KEY;
+      if (pendingKeysRef.current.has(actionKey)) return;
+
+      setPending(actionKey, true);
+      setMarketPanelError(null);
+
+      try {
+        const updated = await patchRetailShelf(patch);
+        setRetailShelfSnapshot(updated);
+        setRetailShelfTabVisible(true);
+        if (enabledPatch && patch.enabled !== undefined) {
+          showMarketSuccess(RETAIL_SHELF_COPY.successEnabled(patch.enabled), "item_bread");
+        } else if (patch.ask !== undefined) {
+          showMarketSuccess(RETAIL_SHELF_COPY.successAsk(patch.ask), "item_bread");
+        }
+        await refresh();
+        await refreshRetailShelf();
+      } catch (e) {
+        const mapped = mapRetailShelfActionError(e);
+        if (mapped.shouldRefresh) {
+          await refresh().catch(() => undefined);
+          await refreshRetailShelf().catch(() => undefined);
+        }
+        setMarketPanelError({ message: mapped.message, hint: mapped.hint });
+      } finally {
+        setPending(actionKey, false);
+      }
+    },
+    [refresh, refreshRetailShelf, setPending, showMarketSuccess],
+  );
+
   const retryInitialLoad = useCallback(() => {
     if (loadRetrying) return;
     setLoadRetrying(true);
@@ -813,6 +879,19 @@ export default function App() {
                   refreshRetail().catch(() => undefined);
                 }}
                 onRetailTabActiveChange={setRetailTabActive}
+                retailShelf={retailShelfSnapshot}
+                retailShelfTabVisible={retailShelfTabVisible}
+                retailShelfPendingEnabled={pendingKeys.has(RETAIL_SHELF_PENDING_ENABLED_KEY)}
+                retailShelfPendingAsk={pendingKeys.has(RETAIL_SHELF_PENDING_ASK_KEY)}
+                onRetailShelfTabOpen={() => {
+                  refreshRetailShelf().catch(() => undefined);
+                }}
+                onRetailShelfToggleEnabled={(enabled) => {
+                  void patchRetailShelfSetting({ enabled });
+                }}
+                onRetailShelfSaveAsk={(ask) => {
+                  void patchRetailShelfSetting({ ask });
+                }}
                 onSell={(itemId, quantity) => marketTrade("sell", itemId, quantity)}
                 onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
                 onCommodityBuy={(commodityId, quantity) => commodityTrade("buy", commodityId, quantity)}

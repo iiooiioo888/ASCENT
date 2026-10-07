@@ -3,6 +3,7 @@ import type { MarketActionErrorView } from "../market-action-error";
 import type { CommoditiesSnapshot } from "../commodities";
 import type { MarketSnapshot } from "../market";
 import type { RetailSnapshot } from "../retail";
+import type { RetailShelfSnapshot } from "../retail-shelf";
 import { MARKET_COPY } from "../marketCopy";
 import { BUILDING_ICON } from "../meta";
 import type { Building, OpsCostsSnapshot } from "../types";
@@ -26,6 +27,14 @@ type Props = {
   retailTabVisible?: boolean;
   onRetailTabOpen?: () => void;
   onRetailTabActiveChange?: (active: boolean) => void;
+  retailShelf?: RetailShelfSnapshot | null;
+  retailShelfTabVisible?: boolean;
+  retailShelfPendingEnabled?: boolean;
+  retailShelfPendingAsk?: boolean;
+  onRetailShelfTabOpen?: () => void;
+  onRetailShelfTabActiveChange?: (active: boolean) => void;
+  onRetailShelfToggleEnabled?: (enabled: boolean) => void;
+  onRetailShelfSaveAsk?: (ask: number) => void;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
   onCommodityBuy?: (commodityId: string, quantity: number) => void;
@@ -53,6 +62,14 @@ export function TradingPostBuildingCard({
   retailTabVisible,
   onRetailTabOpen,
   onRetailTabActiveChange,
+  retailShelf,
+  retailShelfTabVisible,
+  retailShelfPendingEnabled,
+  retailShelfPendingAsk,
+  onRetailShelfTabOpen,
+  onRetailShelfTabActiveChange,
+  onRetailShelfToggleEnabled,
+  onRetailShelfSaveAsk,
   onSell,
   onBuy,
   onCommodityBuy,
@@ -115,6 +132,14 @@ export function TradingPostBuildingCard({
             retailTabVisible={retailTabVisible}
             onRetailTabOpen={onRetailTabOpen}
             onRetailTabActiveChange={onRetailTabActiveChange}
+            retailShelf={retailShelf}
+            retailShelfTabVisible={retailShelfTabVisible}
+            retailShelfPendingEnabled={retailShelfPendingEnabled}
+            retailShelfPendingAsk={retailShelfPendingAsk}
+            onRetailShelfTabOpen={onRetailShelfTabOpen}
+            onRetailShelfTabActiveChange={onRetailShelfTabActiveChange}
+            onRetailShelfToggleEnabled={onRetailShelfToggleEnabled}
+            onRetailShelfSaveAsk={onRetailShelfSaveAsk}
             onSell={onSell}
             onBuy={onBuy}
             onCommodityBuy={onCommodityBuy}

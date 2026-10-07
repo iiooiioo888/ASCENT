@@ -782,6 +782,71 @@ dialog.offline-summary-dialog::backdrop {
   margin-top: 0.5rem;
 }
 
+.retail-shelf-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+.retail-shelf-revenue {
+  margin: 0.2rem 0 0;
+  font-weight: 600;
+  color: var(--gold);
+}
+.retail-shelf-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.retail-shelf-toggle-row,
+.retail-shelf-ask-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+.retail-shelf-toggle-label,
+.retail-shelf-ask-label {
+  font-size: 0.82rem;
+  color: #dcc9ad;
+  min-width: 6.5rem;
+}
+.retail-shelf-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 40px;
+  padding: 0.25rem 0.55rem 0.25rem 0.35rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--panel-edge);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--cream);
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+.retail-shelf-toggle.on {
+  border-color: #c9a46a;
+  background: linear-gradient(180deg, #4a3820, #2e2210);
+}
+.retail-shelf-toggle:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.retail-shelf-toggle-knob {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 2px;
+  background: #8a7355;
+  border: 2px solid #5c4a32;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+}
+.retail-shelf-toggle.on .retail-shelf-toggle-knob {
+  background: #e8c878;
+  border-color: #a88440;
+}
+.retail-shelf-ask-cta {
+  margin-left: auto;
+}
+
 .commodity-row-actions {
   display: flex;
   flex-wrap: wrap;

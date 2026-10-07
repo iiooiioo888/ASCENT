@@ -64,4 +64,10 @@ export type GameState = {
   fieldCap?: number;
   buildingCount?: number;
   buildingSlotCap?: number;
+  /** AFK-BE-2：商行麵包貨架摘要（GET /state）。 */
+  retailShelf?: {
+    enabled: boolean;
+    ask: number;
+    todayRevenueGold: number;
+  };
 };
