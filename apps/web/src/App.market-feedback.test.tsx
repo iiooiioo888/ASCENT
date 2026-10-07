@@ -68,10 +68,10 @@ describe("App MK-FE-2 market feedback", () => {
           if (path === "/api/v1/market/sell" && init?.method === "POST") {
             market = {
               ...market,
-              gold: 18,
-              holdings: { ...market.holdings, item_bread: 0, item_gold: 18 },
+              gold: 17,
+              holdings: { ...market.holdings, item_bread: 0, item_gold: 17 },
             };
-            return { goldDelta: 8 };
+            return { goldDelta: 7, netGoldDelta: 7, transportFee: 1 };
           }
           throw new Error(`unexpected api call: ${path}`);
         },
@@ -91,9 +91,9 @@ describe("App MK-FE-2 market feedback", () => {
     const breadRow = await screen.findByTestId("market-row-sell-item_bread");
     await user.click(within(breadRow).getByRole("button", { name: MARKET_COPY.sellCta }));
 
-    expect(await screen.findByTestId("market-success-toast")).toHaveTextContent("已售出 麵包×1，實收 🪙8");
+    expect(await screen.findByTestId("market-success-toast")).toHaveTextContent("已售出 麵包×1，實收 🪙7（運費 🪙1）");
     await waitFor(() => {
-      expect(screen.getByTestId("hud-gold-chip")).toHaveTextContent("🪙 18");
+      expect(screen.getByTestId("hud-gold-chip")).toHaveTextContent("🪙 17");
     });
   });
 });

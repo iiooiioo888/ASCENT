@@ -1,14 +1,20 @@
 import { PrismaClient } from "../generated/prisma/client";
 import { createPrismaAdapter } from "../src/prisma/create-prisma-adapter";
 import {
+  DEFAULT_MARKET_PRICES,
+  EQUITY_CONFIG,
   LOCAL_PLAYER_ID,
+  seedPriceHistoryAtBase,
   MAX_OFFLINE_GAME_SEC,
   MAX_OFFLINE_REAL_SEC,
   TIME_SCALE,
   TICK_INTERVAL_REAL_MS,
   GAME_DAY_GAME_SEC,
   buildingDefs,
+  seedPlacedBuildingDefIds,
+  enabledCommodityListings,
   generateMethods,
+  initialPriceHistory,
   itemProperties,
   itemTypes,
   items,
@@ -30,6 +36,7 @@ async function main() {
 
   await prisma.playerBuilding.deleteMany();
   await prisma.playerInventory.deleteMany();
+  await prisma.playerEquityHolding.deleteMany();
   await prisma.player.deleteMany();
   await prisma.buildingLevel.deleteMany();
   await prisma.productionMethod.deleteMany();
@@ -40,6 +47,8 @@ async function main() {
   await prisma.buildingDef.deleteMany();
   await prisma.gameConfig.deleteMany();
   await prisma.serverState.deleteMany();
+  await prisma.commodityMarketState.deleteMany();
+  await prisma.equityTickerState.deleteMany();
 
   await prisma.gameConfig.create({
     data: {
@@ -49,6 +58,7 @@ async function main() {
       maxOfflineRealSec: MAX_OFFLINE_REAL_SEC,
       maxOfflineGameSec: MAX_OFFLINE_GAME_SEC,
       tickIntervalRealMs: TICK_INTERVAL_REAL_MS,
+      marketPrices: DEFAULT_MARKET_PRICES,
     },
   });
 
@@ -185,8 +195,30 @@ async function main() {
     });
   }
 
-  const toPlace = ["bdef_field", "bdef_mill", "bdef_oven"];
-  for (const defId of toPlace) {
+  const seedNowMs = now.getTime();
+  for (const listing of enabledCommodityListings()) {
+    await prisma.commodityMarketState.create({
+      data: {
+        commodityId: listing.id,
+        netPressureVolume: 0,
+        priceHistory: initialPriceHistory(listing.basePrice, seedNowMs),
+      },
+    });
+  }
+
+  for (const listing of EQUITY_CONFIG.listings) {
+    const history = seedPriceHistoryAtBase(listing.basePrice, seedNowMs);
+    await prisma.equityTickerState.create({
+      data: {
+        equityId: listing.id,
+        netBuyVolume: 0,
+        currentPrice: listing.basePrice,
+        priceHistory: history,
+      },
+    });
+  }
+
+  for (const defId of seedPlacedBuildingDefIds) {
     await prisma.playerBuilding.create({
       data: {
         id: `pb_${LOCAL_PLAYER_ID}_${defId}`,

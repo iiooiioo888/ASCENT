@@ -1,9 +1,13 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../../generated/prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withSettlementTransaction } from "./settlement-db-lock";
+import { createPrismaAdapter } from "../prisma/create-prisma-adapter";
+import { isPostgresDatabase, withSettlementTransaction } from "./settlement-db-lock";
 
-describe("settlement-db-lock", () => {
-  const prisma = new PrismaClient();
+// ENV_GAP: Prisma 7 + better-sqlite3 雙連線 settlement 鎖在 SQLite 上易 transaction timeout；Postgres advisory lock 才穩定驗證。
+const describeDbLock = isPostgresDatabase() ? describe : describe.skip;
+
+describeDbLock("settlement-db-lock", () => {
+  const prisma = new PrismaClient({ adapter: createPrismaAdapter() });
 
   beforeAll(async () => {
     await prisma.$connect();
@@ -18,7 +22,7 @@ describe("settlement-db-lock", () => {
   });
 
   it("同一 DB 上兩個 client 的 withSettlementTransaction 不會重疊執行", async () => {
-    const other = new PrismaClient();
+    const other = new PrismaClient({ adapter: createPrismaAdapter() });
     await other.$connect();
 
     const log: string[] = [];

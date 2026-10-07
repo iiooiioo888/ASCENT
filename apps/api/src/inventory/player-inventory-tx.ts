@@ -1,6 +1,6 @@
 import { ITEM_GOLD_ID, LOCAL_PLAYER_ID } from "@ascent/shared";
 import { BadRequestException, ConflictException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../../generated/prisma/client";
 import { SETTLEMENT_CONFLICT_MESSAGE } from "./building-state-update";
 
 const EPS = 1e-9;

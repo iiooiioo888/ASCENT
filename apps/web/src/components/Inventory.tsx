@@ -11,9 +11,10 @@ function isLowStock(itemId: string, qty: number): boolean {
 
 type Props = {
   inventory: InvRow[];
+  highlightItemIds?: Set<string>;
 };
 
-export function Inventory({ inventory }: Props) {
+export function Inventory({ inventory, highlightItemIds }: Props) {
   return (
     <section className="pack">
       <h2>背包</h2>
@@ -24,10 +25,12 @@ export function Inventory({ inventory }: Props) {
           return (
             <div
               key={row.itemId}
+              aria-label={qty > 0 ? `${meta.name} ${formatQuantity(qty)}` : undefined}
               className={[
                 "item",
                 qty <= 0 ? "empty" : "",
                 isLowStock(row.itemId, qty) ? "low-stock" : "",
+                highlightItemIds?.has(row.itemId) ? "highlight" : "",
               ]
                 .filter(Boolean)
                 .join(" ")}

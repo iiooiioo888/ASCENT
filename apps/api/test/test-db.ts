@@ -15,7 +15,7 @@ export function createEmptyTestDatabase(): string {
   if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
   const databaseUrl = `file:${dbPath}`;
   // 與 pnpm setup:db 相同：SQLite 不支援 migration 內 PostgreSQL GIN 語法，用 schema push。
-  execSync("pnpm exec prisma db push --skip-generate --accept-data-loss", {
+  execSync("pnpm exec prisma db push --accept-data-loss", {
     cwd: apiRoot,
     env: prismaEnv(databaseUrl),
     stdio: "pipe",

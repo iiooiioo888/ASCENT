@@ -1,10 +1,15 @@
 import { BadRequestException, ConflictException } from "@nestjs/common";
 import { LOCAL_PLAYER_ID } from "@ascent/shared";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../../generated/prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { createPrismaAdapter } from "../prisma/create-prisma-adapter";
 import { PrismaService } from "../prisma/prisma.service";
 import { SimulationService } from "../simulation/simulation.service";
 import { InventoryService } from "./inventory.service";
+import { isPostgresDatabase } from "./settlement-db-lock";
+
+// ENV_GAP: 同上 settlement-db-lock；多 PrismaClient 併發鎖測試僅在 Postgres CI／本機 PG 執行。
+const describeMultiInstance = isPostgresDatabase() ? describe : describe.skip;
 
 const FIELD_BUILDING_ID = `pb_${LOCAL_PLAYER_ID}_bdef_field`;
 const GROW_METHOD_ID = "method_grow_wheat_default";
@@ -16,9 +21,9 @@ function createInventoryStack(client: PrismaClient) {
   return { prisma, sim, inventory };
 }
 
-describe("InventoryService 多實例（兩個 PrismaClient 共用同一 DB）", () => {
-  const clientA = new PrismaClient();
-  const clientB = new PrismaClient();
+describeMultiInstance("InventoryService 多實例（兩個 PrismaClient 共用同一 DB）", () => {
+  const clientA = new PrismaClient({ adapter: createPrismaAdapter() });
+  const clientB = new PrismaClient({ adapter: createPrismaAdapter() });
   let stackA: ReturnType<typeof createInventoryStack>;
   let stackB: ReturnType<typeof createInventoryStack>;
 

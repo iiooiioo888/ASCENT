@@ -1,8 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import {
+  ITEM_GOLD_ID,
   LOCAL_PLAYER_ID,
   iosToRecord,
   mergeQty,
+  haulGoldForBuilding,
+  opsCostsFromDepth,
+  wageGoldForBuilding,
   type BuildingQueueJob,
   type BuildingStatus,
   type ItemIo,
@@ -21,6 +25,7 @@ import {
   type SettlementTransactionClient,
   withSettlementTransaction,
 } from "./settlement-db-lock";
+import { deductPlayerItem } from "./player-inventory-tx";
 
 function toGameInt(sec: number): bigint {
   return BigInt(Math.max(0, Math.floor(sec)));
@@ -35,7 +40,24 @@ export class InventoryService {
     private readonly sim: SimulationService,
   ) {}
 
-  private runExclusive<T>(fn: (tx: SettlementTransactionClient) => Promise<T>): Promise<T> {
+  /** 與結算／建築寫入共用，避免並發雙花（市集等不直接持 tx 的呼叫方）。 */
+  runExclusive<T>(fn: () => Promise<T>): Promise<T> {
+    return this.settlementMutex.runExclusive(fn);
+  }
+
+  /** 僅在已持有 {@link runExclusive} 或內部結算路徑時呼叫。 */
+  async settleAllUnlocked(): Promise<void> {
+    await withSettlementTransaction(this.prisma, async (tx) => {
+      const buildings = await tx.playerBuilding.findMany({
+        where: { playerId: LOCAL_PLAYER_ID },
+      });
+      for (const b of buildings) {
+        await this.settleBuildingUnlocked(tx, b.id);
+      }
+    });
+  }
+
+  private withSettlementTx<T>(fn: (tx: SettlementTransactionClient) => Promise<T>): Promise<T> {
     return this.settlementMutex.runExclusive(() => withSettlementTransaction(this.prisma, fn));
   }
 
@@ -68,7 +90,22 @@ export class InventoryService {
       this.prisma.buildingDef.findMany({ where: { isActive: true } }),
       this.time(),
     ]);
-    return { time, inventory, buildings, methods, buildingDefs: defs };
+    const workforce = await this.workforceSnapshot();
+    const opsCosts = opsCostsFromDepth(this.sim.opsDepth);
+    return { time, inventory, buildings, methods, buildingDefs: defs, workforce, opsCosts };
+  }
+
+  async workforceSnapshot() {
+    const player = await this.prisma.player.findUniqueOrThrow({ where: { id: LOCAL_PLAYER_ID } });
+    const { maxHired } = this.sim.opsDepth.workforce;
+    const hired = player.workforceHired;
+    const busy = player.workforceBusy;
+    return {
+      hired,
+      busy,
+      free: Math.max(0, hired - busy),
+      maxHired,
+    };
   }
 
   async inventory() {
@@ -125,7 +162,7 @@ export class InventoryService {
   }
 
   async start(buildingId: string, methodId: string) {
-    return this.runExclusive(async (tx) => {
+    return this.withSettlementTx(async (tx) => {
       await this.settleBuildingUnlocked(tx, buildingId);
       const building = await tx.playerBuilding.findUnique({
         where: { id: buildingId },
@@ -141,6 +178,13 @@ export class InventoryService {
       }
       const inputs = iosToRecord(method.inputs as ItemIo[]);
       const outputs = iosToRecord(method.outputs as ItemIo[]);
+      const depth = this.sim.opsDepth;
+      const laborCost = depth.workforce.laborCostPerStart;
+      const wageGold = wageGoldForBuilding(building.buildingDefId, depth);
+      const haulGold = haulGoldForBuilding(building.buildingDefId, depth);
+      const player = await tx.player.findUniqueOrThrow({ where: { id: LOCAL_PLAYER_ID } });
+      const free = player.workforceHired - player.workforceBusy;
+      if (free < laborCost) throw new BadRequestException("人手不足");
       const job: BuildingQueueJob = {
         methodId: method.id,
         durationGameSec: method.durationGameSec,
@@ -182,6 +226,16 @@ export class InventoryService {
           data: { quantity: { decrement: qty } },
         });
       }
+      if (wageGold > 0) {
+        await deductPlayerItem(tx, ITEM_GOLD_ID, wageGold);
+      }
+      if (haulGold > 0) {
+        await deductPlayerItem(tx, ITEM_GOLD_ID, haulGold);
+      }
+      await tx.player.update({
+        where: { id: LOCAL_PLAYER_ID },
+        data: { workforceBusy: { increment: laborCost } },
+      });
       return tx.playerBuilding.findUniqueOrThrow({
         where: { id: buildingId },
         include: { buildingDef: true, method: true },
@@ -190,7 +244,7 @@ export class InventoryService {
   }
 
   async stop(buildingId: string) {
-    return this.runExclusive(async (tx) => {
+    return this.withSettlementTx(async (tx) => {
       await this.settleBuildingUnlocked(tx, buildingId);
       const building = await tx.playerBuilding.findUnique({ where: { id: buildingId } });
       if (!building) throw new NotFoundException("建築不存在");
@@ -201,6 +255,8 @@ export class InventoryService {
         now.getTime(),
       );
       const expectedStatus = building.status;
+      const releaseWorkforce = building.status === "running";
+      const laborCost = this.sim.opsDepth.workforce.laborCostPerStart;
       const stopped = await tx.playerBuilding.updateMany({
         where: { id: buildingId, status: expectedStatus },
         data: {
@@ -214,6 +270,16 @@ export class InventoryService {
         },
       });
       throwIfStateConflict(stopped.count);
+      if (releaseWorkforce) {
+        const player = await tx.player.findUniqueOrThrow({ where: { id: LOCAL_PLAYER_ID } });
+        const nextBusy = Math.max(0, player.workforceBusy - laborCost);
+        if (nextBusy !== player.workforceBusy) {
+          await tx.player.update({
+            where: { id: LOCAL_PLAYER_ID },
+            data: { workforceBusy: nextBusy },
+          });
+        }
+      }
       return tx.playerBuilding.findUniqueOrThrow({
         where: { id: buildingId },
         include: { buildingDef: true, method: true },
@@ -222,7 +288,7 @@ export class InventoryService {
   }
 
   async collect(buildingId: string) {
-    return this.runExclusive(async (tx) => {
+    return this.withSettlementTx(async (tx) => {
       await this.settleBuildingUnlocked(tx, buildingId);
       const building = await tx.playerBuilding.findUnique({ where: { id: buildingId } });
       if (!building) throw new NotFoundException("建築不存在");
@@ -250,6 +316,15 @@ export class InventoryService {
         },
       });
       throwIfStateConflict(claimed.count);
+      const laborCost = this.sim.opsDepth.workforce.laborCostPerStart;
+      const player = await tx.player.findUniqueOrThrow({ where: { id: LOCAL_PLAYER_ID } });
+      const nextBusy = Math.max(0, player.workforceBusy - laborCost);
+      if (nextBusy !== player.workforceBusy) {
+        await tx.player.update({
+          where: { id: LOCAL_PLAYER_ID },
+          data: { workforceBusy: nextBusy },
+        });
+      }
       await this.add(tx, buffered);
       return tx.playerBuilding.findUniqueOrThrow({
         where: { id: buildingId },
@@ -259,7 +334,7 @@ export class InventoryService {
   }
 
   async settleAll() {
-    return this.runExclusive(async (tx) => {
+    return this.withSettlementTx(async (tx) => {
       const buildings = await tx.playerBuilding.findMany({
         where: { playerId: LOCAL_PLAYER_ID },
       });
@@ -270,7 +345,7 @@ export class InventoryService {
   }
 
   async settleBuilding(id: string) {
-    return this.runExclusive((tx) => this.settleBuildingUnlocked(tx, id));
+    return this.withSettlementTx((tx) => this.settleBuildingUnlocked(tx, id));
   }
 
   private async settleBuildingUnlocked(tx: SettlementTransactionClient, id: string) {
