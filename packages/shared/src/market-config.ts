@@ -2,8 +2,8 @@
 export const ITEM_GOLD_ID = "item_gold";
 export const ITEM_CURRENCY_TYPE_ID = "it_currency";
 
-/** TODO(product): 新手是否給緩衝金幣。 */
-export const STARTING_GOLD = 0;
+/** 已拍板：開局 10（平衡可調常數）。 */
+export const STARTING_GOLD = 10;
 
 export type MarketPriceBook = {
   sell: Record<string, number>;
