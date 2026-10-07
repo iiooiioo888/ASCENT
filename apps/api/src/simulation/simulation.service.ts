@@ -1,11 +1,13 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import {
   displayGameTime,
+  marketPricesFromDb,
   settleProduction,
   settleWindow,
   type BuildingQueueJob,
   type BuildingStatus,
   type GameConfigValues,
+  type MarketPriceBook,
   type WorldClock,
 } from "@ascent/shared";
 import { PrismaService } from "../prisma/prisma.service";
@@ -13,7 +15,8 @@ import { gameConfigFromRow } from "./game-config.loader";
 
 @Injectable()
 export class SimulationService implements OnModuleInit {
-  private runtimeConfig!: GameConfigValues;
+  private runtimeConfig: GameConfigValues = gameConfigFromRow(null);
+  private marketPrices: MarketPriceBook = marketPricesFromDb(null);
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -24,10 +27,15 @@ export class SimulationService implements OnModuleInit {
   async refreshConfig() {
     const row = await this.prisma.gameConfig.findUnique({ where: { id: 1 } });
     this.runtimeConfig = gameConfigFromRow(row);
+    this.marketPrices = marketPricesFromDb(row?.marketPrices);
   }
 
   get config(): GameConfigValues {
     return this.runtimeConfig;
+  }
+
+  get marketPriceBook(): MarketPriceBook {
+    return this.marketPrices;
   }
 
   displayGameTime(clock: WorldClock, nowMs: number) {

@@ -115,6 +115,8 @@ model GameConfig {
   maxOfflineRealSec  Int @default(28800) @map("max_offline_real_sec")
   maxOfflineGameSec  Int @default(1728000) @map("max_offline_game_sec")
   tickIntervalRealMs Int @default(5000) @map("tick_interval_real_ms")
+  // TODO(product): 價目平衡未定；JSON 覆寫 DEFAULT_MARKET_PRICES。
+  marketPrices       Json? @map("market_prices")
 
   @@map("game_config")
 }

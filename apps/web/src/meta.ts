@@ -17,6 +17,8 @@ export const METHOD_NAME: Record<string, string> = {
   method_make_dough_default: "和麵",
   method_bake_bread_default: "烘烤麵包",
   method_bake_bread_batch: "批量烘烤",
+  method_draw_water_default: "汲水",
+  method_save_seed_default: "留種",
 };
 
 export const BUILDING_ICON: Record<string, string> = {
@@ -24,6 +26,7 @@ export const BUILDING_ICON: Record<string, string> = {
   bdef_silo: "🏚️",
   bdef_mill: "⚙️",
   bdef_oven: "🔥",
+  bdef_well: "💧",
 };
 
 export function itemLabel(id: string) {

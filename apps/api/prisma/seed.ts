@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import {
+  DEFAULT_MARKET_PRICES,
   LOCAL_PLAYER_ID,
   MAX_OFFLINE_GAME_SEC,
   MAX_OFFLINE_REAL_SEC,
@@ -7,10 +8,12 @@ import {
   TICK_INTERVAL_REAL_MS,
   GAME_DAY_GAME_SEC,
   buildingDefs,
+  seedPlacedBuildingDefIds,
   generateMethods,
   itemTypes,
   items,
   rules,
+  seedPlacedBuildingDefIds,
   startingInventory,
   validateCatalog,
 } from "@ascent/shared";
@@ -46,6 +49,7 @@ async function main() {
       maxOfflineRealSec: MAX_OFFLINE_REAL_SEC,
       maxOfflineGameSec: MAX_OFFLINE_GAME_SEC,
       tickIntervalRealMs: TICK_INTERVAL_REAL_MS,
+      marketPrices: DEFAULT_MARKET_PRICES,
     },
   });
 
@@ -161,8 +165,7 @@ async function main() {
     });
   }
 
-  const toPlace = ["bdef_field", "bdef_mill", "bdef_oven"];
-  for (const defId of toPlace) {
+  for (const defId of seedPlacedBuildingDefIds) {
     await prisma.playerBuilding.create({
       data: {
         id: `pb_${LOCAL_PLAYER_ID}_${defId}`,

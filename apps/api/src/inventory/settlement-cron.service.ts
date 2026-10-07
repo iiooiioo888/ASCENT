@@ -13,6 +13,8 @@ const JOB_NAME = "coarse-settlement";
 export class SettlementCronService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(SettlementCronService.name);
   private scheduledMs = 0;
+  /** 測試預設暫停；e2e 可呼叫 {@link resumeBackgroundTicksForTests} 啟用 coarseTick。 */
+  private backgroundTicksPaused = process.env.NODE_ENV === "test";
 
   constructor(
     private readonly inventory: InventoryService,
@@ -20,8 +22,18 @@ export class SettlementCronService implements OnModuleInit, OnModuleDestroy {
     private readonly schedulerRegistry: SchedulerRegistry,
   ) {}
 
+  pauseBackgroundTicksForTests(): void {
+    this.backgroundTicksPaused = true;
+    this.clearSchedule();
+  }
+
+  resumeBackgroundTicksForTests(): void {
+    this.backgroundTicksPaused = false;
+    void this.syncSchedule();
+  }
+
   async onModuleInit() {
-    if (process.env.NODE_ENV === "test") return;
+    if (this.backgroundTicksPaused) return;
     await this.syncSchedule();
   }
 
@@ -51,7 +63,7 @@ export class SettlementCronService implements OnModuleInit, OnModuleDestroy {
   }
 
   async coarseTick() {
-    if (process.env.NODE_ENV === "test") return;
+    if (this.backgroundTicksPaused) return;
     try {
       await this.sim.refreshConfig();
       const ms = Math.max(1000, Math.floor(this.sim.config.tickIntervalRealMs));

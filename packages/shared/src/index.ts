@@ -5,3 +5,4 @@ export * from "./settlement";
 export * from "./method-generator";
 export * from "./validator";
 export * from "./agriculture-catalog";
+export * from "./market-config";

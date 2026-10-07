@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { canStopBuilding } from "../building-actions";
-import { fmtBuffered, fmtIo, realRemainSec, statusLabel } from "../format";
+import { fmtBuffered, realRemainSec, statusLabel } from "../format";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
 import type { BuildingActionErrorView } from "../building-action-error";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
+import { recipeConsumeLine, recipeProduceLine } from "../recipe-display";
+import { WELL_BUILDING_DEF_ID, WELL_IDLE_JOBLINE } from "../resource-loop-copy";
 import type { Building, InvRow, Method } from "../types";
-import { methodPurposeHint } from "../productCopy";
 import { StopConfirmDialog } from "./StopConfirmDialog";
 
 type Props = {
@@ -58,7 +59,6 @@ export function BuildingCard({
   const anyShort = inputRows.some((r) => r.short);
 
   const runningMethod = b.methodId ? options.find((m) => m.id === b.methodId) : undefined;
-  const purposeHint = methodPurposeHint(displayMethod?.id);
 
   const handleStopConfirm = () => {
     setStopConfirmOpen(false);
@@ -86,7 +86,13 @@ export function BuildingCard({
             進行中 {progress.toFixed(0)}% · 剩 {remain.toFixed(0)} 現實秒
           </p>
         ) : (
-          <p className="jobline">{b.status === "ready" ? `可收取 ${fmtBuffered(b.bufferedOutputs)}` : "等待開工"}</p>
+          <p className="jobline">
+            {b.status === "ready"
+              ? `可收取 ${fmtBuffered(b.bufferedOutputs)}`
+              : b.buildingDefId === WELL_BUILDING_DEF_ID
+                ? WELL_IDLE_JOBLINE
+                : "等待開工"}
+          </p>
         )}
 
         {options.length ? (
@@ -116,11 +122,10 @@ export function BuildingCard({
                         ))}
                       </span>
                     ) : (
-                      <span>{fmtIo(displayMethod.inputs)}</span>
+                      <span>{recipeConsumeLine(displayMethod)}</span>
                     )}
                   </div>
-                  <div>產出 {fmtIo(displayMethod.outputs)}</div>
-                  {purposeHint ? <p className="purpose-hint">{purposeHint}</p> : null}
+                  <div>產出 {recipeProduceLine(displayMethod)}</div>
                 </>
               ) : null}
             </div>

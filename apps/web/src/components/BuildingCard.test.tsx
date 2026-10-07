@@ -8,18 +8,37 @@ import {
   growWheatDefault,
   mixFeedDefault,
 } from "../prb-demo/fixtures";
+import { demoSiloBuilding } from "../screenshot-harness/fixtures";
 import { BuildingCard } from "./BuildingCard";
+import { DEMO_SERVER_REAL_TIME } from "../test/demoTime";
+
+const baseInventory = [
+  {
+    itemId: "item_seed_wheat",
+    quantity: "40",
+    item: { code: "item_seed_wheat", layer: "T", derivedTier: 0 },
+  },
+  {
+    itemId: "item_water",
+    quantity: "80",
+    item: { code: "item_water", layer: "T", derivedTier: 0 },
+  },
+];
 
 const baseProps = {
   options: [growWheatDefault, mixFeedDefault],
   inventory: demoInventoryShortWater,
   timeScale: 60,
+  serverRealTime: DEMO_SERVER_REAL_TIME,
   pending: false,
   onSelectMethod: vi.fn(),
   onStart: vi.fn(),
   onStop: vi.fn(),
   onCollect: vi.fn(),
 };
+
+const fieldMethodSelectName = "選擇田的生產方式";
+const millMethodSelectName = "選擇磨坊的生產方式";
 
 describe("BuildingCard U2 inventory precheck", () => {
   it("disables start and renders shortage text when water is short", () => {
@@ -120,7 +139,7 @@ describe("BuildingCard U7 method lock", () => {
         selected={growWheatDefault}
       />,
     );
-    const select = screen.getByRole("combobox") as HTMLSelectElement;
+    const select = screen.getByRole("combobox", { name: millMethodSelectName }) as HTMLSelectElement;
     expect(select).toBeDisabled();
     expect(select.value).toBe("method_mix_feed_default");
   });
@@ -129,7 +148,7 @@ describe("BuildingCard U7 method lock", () => {
     render(
       <BuildingCard {...baseProps} building={demoFieldIdle} selectedId={growWheatDefault.id} selected={growWheatDefault} />,
     );
-    const select = screen.getByRole("combobox") as HTMLSelectElement;
+    const select = screen.getByRole("combobox", { name: fieldMethodSelectName }) as HTMLSelectElement;
     expect(select).not.toBeDisabled();
     expect(select.value).toBe("method_grow_wheat_default");
   });
@@ -148,8 +167,108 @@ describe("BuildingCard U7 method lock", () => {
         selected={mixFeedDefault}
       />,
     );
-    const select = screen.getByRole("combobox") as HTMLSelectElement;
+    const select = screen.getByRole("combobox", { name: fieldMethodSelectName }) as HTMLSelectElement;
     expect(select).toBeDisabled();
     expect(select.value).toBe("method_grow_wheat_default");
+  });
+});
+
+describe("BuildingCard U12 silo (legacy mode)", () => {
+  it("does not render production action buttons for silo", () => {
+    render(
+      <BuildingCard
+        building={demoSiloBuilding}
+        options={[]}
+        inventory={baseInventory}
+        selectedId={undefined}
+        selected={undefined}
+        timeScale={60}
+        serverRealTime={DEMO_SERVER_REAL_TIME}
+        pending={false}
+        onSelectMethod={vi.fn()}
+        onStart={vi.fn()}
+        onStop={vi.fn()}
+        onCollect={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "開工" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "停止" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "收取" })).not.toBeInTheDocument();
+  });
+});
+
+describe("BuildingCard a11y (U15)", () => {
+  it("associates method select with a visible label", () => {
+    render(
+      <BuildingCard
+        building={demoFieldIdle}
+        options={[growWheatDefault]}
+        inventory={baseInventory}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        timeScale={60}
+        serverRealTime={DEMO_SERVER_REAL_TIME}
+        pending={false}
+        onSelectMethod={vi.fn()}
+        onStart={vi.fn()}
+        onStop={vi.fn()}
+        onCollect={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("combobox", { name: fieldMethodSelectName })).toBeInTheDocument();
+    expect(screen.getByText(fieldMethodSelectName)).toHaveAttribute("for", "method-select-demo-field");
+  });
+
+  it("exposes progressbar when running", () => {
+    const serverRealTime = new Date(Date.now() - 30_000).toISOString();
+    const running = {
+      ...demoFieldIdle,
+      status: "running" as const,
+      methodId: growWheatDefault.id,
+      queue: [{ elapsedGameSec: 0, durationGameSec: 3600 }],
+    };
+    render(
+      <BuildingCard
+        building={running}
+        options={[growWheatDefault]}
+        inventory={baseInventory}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        timeScale={60}
+        serverRealTime={serverRealTime}
+        pending={false}
+        onSelectMethod={vi.fn()}
+        onStart={vi.fn()}
+        onStop={vi.fn()}
+        onCollect={vi.fn()}
+      />,
+    );
+
+    const bar = screen.getByRole("progressbar", { name: "田生產進度 50%" });
+    expect(bar).toHaveAttribute("aria-valuenow", "50");
+  });
+
+  it("announces action errors with role alert", () => {
+    render(
+      <BuildingCard
+        building={demoFieldIdle}
+        options={[growWheatDefault]}
+        inventory={baseInventory}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        timeScale={60}
+        serverRealTime={DEMO_SERVER_REAL_TIME}
+        actionError={{ message: "資源不足：水" }}
+        pending={false}
+        onSelectMethod={vi.fn()}
+        onStart={vi.fn()}
+        onStop={vi.fn()}
+        onCollect={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent("資源不足：水");
   });
 });

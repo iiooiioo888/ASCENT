@@ -50,6 +50,11 @@ export function fmtGame(sec: number) {
   return `${d}日 ${h}時 ${m}分`;
 }
 
+/** P3-1: secondary game clock for HUD (primary UX copy uses real seconds on cards). */
+export function fmtGameClockChip(sec: number, prefix: string): string {
+  return `${prefix} ${fmtGame(sec)}`;
+}
+
 export function realRemainSec(job?: { elapsedGameSec: number; durationGameSec: number }, timeScale = 60) {
   if (!job) return 0;
   return Math.max(0, (job.durationGameSec - job.elapsedGameSec) / timeScale);
