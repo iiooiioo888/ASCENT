@@ -5,6 +5,7 @@ import type { BuildingDef, ItemDef, ItemTypeDef, ProductionRuleDef } from "./typ
 export const itemTypes: ItemTypeDef[] = [
   { id: "it_crop", code: "crop", name: "作物", is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "it_produce", code: "produce", name: "農產加工", is_active: true, released_in_version: RELEASED_IN_VERSION },
+  { id: "it_commodity", code: "commodity", name: "大宗現貨", is_active: true, released_in_version: RELEASED_IN_VERSION },
   // TODO(product): 貨幣是否獨立 Player.gold 欄未定；現用 inventory 物品佔位。
   { id: ITEM_CURRENCY_TYPE_ID, code: "currency", name: "貨幣", is_active: true, released_in_version: RELEASED_IN_VERSION },
 ];
@@ -23,6 +24,15 @@ export const items: ItemDef[] = [
     id: ITEM_GOLD_ID,
     code: "gold",
     type_id: ITEM_CURRENCY_TYPE_ID,
+    layer: "C",
+    derived_tier: 0,
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
+  {
+    id: "item_oil",
+    code: "oil",
+    type_id: "it_commodity",
     layer: "C",
     derived_tier: 0,
     is_active: true,

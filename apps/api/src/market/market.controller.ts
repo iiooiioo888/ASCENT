@@ -1,12 +1,12 @@
 import { Body, Controller, Get, Post } from "@nestjs/common";
-import { EquityMarketService } from "./equity-market.service";
 import { MarketService } from "./market.service";
+import { CommodityMarketService } from "./commodity-market.service";
 
 @Controller("api/v1/market")
 export class MarketController {
   constructor(
     private readonly market: MarketService,
-    private readonly equityMarket: EquityMarketService,
+    private readonly commodities: CommodityMarketService,
   ) {}
 
   @Get()
@@ -24,18 +24,18 @@ export class MarketController {
     return this.market.buy(body.itemId, body.quantity);
   }
 
-  @Get("equity")
-  getEquity() {
-    return this.equityMarket.getEquityMarket();
+  @Get("commodities")
+  getCommodities() {
+    return this.commodities.getCommodities();
   }
 
-  @Post("equity/buy")
-  equityBuy(@Body() body: { equityId: string; quantity: number; clientRequestId?: string }) {
-    return this.equityMarket.buy(body.equityId, body.quantity);
+  @Post("commodities/buy")
+  buyCommodity(@Body() body: { commodityId: string; quantity: number }) {
+    return this.commodities.buyCommodity(body.commodityId, body.quantity);
   }
 
-  @Post("equity/sell")
-  equitySell(@Body() body: { equityId: string; quantity: number; clientRequestId?: string }) {
-    return this.equityMarket.sell(body.equityId, body.quantity);
+  @Post("commodities/sell")
+  sellCommodity(@Body() body: { commodityId: string; quantity: number }) {
+    return this.commodities.sellCommodity(body.commodityId, body.quantity);
   }
 }

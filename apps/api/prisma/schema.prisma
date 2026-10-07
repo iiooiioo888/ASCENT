@@ -131,6 +131,14 @@ model ServerState {
   @@map("server_state")
 }
 
+model CommodityMarketState {
+  commodityId       String  @id @map("commodity_id")
+  netPressureVolume Decimal @default(0) @map("net_pressure_volume")
+  priceHistory      Json    @map("price_history")
+
+  @@map("commodity_market_state")
+}
+
 model Player {
   id         String   @id
   createdAt  DateTime @map("created_at")

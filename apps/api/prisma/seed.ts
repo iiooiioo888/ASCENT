@@ -1,9 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import {
   DEFAULT_MARKET_PRICES,
-  EQUITY_CONFIG,
   LOCAL_PLAYER_ID,
-  seedPriceHistoryAtBase,
   MAX_OFFLINE_GAME_SEC,
   MAX_OFFLINE_REAL_SEC,
   TIME_SCALE,
@@ -11,7 +9,9 @@ import {
   GAME_DAY_GAME_SEC,
   buildingDefs,
   seedPlacedBuildingDefIds,
+  enabledCommodityListings,
   generateMethods,
+  initialPriceHistory,
   itemTypes,
   items,
   rules,
@@ -30,8 +30,6 @@ async function main() {
 
   const now = new Date();
 
-  await prisma.playerEquityHolding.deleteMany();
-  await prisma.equityTickerState.deleteMany();
   await prisma.playerBuilding.deleteMany();
   await prisma.playerInventory.deleteMany();
   await prisma.player.deleteMany();
@@ -43,6 +41,7 @@ async function main() {
   await prisma.buildingDef.deleteMany();
   await prisma.gameConfig.deleteMany();
   await prisma.serverState.deleteMany();
+  await prisma.commodityMarketState.deleteMany();
 
   await prisma.gameConfig.create({
     data: {
@@ -168,15 +167,13 @@ async function main() {
     });
   }
 
-  const seedNow = Date.now();
-  for (const listing of EQUITY_CONFIG.listings) {
-    const history = seedPriceHistoryAtBase(listing.basePrice, seedNow);
-    await prisma.equityTickerState.create({
+  const seedNowMs = now.getTime();
+  for (const listing of enabledCommodityListings()) {
+    await prisma.commodityMarketState.create({
       data: {
-        equityId: listing.id,
-        netBuyVolume: 0,
-        currentPrice: listing.basePrice,
-        priceHistory: history,
+        commodityId: listing.id,
+        netPressureVolume: 0,
+        priceHistory: initialPriceHistory(listing.basePrice, seedNowMs),
       },
     });
   }
