@@ -16,6 +16,6 @@ describe("sortInventoryRows (P3-4)", () => {
   });
 
   it("exports stable catalog order length", () => {
-    expect(INVENTORY_DISPLAY_ORDER.length).toBe(8);
+    expect(INVENTORY_DISPLAY_ORDER.length).toBe(9);
   });
 });

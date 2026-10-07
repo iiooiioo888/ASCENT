@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { canStopBuilding, showProductionActionButtons } from "../building-actions";
-import { fmtBuffered, fmtIo, statusLabel } from "../format";
-import { useProgressTick } from "../hooks/useProgressTick";
-import { jobProgressPercent, jobRemainRealSec } from "../productionProgress";
+import { fmtIo, statusLabel } from "../format";
+import { BuildingJobProgress } from "./BuildingJobProgress";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
 import type { BuildingActionErrorView } from "../building-action-error";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
@@ -13,7 +12,6 @@ import type { Building, InvRow, Method, OpsCostsSnapshot, WorkforceSnapshot } fr
 import {
   methodPurposeHint,
   methodSelectAriaLabel,
-  productionProgressAriaLabel,
   SILO_CARD_BODY,
 } from "../productCopy";
 import { StopConfirmDialog } from "./StopConfirmDialog";
@@ -66,12 +64,6 @@ export function BuildingCard({
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
   const job = b.queue[0];
-  const smoothProgress = b.status === "running" && !!job;
-  const nowMs = useProgressTick(smoothProgress);
-  const progress = job
-    ? jobProgressPercent(job, timeScale, serverRealTime, nowMs)
-    : 0;
-  const remain = job ? jobRemainRealSec(job, timeScale, serverRealTime, nowMs) : 0;
 
   const methodLocked = b.status === "running" || b.status === "ready";
   const displayMethodId = methodLocked && b.methodId ? b.methodId : selectedId;
@@ -98,7 +90,6 @@ export function BuildingCard({
     ? startOpsPrecheck(b.buildingDefId, goldBalance, workforce, opsCosts)
     : null;
   const purposeHint = methodPurposeHint(displayMethod?.id);
-  const progressPercent = Math.round(b.status === "ready" ? 100 : progress);
   const showActions = showProductionActionButtons(b);
   const methodSelectId = `method-select-${b.id}`;
   const buildingIconLabel = b.buildingDef.name;
@@ -126,13 +117,14 @@ export function BuildingCard({
           </div>
         </div>
 
-        {job ? (
-          <p className="jobline">
-            進行中 {progress.toFixed(0)}% · 剩 {remain.toFixed(0)} 現實秒
-          </p>
-        ) : (
-          <p className="jobline">{b.status === "ready" ? `可收取 ${fmtBuffered(b.bufferedOutputs)}` : "等待開工"}</p>
-        )}
+        <BuildingJobProgress
+          buildingName={b.buildingDef.name}
+          status={b.status}
+          job={job}
+          timeScale={timeScale}
+          serverRealTime={serverRealTime}
+          bufferedOutputs={b.bufferedOutputs}
+        />
 
         {options.length ? (
           <>
@@ -233,18 +225,6 @@ export function BuildingCard({
             <button type="button" className="collect" disabled={b.status !== "ready"} onClick={onCollect}>
               收取
             </button>
-          </div>
-        ) : null}
-        {job || b.status === "ready" ? (
-          <div
-            className="bar"
-            role="progressbar"
-            aria-valuenow={progressPercent}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={productionProgressAriaLabel(b.buildingDef.name, progressPercent)}
-          >
-            <i style={{ width: `${progressPercent}%` }} aria-hidden />
           </div>
         ) : null}
       </fieldset>

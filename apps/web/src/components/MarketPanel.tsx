@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
+import { forwardRef, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Ref } from "react";
 import type { MarketActionErrorView } from "../market-action-error";
 import type { MarketSnapshot } from "../market";
@@ -62,6 +62,8 @@ export const MarketPanel = forwardRef(function MarketPanel(
   const [tab, setTab] = useState<Tab>("sell");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [commodityQuantities, setCommodityQuantities] = useState<Record<string, number>>({});
+  const panelScrollRef = useRef<HTMLElement | null>(null);
+  const savedScrollTopRef = useRef(0);
 
   useEffect(() => {
     if (!tabFocusRequest) return;
@@ -100,6 +102,32 @@ export const MarketPanel = forwardRef(function MarketPanel(
     setQuantities((prev) => ({ ...prev, [key]: next }));
   }, []);
 
+  const mergePanelRef = useCallback(
+    (node: HTMLElement | null) => {
+      panelScrollRef.current = node;
+      if (typeof ref === "function") ref(node);
+      else if (ref) ref.current = node;
+    },
+    [ref],
+  );
+
+  useEffect(() => {
+    const el = panelScrollRef.current;
+    if (!el) return undefined;
+    const onScroll = () => {
+      savedScrollTopRef.current = el.scrollTop;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useLayoutEffect(() => {
+    const el = panelScrollRef.current;
+    if (el && savedScrollTopRef.current > 0) {
+      el.scrollTop = savedScrollTopRef.current;
+    }
+  }, [market, commodities, tab]);
+
   useEffect(() => {
     if (!market) return;
     setQuantities((prev) => {
@@ -127,7 +155,7 @@ export const MarketPanel = forwardRef(function MarketPanel(
 
   return (
     <section
-      ref={ref}
+      ref={mergePanelRef}
       id={id}
       className="market-panel pack"
       tabIndex={-1}
@@ -147,11 +175,14 @@ export const MarketPanel = forwardRef(function MarketPanel(
         {tab === "commodities" ? COMMODITY_COPY.hint : MARKET_COPY.hint}
       </p>
 
-      {successToast ? (
-        <p className="market-trade-toast" role="status" aria-live="polite" data-testid="market-success-toast">
-          {successToast}
-        </p>
-      ) : null}
+      <p
+        className={`market-trade-toast-slot${successToast ? " has-toast" : ""}`}
+        role="status"
+        aria-live="polite"
+        data-testid="market-success-toast"
+      >
+        {successToast ?? ""}
+      </p>
 
       {panelError ? (
         <p className="market-panel-error" role="alert" title={panelError.hint}>

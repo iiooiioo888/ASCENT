@@ -36,7 +36,10 @@ import {
   MARKET_PANEL_ANCHOR_ID,
   resolveHudGold,
 } from "./market-feedback";
+import { sortBuildingDefs } from "./buildingSort";
 import { nextPollFailureCount, shouldShowConnectionLost } from "./connectionPoll";
+import { MARKET_POLL_INTERVAL_MS, STATE_POLL_INTERVAL_MS } from "./gamePoll";
+import { normalizeGameState } from "./gameStateNormalize";
 import {
   buildingScrollAnchorId,
   findFieldBuilding,
@@ -118,7 +121,7 @@ export default function App() {
 
   const refresh = useCallback(async () => {
     const next = await api<GameState>("/api/v1/state");
-    setState(next);
+    setState(normalizeGameState(next));
     pollFailuresRef.current = 0;
     setConnectionLost(false);
     setLoadError("");
@@ -134,23 +137,44 @@ export default function App() {
   const refreshCommodities = useCallback(async () => {
     const snapshot = await fetchCommoditiesOptional();
     setCommoditiesSnapshot(snapshot);
-    setCommoditiesTabVisible(
-      snapshot !== null && enabledCommodityListings(snapshot).length > 0,
-    );
+    setCommoditiesTabVisible((prev) => {
+      const next =
+        snapshot !== null &&
+        Array.isArray(snapshot.listings) &&
+        enabledCommodityListings(snapshot).length > 0;
+      return prev === next ? prev : next;
+    });
     return snapshot;
+  }, []);
+
+  const refreshMarketData = useCallback(async () => {
+    const [market, commodities] = await Promise.all([
+      fetchMarket().catch(() => null),
+      fetchCommoditiesOptional().catch(() => null),
+    ]);
+    if (market) setMarketSnapshot(market);
+    setCommoditiesSnapshot(commodities);
+    setCommoditiesTabVisible((prev) => {
+      const next =
+        commodities !== null &&
+        Array.isArray(commodities.listings) &&
+        enabledCommodityListings(commodities).length > 0;
+      return prev === next ? prev : next;
+    });
+    return { market, commodities };
   }, []);
 
   const handlePollFailure = useCallback((e: unknown) => {
     const message = formatUserError(e);
     pollFailuresRef.current = nextPollFailureCount(pollFailuresRef.current, true);
-    if (!state) {
+    if (!stateRef.current) {
       setLoadError(message);
       return;
     }
     if (shouldShowConnectionLost(pollFailuresRef.current)) {
       setConnectionLost(true);
     }
-  }, [state]);
+  }, []);
 
   const runInitialLoad = useCallback(async () => {
     try {
@@ -163,8 +187,9 @@ export default function App() {
   }, [refresh, handlePollFailure]);
 
   useEffect(() => {
-    runInitialLoad();
-  }, [runInitialLoad]);
+    void runInitialLoad();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only initial load (avoid poll storm)
+  }, []);
 
   useEffect(() => {
     if (!state || !isOfflineSummaryEnabled(FEATURE_OFFLINE_SUMMARY)) return;
@@ -212,19 +237,29 @@ export default function App() {
     saveStoredSnapshot(snapshotFromGameState(current));
   }, []);
 
-  useEffect(() => {
-    if (!state) return undefined;
-    const t = setInterval(() => {
-      refresh().catch(handlePollFailure);
-    }, 2000);
-    return () => clearInterval(t);
-  }, [state, refresh, handlePollFailure]);
+  const gamePollingActive = state !== null;
 
   useEffect(() => {
-    if (!state) return;
-    refreshMarket().catch(() => undefined);
-    refreshCommodities().catch(() => undefined);
-  }, [state, refreshMarket, refreshCommodities]);
+    if (!gamePollingActive) return undefined;
+    const t = setInterval(() => {
+      refresh().catch(handlePollFailure);
+    }, STATE_POLL_INTERVAL_MS);
+    return () => clearInterval(t);
+  }, [gamePollingActive, refresh, handlePollFailure]);
+
+  useEffect(() => {
+    if (!gamePollingActive) return undefined;
+    void refreshMarketData();
+    const t = setInterval(() => {
+      void refreshMarketData();
+    }, MARKET_POLL_INTERVAL_MS);
+    return () => clearInterval(t);
+  }, [gamePollingActive, refreshMarketData]);
+
+  useEffect(() => {
+    if (!marketOpenBuildingId) return;
+    void refreshMarketData();
+  }, [marketOpenBuildingId, refreshMarketData]);
 
   useEffect(() => {
     return () => {
@@ -553,11 +588,13 @@ export default function App() {
     return <LoadingScreen error={loadError} retrying={loadRetrying} onRetry={retryInitialLoad} />;
   }
 
-  const unplaced = state.buildingDefs.filter((d) => {
-    if (isPreplacedBuildingPlotHidden(d.id)) return false;
-    if (!FEATURE_SHOW_SILO_PLACEMENT && isSiloBuildingDef(d.id)) return false;
-    return !state.buildings.some((b) => b.buildingDefId === d.id);
-  });
+  const unplaced = sortBuildingDefs(
+    state.buildingDefs.filter((d) => {
+      if (isPreplacedBuildingPlotHidden(d.id)) return false;
+      if (!FEATURE_SHOW_SILO_PLACEMENT && isSiloBuildingDef(d.id)) return false;
+      return !state.buildings.some((b) => b.buildingDefId === d.id);
+    }),
+  );
 
   const toggleMarketPanel = (buildingId: string) => {
     setMarketOpenBuildingId((prev) => (prev === buildingId ? null : buildingId));
