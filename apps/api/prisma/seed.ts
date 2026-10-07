@@ -13,7 +13,6 @@ import {
   itemTypes,
   items,
   rules,
-  seedPlacedBuildingDefIds,
   startingInventory,
   validateCatalog,
 } from "@ascent/shared";
