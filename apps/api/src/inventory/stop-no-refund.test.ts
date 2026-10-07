@@ -1,40 +1,47 @@
-import { describe, expect, it, beforeAll } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { LOCAL_PLAYER_ID } from "@ascent/shared";
-import { PrismaClient } from "../../generated/prisma/client";
-import { createPrismaAdapter } from "../prisma/create-prisma-adapter";
+import { createEmptyTestDatabase, removeTestDatabase, seedTestDatabase } from "../../test/test-db";
 import { InventoryService } from "./inventory.service";
 import { SimulationService } from "../simulation/simulation.service";
 import { PrismaService } from "../prisma/prisma.service";
 
 /**
- * 已拍板 D6：stop 不退還 start 已扣輸入。需已種子 DB（CI `setup:db`）。
+ * 已拍板 D6：stop 不退還 start 已扣輸入。
  */
 describe("stop 不退還已扣輸入（D6）", () => {
-  const prisma = new PrismaClient({ adapter: createPrismaAdapter() }) as PrismaService;
+  let databaseUrl: string;
+  let prisma: PrismaService;
   let inventory: InventoryService;
 
   beforeAll(async () => {
-    if (!process.env.DATABASE_URL) return;
-    const state = await prisma.serverState.findUnique({ where: { id: 1 } });
-    if (!state) return;
+    databaseUrl = createEmptyTestDatabase();
+    process.env.DATABASE_URL = databaseUrl;
+    prisma = new PrismaService();
+    await prisma.$connect();
     const sim = new SimulationService(prisma);
-    await sim.onModuleInit();
+    await sim.refreshConfig();
     inventory = new InventoryService(prisma, sim);
   });
 
-  it("start 扣料後 stop，庫存不恢復", async () => {
-    if (!process.env.DATABASE_URL || !inventory) return;
-    const state = await prisma.serverState.findUnique({ where: { id: 1 } });
-    if (!state) return;
+  beforeEach(async () => {
+    seedTestDatabase(databaseUrl);
+  });
 
+  afterAll(async () => {
+    await prisma.$disconnect();
+    removeTestDatabase(databaseUrl);
+  });
+
+  it("start 扣料後 stop，庫存不恢復", async () => {
     const fieldId = `pb_${LOCAL_PLAYER_ID}_bdef_field`;
     const field = await prisma.playerBuilding.findUnique({ where: { id: fieldId } });
-    if (!field) {
-      expect(field).toBeTruthy();
-      return;
-    }
-    if (field.status === "ready") await inventory.collect(fieldId);
-    else if (field.status === "running") await inventory.stop(fieldId);
+    expect(field).toBeTruthy();
+    if (field!.status === "ready") await inventory.collect(fieldId);
+    else if (field!.status === "running") await inventory.stop(fieldId);
+    await prisma.player.update({
+      where: { id: LOCAL_PLAYER_ID },
+      data: { workforceBusy: 0 },
+    });
 
     const beforeSeed = await prisma.playerInventory.findUnique({
       where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: "item_seed_wheat" } },

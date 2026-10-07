@@ -20,6 +20,8 @@ import {
   haulGoldForBuilding,
   opsCostsFromDepth,
   wageGoldForBuilding,
+  defaultAutoMethodIdForBuilding,
+  mapStartFailureToAutoPauseReason,
   type BuildingQueueJob,
   type BuildingStatus,
   type ItemIo,
@@ -51,6 +53,16 @@ function fallowUntilForApi(
   if (fallowUntilGame == null) return undefined;
   const until = Number(fallowUntilGame);
   return isFallowActive(until, currentGameSec) ? until : undefined;
+}
+
+function badRequestMessage(e: BadRequestException): string {
+  const res = e.getResponse();
+  if (typeof res === "string") return res;
+  if (typeof res === "object" && res && "message" in res) {
+    const m = (res as { message: string | string[] }).message;
+    return Array.isArray(m) ? m[0] : m;
+  }
+  return String(res);
 }
 
 function withBuildingEnvironmentFields<
@@ -290,93 +302,164 @@ export class InventoryService {
   async start(buildingId: string, methodId: string) {
     return this.withSettlementTx(async (tx) => {
       await this.settleBuildingUnlocked(tx, buildingId);
-      const building = await tx.playerBuilding.findUnique({
-        where: { id: buildingId },
-        include: { buildingDef: true },
-      });
-      if (!building) throw new NotFoundException("建築不存在");
-      if (building.status !== "idle") throw new BadRequestException("建築忙碌或待收取");
-      const method = await tx.productionMethod.findFirst({ where: { id: methodId, isActive: true } });
-      if (!method) throw new BadRequestException("未知生產方式");
-      const allowed = (building.buildingDef.allowedRuleIds as string[]) ?? [];
-      if (!isMethodAllowedForBuilding(allowed, method.ruleId)) {
-        throw new BadRequestException("此建築不能使用該方式");
-      }
-      const now = new Date();
-      const clock = await this.requireState(tx);
-      const game = this.sim.displayGameTime(
-        { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
-        now.getTime(),
-      );
-      if (
-        building.buildingDefId === "bdef_field" &&
-        isFieldGrowRuleId(method.ruleId) &&
-        isFallowActive(
-          building.fallowUntilGame != null ? Number(building.fallowUntilGame) : null,
-          game,
-        )
-      ) {
-        throw new BadRequestException("土地休耕中");
-      }
-      const inputs = iosToRecord(method.inputs as ItemIo[]);
-      const outputs = iosToRecord(method.outputs as ItemIo[]);
-      const depth = this.sim.opsDepth;
-      const laborCost = depth.workforce.laborCostPerStart;
-      const wageGold = wageGoldForBuilding(building.buildingDefId, depth);
-      const haulGold = haulGoldForBuilding(building.buildingDefId, depth);
-      const player = await tx.player.findUniqueOrThrow({ where: { id: LOCAL_PLAYER_ID } });
-      const free = player.workforceHired - player.workforceBusy;
-      if (free < laborCost) throw new BadRequestException("人手不足");
-      const job: BuildingQueueJob = {
-        methodId: method.id,
-        durationGameSec: method.durationGameSec,
-        elapsedGameSec: 0,
-        inputs,
-        outputs,
-      };
-      const started = await tx.playerBuilding.updateMany({
-        where: { id: buildingId, status: "idle" },
-        data: {
-          methodId: method.id,
-          status: "running",
-          queue: [job] as unknown as Prisma.InputJsonValue,
-          inputs,
-          outputs,
-          lastSettledAt: now,
-          lastSettledGame: toGameInt(game),
-          lastUpdate: now,
-          lastUpdateGame: toGameInt(game),
-        },
-      });
-      throwIfStateConflict(started.count);
-      for (const [itemId, qty] of Object.entries(inputs)) {
-        const row = await tx.playerInventory.findUnique({
-          where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
-        });
-        const have = row ? Number(row.quantity) : 0;
-        if (have + 1e-9 < qty) throw new BadRequestException(`資源不足：${itemId}`);
-      }
-      for (const [itemId, qty] of Object.entries(inputs)) {
-        await tx.playerInventory.update({
-          where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
-          data: { quantity: { decrement: qty } },
-        });
-      }
-      if (wageGold > 0) {
-        await deductPlayerItem(tx, ITEM_GOLD_ID, wageGold);
-      }
-      if (haulGold > 0) {
-        await deductPlayerItem(tx, ITEM_GOLD_ID, haulGold);
-      }
-      await tx.player.update({
-        where: { id: LOCAL_PLAYER_ID },
-        data: { workforceBusy: { increment: laborCost } },
-      });
+      await this.executeStartInTx(tx, buildingId, methodId);
       return tx.playerBuilding.findUniqueOrThrow({
         where: { id: buildingId },
         include: { buildingDef: true, method: true },
       });
     });
+  }
+
+  async setAutoEnabled(buildingId: string, autoEnabled: boolean) {
+    if (typeof autoEnabled !== "boolean") {
+      throw new BadRequestException("autoEnabled 必須為布林值");
+    }
+    return this.withSettlementTx(async (tx) => {
+      await this.settleBuildingUnlocked(tx, buildingId);
+      const building = await tx.playerBuilding.findUnique({ where: { id: buildingId } });
+      if (!building) throw new NotFoundException("建築不存在");
+      await tx.playerBuilding.update({
+        where: { id: buildingId },
+        data: {
+          autoEnabled,
+          autoPauseReason: autoEnabled ? building.autoPauseReason : null,
+        },
+      });
+      if (autoEnabled) {
+        await this.maybeTryAutoStartUnlocked(tx, buildingId);
+      }
+      return tx.playerBuilding.findUniqueOrThrow({
+        where: { id: buildingId },
+        include: { buildingDef: true, method: true },
+      });
+    });
+  }
+
+  private async executeStartInTx(
+    tx: SettlementTransactionClient,
+    buildingId: string,
+    methodId: string,
+  ): Promise<void> {
+    const building = await tx.playerBuilding.findUnique({
+      where: { id: buildingId },
+      include: { buildingDef: true },
+    });
+    if (!building) throw new NotFoundException("建築不存在");
+    if (building.status !== "idle") throw new BadRequestException("建築忙碌或待收取");
+    const method = await tx.productionMethod.findFirst({ where: { id: methodId, isActive: true } });
+    if (!method) throw new BadRequestException("未知生產方式");
+    const allowed = (building.buildingDef.allowedRuleIds as string[]) ?? [];
+    if (!isMethodAllowedForBuilding(allowed, method.ruleId)) {
+      throw new BadRequestException("此建築不能使用該方式");
+    }
+    const now = new Date();
+    const clock = await this.requireState(tx);
+    const game = this.sim.displayGameTime(
+      { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
+      now.getTime(),
+    );
+    if (
+      building.buildingDefId === "bdef_field" &&
+      isFieldGrowRuleId(method.ruleId) &&
+      isFallowActive(
+        building.fallowUntilGame != null ? Number(building.fallowUntilGame) : null,
+        game,
+      )
+    ) {
+      throw new BadRequestException("土地休耕中");
+    }
+    const inputs = iosToRecord(method.inputs as ItemIo[]);
+    const outputs = iosToRecord(method.outputs as ItemIo[]);
+    const depth = this.sim.opsDepth;
+    const laborCost = depth.workforce.laborCostPerStart;
+    const wageGold = wageGoldForBuilding(building.buildingDefId, depth);
+    const haulGold = haulGoldForBuilding(building.buildingDefId, depth);
+    const player = await tx.player.findUniqueOrThrow({ where: { id: LOCAL_PLAYER_ID } });
+    const free = player.workforceHired - player.workforceBusy;
+    if (free < laborCost) throw new BadRequestException("人手不足");
+    for (const [itemId, qty] of Object.entries(inputs)) {
+      const row = await tx.playerInventory.findUnique({
+        where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
+      });
+      const have = row ? Number(row.quantity) : 0;
+      if (have + 1e-9 < qty) throw new BadRequestException(`資源不足：${itemId}`);
+    }
+    const goldCost = wageGold + haulGold;
+    if (goldCost > 0) {
+      const goldRow = await tx.playerInventory.findUnique({
+        where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+      });
+      const goldHave = goldRow ? Number(goldRow.quantity) : 0;
+      if (goldHave + 1e-9 < goldCost) throw new BadRequestException("金幣不足");
+    }
+    const job: BuildingQueueJob = {
+      methodId: method.id,
+      durationGameSec: method.durationGameSec,
+      elapsedGameSec: 0,
+      inputs,
+      outputs,
+    };
+    const started = await tx.playerBuilding.updateMany({
+      where: { id: buildingId, status: "idle" },
+      data: {
+        methodId: method.id,
+        status: "running",
+        queue: [job] as unknown as Prisma.InputJsonValue,
+        inputs,
+        outputs,
+        lastSettledAt: now,
+        lastSettledGame: toGameInt(game),
+        lastUpdate: now,
+        lastUpdateGame: toGameInt(game),
+      },
+    });
+    throwIfStateConflict(started.count);
+    for (const [itemId, qty] of Object.entries(inputs)) {
+      await tx.playerInventory.update({
+        where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
+        data: { quantity: { decrement: qty } },
+      });
+    }
+    if (wageGold > 0) {
+      await deductPlayerItem(tx, ITEM_GOLD_ID, wageGold);
+    }
+    if (haulGold > 0) {
+      await deductPlayerItem(tx, ITEM_GOLD_ID, haulGold);
+    }
+    await tx.player.update({
+      where: { id: LOCAL_PLAYER_ID },
+      data: { workforceBusy: { increment: laborCost } },
+    });
+  }
+
+  /** AFK-D4：每 tick 每建築最多試一次；重用 executeStartInTx 閘門。 */
+  private async maybeTryAutoStartUnlocked(tx: SettlementTransactionClient, buildingId: string) {
+    const building = await tx.playerBuilding.findUnique({
+      where: { id: buildingId },
+      include: { buildingDef: true },
+    });
+    if (!building?.autoEnabled || building.status !== "idle") return;
+    const methodId = defaultAutoMethodIdForBuilding(building.buildingDefId);
+    if (!methodId) return;
+    try {
+      await this.executeStartInTx(tx, buildingId, methodId);
+      await tx.playerBuilding.update({
+        where: { id: buildingId },
+        data: { autoPauseReason: null },
+      });
+    } catch (e) {
+      if (e instanceof BadRequestException) {
+        const reason = mapStartFailureToAutoPauseReason(badRequestMessage(e));
+        if (reason) {
+          await tx.playerBuilding.update({
+            where: { id: buildingId },
+            data: { autoPauseReason: reason },
+          });
+        }
+        return;
+      }
+      throw e;
+    }
   }
 
   async stop(buildingId: string) {
@@ -474,6 +557,7 @@ export class InventoryService {
         });
       }
       await this.add(tx, buffered);
+      await this.maybeTryAutoStartUnlocked(tx, buildingId);
       return tx.playerBuilding.findUniqueOrThrow({
         where: { id: buildingId },
         include: { buildingDef: true, method: true },
@@ -543,6 +627,9 @@ export class InventoryService {
           where: { id: 1 },
           data: { lastUpdate: now },
         });
+        if (result.status === "idle") {
+          await this.maybeTryAutoStartUnlocked(tx, id);
+        }
         return;
       }
     }

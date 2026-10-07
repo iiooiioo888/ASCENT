@@ -89,6 +89,12 @@ export type WorldClock = {
 
 export type BuildingStatus = "idle" | "running" | "ready";
 
+/** GET state／建築上的 AFK 欄位（AFK-BE-1）。 */
+export type BuildingAfkState = {
+  autoEnabled: boolean;
+  autoPauseReason: string | null;
+};
+
 export type BuildingQueueJob = {
   methodId: string;
   durationGameSec: number;

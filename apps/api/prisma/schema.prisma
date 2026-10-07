@@ -222,6 +222,8 @@ model PlayerBuilding {
   bufferedOutputs  Json     @map("buffered_outputs")
   status           String
   fallowUntilGame  BigInt?  @map("fallow_until_game")
+  autoEnabled      Boolean  @default(false) @map("auto_enabled")
+  autoPauseReason  String?  @map("auto_pause_reason")
 
   @@map("player_buildings")
 }
