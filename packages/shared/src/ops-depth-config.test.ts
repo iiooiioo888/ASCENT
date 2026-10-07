@@ -4,6 +4,7 @@ import {
   haulGoldForBuilding,
   opsCostsFromDepth,
   opsDepthFromDb,
+  resolveSellGoldAfterTransport,
   wageGoldForBuilding,
 } from "./ops-depth-config";
 
@@ -30,6 +31,15 @@ describe("ops-depth-config", () => {
     expect(depth.workforce.hireCostGold).toBe(DEFAULT_OPS_DEPTH.workforce.hireCostGold);
     expect(depth.wages.byBuildingId.bdef_field).toBe(1);
     expect(depth.sellTransport.item_bread).toBe(1);
+  });
+
+  it("賣出淨額：單價 8 運費 1 → net 7；運費過高拒絕", () => {
+    expect(resolveSellGoldAfterTransport("item_bread", 8, 1)).toEqual({
+      gross: 8,
+      transportFee: 1,
+      netGold: 7,
+    });
+    expect(resolveSellGoldAfterTransport("item_bread", 0, 1)).toBeNull();
   });
 
   it("opsCosts 快照含 haul／sellTransport 供預覽", () => {

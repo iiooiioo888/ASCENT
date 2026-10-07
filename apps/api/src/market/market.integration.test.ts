@@ -78,15 +78,17 @@ describe("市集（整合）", () => {
     });
   });
 
-  it("賣出麵包增加金幣", async () => {
+  it("賣出麵包增加金幣（扣運費後淨額）", async () => {
     await setQty("item_bread", 2);
     await setQty(ITEM_GOLD_ID, 0);
     const res = await market.sell("item_bread", 1);
-    expect(res.goldDelta).toBe(8);
+    expect(res.goldDelta).toBe(7);
+    expect(res.netGoldDelta).toBe(7);
+    expect(res.transportFee).toBe(1);
     const gold = await prisma.playerInventory.findUnique({
       where: { playerId_itemId: { playerId: "player_local", itemId: ITEM_GOLD_ID } },
     });
-    expect(Number(gold?.quantity)).toBe(8);
+    expect(Number(gold?.quantity)).toBe(7);
   });
 
   it("買入種子扣金幣", async () => {
@@ -129,6 +131,6 @@ describe("市集（整合）", () => {
     const gold = await prisma.playerInventory.findUnique({
       where: { playerId_itemId: { playerId: "player_local", itemId: ITEM_GOLD_ID } },
     });
-    expect(Number(gold?.quantity)).toBe(8);
+    expect(Number(gold?.quantity)).toBe(7);
   });
 });

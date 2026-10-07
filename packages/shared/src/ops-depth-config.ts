@@ -105,6 +105,23 @@ export function haulGoldForBuilding(buildingDefId: string, depth: OpsDepthConfig
   return depth.haul.byBuildingId[buildingDefId] ?? 0;
 }
 
+export function sellTransportFeePerUnit(itemId: string, depth: OpsDepthConfig = DEFAULT_OPS_DEPTH): number {
+  return depth.sellTransport[itemId] ?? 0;
+}
+
+/** 賣出淨額；運費高於售價總額時回傳 null（拒賣）。 */
+export function resolveSellGoldAfterTransport(
+  itemId: string,
+  unitPrice: number,
+  qty: number,
+  depth: OpsDepthConfig = DEFAULT_OPS_DEPTH,
+): { gross: number; transportFee: number; netGold: number } | null {
+  const gross = unitPrice * qty;
+  const transportFee = sellTransportFeePerUnit(itemId, depth) * qty;
+  if (transportFee > gross) return null;
+  return { gross, transportFee, netGold: gross - transportFee };
+}
+
 export function opsCostsFromDepth(depth: OpsDepthConfig = DEFAULT_OPS_DEPTH): OpsCostsSnapshot {
   return {
     hireCostGold: depth.workforce.hireCostGold,
