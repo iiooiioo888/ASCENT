@@ -403,6 +403,35 @@ dialog.offline-summary-dialog::backdrop {
   border: 2px solid #6aa8e0;
   box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
 }
+.hud .chip-weather {
+  font-weight: 700;
+  color: var(--ink);
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.25);
+}
+.hud .chip-weather-fair {
+  background: #f0d878;
+}
+.hud .chip-weather-rain {
+  background: #88b8e8;
+}
+.hud .chip-weather-drought {
+  background: #d4a060;
+}
+.fallow-notice {
+  margin: 0.35rem 0 0;
+  padding: 0.4rem 0.55rem;
+  border-radius: var(--radius);
+  background: rgba(80, 48, 24, 0.45);
+  border: 1px dashed var(--panel-edge);
+  color: var(--cream);
+  font-size: 0.85rem;
+}
+.env-yield-preview {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
 .workforce-hud {
   display: flex;
   flex-wrap: wrap;

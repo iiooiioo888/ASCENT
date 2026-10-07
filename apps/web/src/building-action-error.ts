@@ -122,6 +122,10 @@ const REGISTRY: Readonly<Record<string, RegistryEntry>> = {
     copy: OPS_DEPTH_COPY.workforceCap,
     shouldRefresh: false,
   },
+  土地休耕中: {
+    copy: "土地休耕中",
+    shouldRefresh: false,
+  },
 };
 
 const INSUFFICIENT_PREFIX = "資源不足：";

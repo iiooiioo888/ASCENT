@@ -21,6 +21,8 @@ export type Building = {
   methodId: string | null;
   queue: { elapsedGameSec: number; durationGameSec: number }[];
   bufferedOutputs: Record<string, number>;
+  /** 休地結束遊戲秒（僅休地中由 API 回傳） */
+  fallowUntil?: number;
 };
 
 export type WorkforceSnapshot = {
@@ -38,6 +40,12 @@ export type OpsCostsSnapshot = {
   laborCostPerStart: number;
 };
 
+export type EnvironmentState = {
+  weather: "fair" | "rain" | "drought";
+  yieldMult: number;
+  nextChangeAt?: number;
+};
+
 export type GameState = {
   time: { displayGameTime: number; timeScale: number; serverRealTime: string };
   inventory: InvRow[];
@@ -46,4 +54,5 @@ export type GameState = {
   buildingDefs: { id: string; name: string; code: string }[];
   workforce?: WorkforceSnapshot;
   opsCosts?: OpsCostsSnapshot;
+  environment?: EnvironmentState;
 };
