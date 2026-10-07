@@ -1,17 +1,15 @@
-import { BadRequestException, ConflictException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import {
   ITEM_GOLD_ID,
   LOCAL_PLAYER_ID,
   parseTradeQuantity,
   resolveMarketUnitPrice,
+  resolveSellGoldAfterTransport,
 } from "@ascent/shared";
-import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { SimulationService } from "../simulation/simulation.service";
 import { InventoryService } from "../inventory/inventory.service";
-import { SETTLEMENT_CONFLICT_MESSAGE } from "../inventory/building-state-update";
-
-const EPS = 1e-9;
+import { creditPlayerItem, deductPlayerItem } from "../inventory/player-inventory-tx";
 
 @Injectable()
 export class MarketService {
@@ -50,17 +48,21 @@ export class MarketService {
       const book = this.sim.marketPriceBook;
       const unitPrice = resolveMarketUnitPrice("sell", itemId, book);
       if (unitPrice === null) throw new BadRequestException(`不可交易：${itemId}`);
-      const goldGain = unitPrice * qty;
+      const depth = this.sim.opsDepth;
+      const settled = resolveSellGoldAfterTransport(itemId, unitPrice, qty, depth);
+      if (!settled) throw new BadRequestException("運費過高");
 
       return this.prisma.$transaction(async (tx) => {
-        await this.deductItem(tx, itemId, qty);
-        await this.creditItem(tx, ITEM_GOLD_ID, goldGain);
+        await deductPlayerItem(tx, itemId, qty);
+        await creditPlayerItem(tx, ITEM_GOLD_ID, settled.netGold);
         return {
           side: "sell" as const,
           itemId,
           quantity: qty,
           unitPrice,
-          goldDelta: goldGain,
+          goldDelta: settled.netGold,
+          netGoldDelta: settled.netGold,
+          transportFee: settled.transportFee,
         };
       });
     });
@@ -79,8 +81,8 @@ export class MarketService {
       const goldCost = unitPrice * qty;
 
       return this.prisma.$transaction(async (tx) => {
-        await this.deductItem(tx, ITEM_GOLD_ID, goldCost, "金幣不足");
-        await this.creditItem(tx, itemId, qty);
+        await deductPlayerItem(tx, ITEM_GOLD_ID, goldCost, "金幣不足");
+        await creditPlayerItem(tx, itemId, qty);
         return {
           side: "buy" as const,
           itemId,
@@ -92,38 +94,4 @@ export class MarketService {
     });
   }
 
-  private async deductItem(
-    tx: Prisma.TransactionClient,
-    itemId: string,
-    qty: number,
-    insufficientMessage?: string,
-  ) {
-    const updated = await tx.playerInventory.updateMany({
-      where: {
-        playerId: LOCAL_PLAYER_ID,
-        itemId,
-        quantity: { gte: qty },
-      },
-      data: { quantity: { decrement: qty } },
-    });
-    if (updated.count === 1) return;
-
-    const row = await tx.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
-    });
-    const have = row ? Number(row.quantity) : 0;
-    if (have + EPS < qty) {
-      if (itemId === ITEM_GOLD_ID) throw new BadRequestException(insufficientMessage ?? "金幣不足");
-      throw new BadRequestException(insufficientMessage ?? `資源不足：${itemId}`);
-    }
-    throw new ConflictException(SETTLEMENT_CONFLICT_MESSAGE);
-  }
-
-  private async creditItem(tx: Prisma.TransactionClient, itemId: string, qty: number) {
-    await tx.playerInventory.upsert({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
-      update: { quantity: { increment: qty } },
-      create: { playerId: LOCAL_PLAYER_ID, itemId, quantity: qty },
-    });
-  }
 }

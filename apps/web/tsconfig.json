@@ -11,7 +11,10 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    "strict": true
+    "strict": true,
+    "paths": {
+      "@ascent/shared": ["../../packages/shared/src/index.ts"]
+    }
   },
   "include": ["src"]
 }

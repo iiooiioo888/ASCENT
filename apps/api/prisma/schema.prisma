@@ -145,6 +145,7 @@ model Player {
   lastSeenAt DateTime @map("last_seen_at")
   inventory  PlayerInventory[]
   buildings  PlayerBuilding[]
+  equityHoldings PlayerEquityHolding[]
 
   @@map("players")
 }
@@ -159,6 +160,25 @@ model PlayerInventory {
 
   @@id([playerId, itemId])
   @@map("player_inventory")
+}
+
+model PlayerEquityHolding {
+  playerId String @map("player_id")
+  player   Player @relation(fields: [playerId], references: [id])
+  equityId String @map("equity_id")
+  shares   Int    @default(0)
+
+  @@id([playerId, equityId])
+  @@map("player_equity_holdings")
+}
+
+model EquityTickerState {
+  equityId      String @id @map("equity_id")
+  netBuyVolume  Int    @default(0) @map("net_buy_volume")
+  currentPrice  Int    @map("current_price")
+  priceHistory  Json   @map("price_history")
+
+  @@map("equity_ticker_state")
 }
 
 model PlayerBuilding {

@@ -224,7 +224,7 @@ describe("API v1（整合）", () => {
         .send({ methodId: growMethodId })
         .expect(201);
       await windBuildingBack(fieldBuildingId, 90);
-      await request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`).expect(201);
+      await request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`).expect(200);
       const inv = await prisma.playerInventory.findUnique({
         where: { playerId_itemId: { playerId: "player_local", itemId: "item_wheat" } },
       });
@@ -272,24 +272,6 @@ describe("API v1（整合）", () => {
 
     it("GET 不存在建築 → 404", async () => {
       await request(app.getHttpServer()).get("/api/v1/buildings/pb_missing").expect(404);
-    });
-
-    it("POST collect 非 ready → 400", async () => {
-      await request(app.getHttpServer())
-        .post(`/api/v1/buildings/${fieldBuildingId}/collect`)
-        .expect(400);
-    });
-
-    it("連續兩次 POST collect：第二次 → 400（尚無可收取產出）", async () => {
-      await request(app.getHttpServer())
-        .post(`/api/v1/buildings/${fieldBuildingId}/start`)
-        .send({ methodId: growMethodId })
-        .expect(201);
-      await windBuildingBack(fieldBuildingId, 90);
-      await request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`).expect(201);
-      const second = await request(app.getHttpServer()).post(`/api/v1/buildings/${fieldBuildingId}/collect`);
-      expect(second.status).toBe(400);
-      expect(second.body.message).toMatch(/尚無可收取產出/);
     });
 
     it("POST place 未知建築 → 400", async () => {

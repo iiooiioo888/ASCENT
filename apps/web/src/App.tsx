@@ -1,107 +1,221 @@
-import { useEffect, useMemo, useState } from "react";
-
-const ITEM_META: Record<string, { name: string; icon: string }> = {
-  item_seed_wheat: { name: "小麥種子", icon: "🌱" },
-  item_wheat: { name: "小麥", icon: "🌾" },
-  item_straw: { name: "秸稈", icon: "🪵" },
-  item_water: { name: "水", icon: "💧" },
-  item_flour: { name: "麵粉", icon: "🥣" },
-  item_feed: { name: "飼料", icon: "🧺" },
-  item_dough: { name: "麵團", icon: "⚪" },
-  item_bread: { name: "麵包", icon: "🍞" },
-};
-
-const METHOD_NAME: Record<string, string> = {
-  method_grow_wheat_default: "種植小麥",
-  method_grow_wheat_water_saving: "省水種植",
-  method_mill_flour_default: "磨粉",
-  method_mix_feed_default: "拌飼料",
-  method_make_dough_default: "和麵",
-  method_bake_bread_default: "烘烤麵包",
-  method_bake_bread_batch: "批量烘烤",
-};
-
-const BUILDING_ICON: Record<string, string> = {
-  bdef_field: "🌾",
-  bdef_silo: "🏚️",
-  bdef_mill: "⚙️",
-  bdef_oven: "🔥",
-};
-
-type InvRow = { itemId: string; quantity: string; item: { code: string; layer: string; derivedTier: number } };
-type Method = {
-  id: string;
-  code: string;
-  ruleId: string;
-  durationGameSec: number;
-  inputs: { item_id: string; qty: number }[];
-  outputs: { item_id: string; qty: number }[];
-};
-type Building = {
-  id: string;
-  status: string;
-  buildingDefId: string;
-  buildingDef: { name: string; allowedRuleIds: string[] };
-  methodId: string | null;
-  queue: { elapsedGameSec: number; durationGameSec: number }[];
-  bufferedOutputs: Record<string, number>;
-};
-type State = {
-  time: { displayGameTime: number; timeScale: number; serverRealTime: string };
-  inventory: InvRow[];
-  buildings: Building[];
-  methods: Method[];
-  buildingDefs: { id: string; name: string; code: string }[];
-};
-
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    const msg = Array.isArray(body.message) ? body.message.join("；") : body.message;
-    throw new Error(msg ?? res.statusText);
-  }
-  return res.json() as Promise<T>;
-}
-
-function fmtGame(sec: number) {
-  const d = Math.floor(sec / 86400);
-  const h = Math.floor((sec % 86400) / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  return `${d}日 ${h}時 ${m}分`;
-}
-
-function itemLabel(id: string) {
-  return ITEM_META[id]?.name ?? id;
-}
-
-function fmtIo(ios: { item_id: string; qty: number }[]) {
-  return ios.map((io) => `${ITEM_META[io.item_id]?.icon ?? ""} ${itemLabel(io.item_id)}×${io.qty}`).join("  ");
-}
-
-function realRemainSec(job?: { elapsedGameSec: number; durationGameSec: number }, timeScale = 60) {
-  if (!job) return 0;
-  return Math.max(0, (job.durationGameSec - job.elapsedGameSec) / timeScale);
-}
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api } from "./api";
+import { BuildingCard } from "./components/BuildingCard";
+import { IndustryChain } from "./components/IndustryChain";
+import { SiloBuildingCard } from "./components/SiloBuildingCard";
+import { TradingPostBuildingCard } from "./components/TradingPostBuildingCard";
+import { ConnectionStatusBar } from "./components/ConnectionStatusBar";
+import { DepletionNotice } from "./components/DepletionNotice";
+import { Inventory } from "./components/Inventory";
+import { marketPendingKey, type MarketTabFocusRequest } from "./components/MarketPanel";
+import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
+import { LoadingScreen } from "./components/LoadingScreen";
+import { maybeWorkforceHud } from "./components/WorkforceHud";
+import type { BuildingActionErrorView } from "./building-action-error";
+import { mapBuildingActionError } from "./building-action-error";
+import type { MarketActionErrorView } from "./market-action-error";
+import { mapMarketActionError } from "./market-action-error";
+import { fetchMarket, postMarketBuy, postMarketSell, type MarketSnapshot } from "./market";
+import {
+  canAffordAnyMarketBuy,
+  formatMarketTradeSuccess,
+  hudGoldChipLabel,
+  MARKET_PANEL_ANCHOR_ID,
+  resolveHudGold,
+} from "./market-feedback";
+import { nextPollFailureCount, shouldShowConnectionLost } from "./connectionPoll";
+import {
+  buildingScrollAnchorId,
+  findFieldBuilding,
+  pickSaveSeedMethodId,
+  isPreplacedBuildingPlotHidden,
+  resolveTradingPostScrollAnchorId,
+  resolveWellScrollAnchorId,
+  SCROLL_HIGHLIGHT_MS,
+} from "./depletion-scroll";
+import { isResourceDepleted } from "./depletion";
+import { FEATURE_SHOW_DEPLETION_EMPTY_STATE, FEATURE_SHOW_SILO_PLACEMENT, FEATURE_SILO_CARD_MODE } from "./featureFlags";
+import { formatUserError, fmtGameClockChip } from "./format";
+import { sortInventoryRows } from "./inventorySort";
+import { BUILDING_ICON } from "./meta";
+import {
+  BRAND_DISPLAY_NAME,
+  BRAND_SUBTITLE,
+  FEATURE_OFFLINE_SUMMARY,
+  GAME_TIME_CHIP_PREFIX,
+  OFFLINE_PROGRESS_BANNER,
+  OFFLINE_PROGRESS_HUD_CHIP,
+  SLICE_FLOW_BANNER,
+  SLICE_GOAL_BANNER,
+  timeScaleHudChip,
+} from "./productCopy";
+import {
+  FIELD_BUILDING_DEF_ID,
+  TRADING_POST_BUILDING_DEF_ID,
+  WELL_BUILDING_DEF_ID,
+} from "./resource-loop-copy";
+import { isSiloBuilding, isSiloBuildingDef } from "./silo";
+import { findTradingPostBuilding, isTradingPostBuilding } from "./tradingPost";
+import {
+  collectHighlightItemIds,
+  formatCollectSuccess,
+  SUCCESS_FEEDBACK_MS,
+} from "./successFeedback";
+import type { GameState, Method } from "./types";
+import {
+  diffOfflineSnapshot,
+  isOfflineSummaryEnabled,
+  loadStoredSnapshot,
+  saveStoredSnapshot,
+  snapshotFromGameState,
+  type OfflineSummaryResult,
+} from "./offlineSummary";
 
 export default function App() {
-  const [state, setState] = useState<State | null>(null);
-  const [error, setError] = useState<string>("");
+  const [state, setState] = useState<GameState | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [loadRetrying, setLoadRetrying] = useState(false);
+  const [connectionLost, setConnectionLost] = useState(false);
+  const pollFailuresRef = useRef(0);
+  const [actionErrors, setActionErrors] = useState<Record<string, BuildingActionErrorView>>({});
+  const [actionSuccess, setActionSuccess] = useState<Record<string, string>>({});
+  const [highlightItems, setHighlightItems] = useState<Set<string>>(() => new Set());
+  const successTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const [picked, setPicked] = useState<Record<string, string>>({});
+  const [highlightDefId, setHighlightDefId] = useState<string | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingKeysRef = useRef(new Set<string>());
+  const [pendingKeys, setPendingKeys] = useState<Set<string>>(() => new Set());
+  const stateRef = useRef<GameState | null>(null);
+  const offlineSummaryVisibleRef = useRef(false);
+  const offlineEvaluatedRef = useRef(false);
+  const [offlineSummary, setOfflineSummary] = useState<OfflineSummaryResult | null>(null);
+  const [marketSnapshot, setMarketSnapshot] = useState<MarketSnapshot | null>(null);
+  const [marketPanelError, setMarketPanelError] = useState<MarketActionErrorView | null>(null);
+  const [marketSuccessToast, setMarketSuccessToast] = useState<string | null>(null);
+  const marketToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [marketTabFocusRequest, setMarketTabFocusRequest] = useState<MarketTabFocusRequest | undefined>();
+  const [marketOpenBuildingId, setMarketOpenBuildingId] = useState<string | null>(null);
+  const [hireError, setHireError] = useState<BuildingActionErrorView | null>(null);
+  const HIRE_ACTION_KEY = "workforce:hire";
 
-  async function refresh() {
-    const next = await api<State>("/api/v1/state");
+  stateRef.current = state;
+
+  const refresh = useCallback(async () => {
+    const next = await api<GameState>("/api/v1/state");
     setState(next);
-    setError("");
-  }
+    pollFailuresRef.current = 0;
+    setConnectionLost(false);
+    setLoadError("");
+    return next;
+  }, []);
+
+  const refreshMarket = useCallback(async () => {
+    const snapshot = await fetchMarket();
+    setMarketSnapshot(snapshot);
+    return snapshot;
+  }, []);
+
+  const handlePollFailure = useCallback((e: unknown) => {
+    const message = formatUserError(e);
+    pollFailuresRef.current = nextPollFailureCount(pollFailuresRef.current, true);
+    if (!state) {
+      setLoadError(message);
+      return;
+    }
+    if (shouldShowConnectionLost(pollFailuresRef.current)) {
+      setConnectionLost(true);
+    }
+  }, [state]);
+
+  const runInitialLoad = useCallback(async () => {
+    try {
+      await refresh();
+    } catch (e) {
+      handlePollFailure(e);
+    } finally {
+      setLoadRetrying(false);
+    }
+  }, [refresh, handlePollFailure]);
 
   useEffect(() => {
-    refresh().catch((e) => setError(String(e)));
-    const t = setInterval(() => refresh().catch(() => undefined), 2000);
+    runInitialLoad();
+  }, [runInitialLoad]);
+
+  useEffect(() => {
+    if (!state || !isOfflineSummaryEnabled(FEATURE_OFFLINE_SUMMARY)) return;
+    if (offlineEvaluatedRef.current) return;
+    offlineEvaluatedRef.current = true;
+
+    const previous = loadStoredSnapshot();
+    if (previous) {
+      const summary = diffOfflineSnapshot(previous, state);
+      if (summary) {
+        setOfflineSummary(summary);
+        offlineSummaryVisibleRef.current = true;
+        return;
+      }
+    }
+    saveStoredSnapshot(snapshotFromGameState(state));
+  }, [state]);
+
+  useEffect(() => {
+    if (!state || !isOfflineSummaryEnabled(FEATURE_OFFLINE_SUMMARY)) return undefined;
+
+    const persistUnlessSummaryOpen = () => {
+      if (offlineSummaryVisibleRef.current) return;
+      const current = stateRef.current;
+      if (current) saveStoredSnapshot(snapshotFromGameState(current));
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") persistUnlessSummaryOpen();
+    };
+
+    window.addEventListener("pagehide", persistUnlessSummaryOpen);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", persistUnlessSummaryOpen);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [state]);
+
+  const dismissOfflineSummary = useCallback(() => {
+    const current = stateRef.current;
+    if (!current) return;
+    setOfflineSummary(null);
+    offlineSummaryVisibleRef.current = false;
+    saveStoredSnapshot(snapshotFromGameState(current));
+  }, []);
+
+  useEffect(() => {
+    if (!state) return undefined;
+    const t = setInterval(() => {
+      refresh().catch(handlePollFailure);
+    }, 2000);
     return () => clearInterval(t);
+  }, [state, refresh, handlePollFailure]);
+
+  useEffect(() => {
+    if (!state) return;
+    refreshMarket().catch(() => undefined);
+  }, [state, refreshMarket]);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    };
+  }, []);
+
+  const flashHighlight = useCallback((buildingDefId: string) => {
+    setHighlightDefId(buildingDefId);
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = setTimeout(() => setHighlightDefId(null), SCROLL_HIGHLIGHT_MS);
+  }, []);
+
+  const scrollToAnchor = useCallback((anchorId: string) => {
+    document.getElementById(anchorId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    document.getElementById(anchorId)?.focus({ preventScroll: true });
   }, []);
 
   const methodsByRule = useMemo(() => {
@@ -114,76 +228,331 @@ export default function App() {
     return m;
   }, [state]);
 
-  async function act(path: string, body?: unknown) {
-    try {
-      await api(path, { method: "POST", body: body ? JSON.stringify(body) : undefined });
-      await refresh();
-    } catch (e) {
-      setError(String(e));
+  const resourceDepleted = useMemo(() => {
+    if (!state) return false;
+    return isResourceDepleted(state.buildings, state.inventory, methodsByRule);
+  }, [state, methodsByRule]);
+
+  const sortedInventory = useMemo(() => {
+    if (!state) return [];
+    return sortInventoryRows(state.inventory);
+  }, [state]);
+
+  const hudGold = useMemo(
+    () => (state ? resolveHudGold(marketSnapshot?.gold, state.inventory) : 0),
+    [marketSnapshot?.gold, state],
+  );
+
+  const marketCtaProminent = useMemo(
+    () => canAffordAnyMarketBuy(hudGold, marketSnapshot?.prices),
+    [hudGold, marketSnapshot?.prices],
+  );
+
+  const goToWell = useCallback(() => {
+    if (!state) return;
+    const anchor = resolveWellScrollAnchorId(state.buildings);
+    if (!anchor) return;
+    flashHighlight(WELL_BUILDING_DEF_ID);
+    scrollToAnchor(anchor);
+  }, [flashHighlight, scrollToAnchor, state]);
+
+  const goToSaveSeed = useCallback(() => {
+    if (!state) return;
+    flashHighlight(FIELD_BUILDING_DEF_ID);
+    const field = findFieldBuilding(state.buildings);
+    if (field) {
+      const saveSeedId = pickSaveSeedMethodId(field, methodsByRule);
+      if (saveSeedId) {
+        setPicked((prev) => ({ ...prev, [field.id]: saveSeedId }));
+      }
+      scrollToAnchor(buildingScrollAnchorId(field.id));
     }
-  }
+  }, [flashHighlight, methodsByRule, scrollToAnchor, state]);
+
+  const goToMarket = useCallback(
+    (opts?: { preferBuyTab?: boolean }) => {
+      if (!state) return;
+      const shop = findTradingPostBuilding(state.buildings);
+      if (!shop) return;
+      setMarketOpenBuildingId(shop.id);
+      if (opts?.preferBuyTab) {
+        setMarketTabFocusRequest({ tab: "buy", seq: Date.now() });
+      }
+      flashHighlight(TRADING_POST_BUILDING_DEF_ID);
+      const buildingAnchor = resolveTradingPostScrollAnchorId(state.buildings);
+      if (buildingAnchor) scrollToAnchor(buildingAnchor);
+      requestAnimationFrame(() => scrollToAnchor(MARKET_PANEL_ANCHOR_ID));
+    },
+    [flashHighlight, scrollToAnchor, state],
+  );
+
+  const showMarketSuccess = useCallback((message: string, tradedItemId: string) => {
+    if (marketToastTimerRef.current) {
+      clearTimeout(marketToastTimerRef.current);
+      marketToastTimerRef.current = null;
+    }
+    setMarketSuccessToast(message);
+    setHighlightItems((prev) => {
+      const next = new Set(prev);
+      next.add("item_gold");
+      next.add(tradedItemId);
+      return next;
+    });
+    marketToastTimerRef.current = setTimeout(() => {
+      marketToastTimerRef.current = null;
+      setMarketSuccessToast(null);
+      setHighlightItems((prev) => {
+        const next = new Set(prev);
+        next.delete("item_gold");
+        next.delete(tradedItemId);
+        return next;
+      });
+    }, SUCCESS_FEEDBACK_MS);
+  }, []);
+
+  const setPending = useCallback((key: string, on: boolean) => {
+    const next = new Set(pendingKeysRef.current);
+    if (on) next.add(key);
+    else next.delete(key);
+    pendingKeysRef.current = next;
+    setPendingKeys(next);
+  }, []);
+
+  const clearSuccessFeedback = useCallback((actionKey: string) => {
+    const existing = successTimersRef.current.get(actionKey);
+    if (existing) {
+      clearTimeout(existing);
+      successTimersRef.current.delete(actionKey);
+    }
+    setActionSuccess((prev) => {
+      if (!prev[actionKey]) return prev;
+      const next = { ...prev };
+      delete next[actionKey];
+      return next;
+    });
+  }, []);
+
+  const showCollectSuccess = useCallback(
+    (actionKey: string, buffered: Record<string, number>) => {
+      const message = formatCollectSuccess(buffered);
+      if (!message) return;
+
+      const itemIds = collectHighlightItemIds(buffered);
+      clearSuccessFeedback(actionKey);
+      setActionSuccess((prev) => ({ ...prev, [actionKey]: message }));
+      setHighlightItems((prev) => {
+        const next = new Set(prev);
+        for (const id of itemIds) next.add(id);
+        return next;
+      });
+
+      const timer = setTimeout(() => {
+        successTimersRef.current.delete(actionKey);
+        setActionSuccess((prev) => {
+          if (!prev[actionKey]) return prev;
+          const next = { ...prev };
+          delete next[actionKey];
+          return next;
+        });
+        setHighlightItems((prev) => {
+          const next = new Set(prev);
+          for (const id of itemIds) next.delete(id);
+          return next;
+        });
+      }, SUCCESS_FEEDBACK_MS);
+      successTimersRef.current.set(actionKey, timer);
+    },
+    [clearSuccessFeedback],
+  );
+
+  const act = useCallback(
+    async (
+      actionKey: string,
+      path: string,
+      body?: unknown,
+      opts?: { collectBuffered?: Record<string, number> },
+    ) => {
+      if (pendingKeysRef.current.has(actionKey)) return;
+
+      setPending(actionKey, true);
+      clearSuccessFeedback(actionKey);
+      if (actionKey === HIRE_ACTION_KEY) {
+        setHireError(null);
+      }
+      setActionErrors((prev) => {
+        const next = { ...prev };
+        delete next[actionKey];
+        return next;
+      });
+
+      try {
+        await api(path, { method: "POST", body: body ? JSON.stringify(body) : undefined });
+        if (actionKey === HIRE_ACTION_KEY) {
+          setHireError(null);
+        }
+        setActionErrors((prev) => {
+          const next = { ...prev };
+          delete next[actionKey];
+          return next;
+        });
+        if (opts?.collectBuffered) {
+          showCollectSuccess(actionKey, opts.collectBuffered);
+        }
+        await refresh();
+      } catch (e) {
+        const mapped = mapBuildingActionError(e);
+        if (mapped.shouldRefresh) {
+          await refresh().catch(() => undefined);
+        }
+        const view = { message: mapped.message, hint: mapped.hint };
+        if (actionKey === HIRE_ACTION_KEY) {
+          setHireError(view);
+        } else {
+          setActionErrors((prev) => ({
+            ...prev,
+            [actionKey]: view,
+          }));
+        }
+      } finally {
+        setPending(actionKey, false);
+      }
+    },
+    [refresh, setPending, clearSuccessFeedback, showCollectSuccess],
+  );
+
+  const hireWorkforce = useCallback(() => {
+    act(HIRE_ACTION_KEY, "/api/v1/workforce/hire", {});
+  }, [act]);
+
+  const marketTrade = useCallback(
+    async (side: "sell" | "buy", itemId: string, quantity: number) => {
+      const actionKey = marketPendingKey(side, itemId);
+      if (pendingKeysRef.current.has(actionKey)) return;
+
+      const unitPrice =
+        side === "sell"
+          ? (marketSnapshot?.prices.sell[itemId] ?? 0)
+          : (marketSnapshot?.prices.buy[itemId] ?? 0);
+      const grossGold = unitPrice * quantity;
+
+      setPending(actionKey, true);
+      setMarketPanelError(null);
+
+      try {
+        if (side === "sell") {
+          const result = await postMarketSell(itemId, quantity);
+          const netGold = result.netGoldDelta ?? result.goldDelta ?? grossGold;
+          showMarketSuccess(
+            formatMarketTradeSuccess(side, itemId, quantity, grossGold, {
+              netGold,
+              transportFee: result.transportFee,
+            }),
+            itemId,
+          );
+        } else {
+          await postMarketBuy(itemId, quantity);
+          showMarketSuccess(formatMarketTradeSuccess(side, itemId, quantity, grossGold), itemId);
+        }
+        await refresh();
+        await refreshMarket();
+      } catch (e) {
+        const mapped = mapMarketActionError(e);
+        if (mapped.shouldRefresh) {
+          await refresh().catch(() => undefined);
+          await refreshMarket().catch(() => undefined);
+        }
+        setMarketPanelError({ message: mapped.message, hint: mapped.hint });
+      } finally {
+        setPending(actionKey, false);
+      }
+    },
+    [marketSnapshot, refresh, refreshMarket, setPending, showMarketSuccess],
+  );
+
+  const retryInitialLoad = useCallback(() => {
+    if (loadRetrying) return;
+    setLoadRetrying(true);
+    setLoadError("");
+    runInitialLoad();
+  }, [loadRetrying, runInitialLoad]);
+
+  useEffect(() => {
+    const timers = successTimersRef.current;
+    return () => {
+      for (const t of timers.values()) clearTimeout(t);
+      timers.clear();
+      if (marketToastTimerRef.current) clearTimeout(marketToastTimerRef.current);
+    };
+  }, []);
 
   if (!state) {
-    return (
-      <div className="loading">
-        <div>
-          <h1>崛起</h1>
-          <p>{error || "農莊正在甦醒…"}</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen error={loadError} retrying={loadRetrying} onRetry={retryInitialLoad} />;
   }
 
-  const unplaced = state.buildingDefs.filter((d) => !state.buildings.some((b) => b.buildingDefId === d.id));
+  const unplaced = state.buildingDefs.filter((d) => {
+    if (isPreplacedBuildingPlotHidden(d.id)) return false;
+    if (!FEATURE_SHOW_SILO_PLACEMENT && isSiloBuildingDef(d.id)) return false;
+    return !state.buildings.some((b) => b.buildingDefId === d.id);
+  });
+
+  const toggleMarketPanel = (buildingId: string) => {
+    setMarketOpenBuildingId((prev) => (prev === buildingId ? null : buildingId));
+  };
 
   return (
     <div className="world">
+      <ConnectionStatusBar visible={connectionLost} />
       <header className="hud">
         <div className="crest">
           <div className="crest-mark" aria-hidden>
             🌾
           </div>
           <div>
-            <h1>崛起</h1>
-            <small>農業切片 · 莊園</small>
+            <h1>{BRAND_DISPLAY_NAME}</h1>
+            <small>{BRAND_SUBTITLE}</small>
           </div>
         </div>
         <div className="clock">
-          <span className="chip">⏳ {fmtGame(state.time.displayGameTime)}</span>
-          <span className="chip">⚖ 1 : {state.time.timeScale}</span>
-          <span className="chip">🌙 離線 8 時</span>
+          <span className="chip chip-muted">
+            {fmtGameClockChip(state.time.displayGameTime, GAME_TIME_CHIP_PREFIX)}
+          </span>
+          <span className="chip">{timeScaleHudChip(state.time.timeScale)}</span>
+          <span className="chip chip-gold" data-testid="hud-gold-chip">
+            {hudGoldChipLabel(hudGold)}
+          </span>
+          {maybeWorkforceHud({
+            workforce: state.workforce,
+            opsCosts: state.opsCosts,
+            gold: hudGold,
+            pending: pendingKeys.has(HIRE_ACTION_KEY),
+            error: hireError ?? actionErrors[HIRE_ACTION_KEY],
+            onHire: () => {
+              setHireError(null);
+              hireWorkforce();
+            },
+            onGoMarket: () => goToMarket(),
+          })}
+          <span className="chip">{OFFLINE_PROGRESS_HUD_CHIP}</span>
         </div>
       </header>
 
-      <p className="banner">田種麥 → 磨坊磨粉／拌飼 → 爐和麵烤麵包。工時以遊戲秒計，現實約為六十分之一。</p>
-      {error ? <p className="banner error">{error}</p> : null}
+      <p className="banner banner-goal">{SLICE_GOAL_BANNER}</p>
+      <p className="banner">{SLICE_FLOW_BANNER}</p>
+      <p className="banner banner-muted">{OFFLINE_PROGRESS_BANNER}</p>
+      {offlineSummary ? (
+        <OfflineSummaryNotice summary={offlineSummary} onDismiss={dismissOfflineSummary} />
+      ) : null}
+      <DepletionNotice
+        visible={FEATURE_SHOW_DEPLETION_EMPTY_STATE && resourceDepleted}
+        onGoWell={goToWell}
+        onGoSaveSeed={goToSaveSeed}
+        onGoMarket={() => goToMarket({ preferBuyTab: marketCtaProminent })}
+        marketCtaProminent={marketCtaProminent}
+      />
 
-      <section className="pack">
-        <h2>背包</h2>
-        <div className="items">
-          {state.inventory.map((row) => {
-            const qty = Number(row.quantity);
-            const meta = ITEM_META[row.itemId] ?? { name: row.item.code, icon: "📦" };
-            return (
-              <div key={row.itemId} className={qty <= 0 ? "item empty" : "item"}>
-                <div className="icon">{meta.icon}</div>
-                <div className="name">{meta.name}</div>
-                <div className="qty">{qty.toFixed(0)}</div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+      <Inventory inventory={sortedInventory} highlightItemIds={highlightItems} />
 
-      <div className="chain">
-        <span>🌾 田</span>
-        <i>→</i>
-        <span>⚙️ 磨坊</span>
-        <i>→</i>
-        <span>🔥 爐</span>
-        <i>→</i>
-        <span>🍞 麵包</span>
-      </div>
+      <IndustryChain buildings={state.buildings} />
 
       <section className="settlement">
         {state.buildings.map((b) => {
@@ -191,102 +560,97 @@ export default function App() {
           const options = allowed.flatMap((rid) => methodsByRule.get(rid) ?? []);
           const selectedId = picked[b.id] ?? options[0]?.id;
           const selected = options.find((m) => m.id === selectedId);
-          const job = b.queue[0];
-          const progress = job ? Math.min(100, (job.elapsedGameSec / job.durationGameSec) * 100) : 0;
-          const remain = realRemainSec(job, state.time.timeScale);
+          const actionKey = b.id;
+
+          if (isSiloBuilding(b) && FEATURE_SILO_CARD_MODE === "simplified") {
+            return (
+              <SiloBuildingCard
+                key={b.id}
+                building={b}
+                actionError={actionErrors[actionKey]}
+                pending={pendingKeys.has(actionKey)}
+              />
+            );
+          }
+
+          if (isTradingPostBuilding(b)) {
+            return (
+              <TradingPostBuildingCard
+                key={b.id}
+                building={b}
+                highlight={highlightDefId === b.buildingDefId}
+                marketOpen={marketOpenBuildingId === b.id}
+                onToggleMarket={() => toggleMarketPanel(b.id)}
+                market={marketSnapshot}
+                panelError={marketPanelError}
+                pendingKeys={pendingKeys}
+                successToast={marketSuccessToast}
+                tabFocusRequest={marketTabFocusRequest}
+                opsCosts={state.opsCosts}
+                onSell={(itemId, quantity) => marketTrade("sell", itemId, quantity)}
+                onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
+              />
+            );
+          }
+
           return (
-            <article key={b.id} className={`plot ${b.status}`}>
-              <div className="plot-head">
-                <div style={{ display: "flex", gap: "0.7rem", alignItems: "center" }}>
-                  <div className="bicon">{BUILDING_ICON[b.buildingDefId] ?? "🏠"}</div>
-                  <div>
-                    <h3 className="bname">{b.buildingDef.name}</h3>
-                    <span className={`badge ${b.status}`}>{statusLabel(b.status)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {job ? (
-                <p className="jobline">
-                  進行中 {progress.toFixed(0)}% · 剩 {remain.toFixed(0)} 現實秒
-                </p>
-              ) : (
-                <p className="jobline">{b.status === "ready" ? `可收取 ${fmtBuffered(b.bufferedOutputs)}` : "等待開工"}</p>
-              )}
-
-              {options.length ? (
-                <>
-                  <select
-                    value={selectedId ?? ""}
-                    onChange={(e) => setPicked({ ...picked, [b.id]: e.target.value })}
-                  >
-                    {options.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {METHOD_NAME[m.id] ?? m.code} · {(m.durationGameSec / state.time.timeScale).toFixed(0)} 秒
-                      </option>
-                    ))}
-                  </select>
-                  <div className="recipe">
-                    {selected ? (
-                      <>
-                        <div>消耗 {fmtIo(selected.inputs)}</div>
-                        <div>產出 {fmtIo(selected.outputs)}</div>
-                      </>
-                    ) : null}
-                  </div>
-                </>
-              ) : (
-                <div className="recipe">倉不開工，只佔建築槽。</div>
-              )}
-
-              <div className="actions">
-                <button
-                  disabled={!options.length || b.status !== "idle"}
-                  onClick={() => act(`/api/v1/buildings/${b.id}/start`, { methodId: selectedId })}
-                >
-                  開工
-                </button>
-                <button className="ghost" onClick={() => act(`/api/v1/buildings/${b.id}/stop`)}>
-                  停止
-                </button>
-                <button
-                  className="collect"
-                  disabled={b.status !== "ready"}
-                  onClick={() => act(`/api/v1/buildings/${b.id}/collect`)}
-                >
-                  收取
-                </button>
-              </div>
-              {job || b.status === "ready" ? (
-                <div className="bar">
-                  <i style={{ width: `${b.status === "ready" ? 100 : progress}%` }} />
-                </div>
-              ) : null}
-            </article>
+            <BuildingCard
+              key={b.id}
+              scrollAnchorId={buildingScrollAnchorId(b.id)}
+              highlight={highlightDefId === b.buildingDefId}
+              building={b}
+              options={options}
+              inventory={state.inventory}
+              selectedId={selectedId}
+              selected={selected}
+              timeScale={state.time.timeScale}
+              serverRealTime={state.time.serverRealTime}
+              actionError={actionErrors[actionKey]}
+              actionSuccess={actionSuccess[actionKey]}
+              pending={pendingKeys.has(actionKey)}
+              onSelectMethod={(methodId) => setPicked({ ...picked, [b.id]: methodId })}
+              onStart={() => act(actionKey, `/api/v1/buildings/${b.id}/start`, { methodId: selectedId })}
+              onStop={() => act(actionKey, `/api/v1/buildings/${b.id}/stop`)}
+              onCollect={() =>
+                act(actionKey, `/api/v1/buildings/${b.id}/collect`, undefined, {
+                  collectBuffered: { ...b.bufferedOutputs },
+                })
+              }
+              goldBalance={hudGold}
+              workforce={state.workforce}
+              opsCosts={state.opsCosts}
+              onGoMarket={() => goToMarket()}
+            />
           );
         })}
 
-        {unplaced.map((d) => (
-          <div key={d.id} className="plot empty">
-            <div className="bicon">{BUILDING_ICON[d.id] ?? "🪵"}</div>
-            <div>空地 · 可放置{d.name}</div>
-            <button onClick={() => act("/api/v1/buildings", { buildingDefId: d.id })}>放置{d.name}</button>
-          </div>
-        ))}
+        {unplaced.map((d) => {
+          const actionKey = `place:${d.id}`;
+          const pending = pendingKeys.has(actionKey);
+          return (
+            <div
+              key={d.id}
+              id={`plot-unplaced-${d.id}`}
+              className={`plot empty${pending ? " pending" : ""}${highlightDefId === d.id ? " scroll-highlight" : ""}`}
+            >
+              <fieldset className="plot-body" disabled={pending}>
+                <div className="bicon" role="img" aria-label={d.name}>
+                  {BUILDING_ICON[d.id] ?? "🪵"}
+                </div>
+                <div>空地 · 可放置{d.name}</div>
+                {actionErrors[actionKey] ? (
+                  <p className="plot-action-error" role="alert" title={actionErrors[actionKey].hint}>
+                    {actionErrors[actionKey].message}
+                  </p>
+                ) : null}
+                <button type="button" onClick={() => act(actionKey, "/api/v1/buildings", { buildingDefId: d.id })}>
+                  放置{d.name}
+                </button>
+              </fieldset>
+            </div>
+          );
+        })}
       </section>
     </div>
   );
-}
-
-function statusLabel(status: string) {
-  if (status === "running") return "生產中";
-  if (status === "ready") return "待收取";
-  return "閒置";
-}
-
-function fmtBuffered(buf: Record<string, number>) {
-  const parts = Object.entries(buf)
-    .filter(([, q]) => q > 0)
-    .map(([id, q]) => `${ITEM_META[id]?.icon ?? ""} ${itemLabel(id)}×${q}`);
-  return parts.length ? parts.join("  ") : "（無）";
 }
