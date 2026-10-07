@@ -6,13 +6,13 @@ import { jobProgressPercent, jobRemainRealSec } from "../productionProgress";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
 import type { BuildingActionErrorView } from "../building-action-error";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
-import type { Building, InvRow, Method } from "../types";
 import {
   methodPurposeHint,
   methodSelectAriaLabel,
   productionProgressAriaLabel,
   SILO_CARD_BODY,
 } from "../productCopy";
+import type { Building, InvRow, Method } from "../types";
 import { StopConfirmDialog } from "./StopConfirmDialog";
 
 type Props = {
