@@ -67,6 +67,7 @@ export type GameState = {
   /** AFK-BE-2：商行麵包貨架摘要（GET /state）。 */
   retailShelf?: {
     enabled: boolean;
+    followMarket?: boolean;
     ask: number;
     todayRevenueGold: number;
   };

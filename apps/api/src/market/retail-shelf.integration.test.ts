@@ -45,21 +45,34 @@ describe("AFK-BE-2 商行貨架", () => {
     });
   }
 
-  it("GET 預設 ask 錨 MK 麵包價", async () => {
+  it("GET 預設 ask 跟市 MK×0.95", async () => {
     const res = await shelf.getShelf();
     expect(res.enabled).toBe(false);
-    expect(res.ask).toBe(8);
+    expect(res.followMarket).toBe(true);
+    expect(res.ask).toBe(7);
     expect(res.todayRevenueGold).toBe(0);
     expect(res.skuId).toBe("item_bread");
   });
 
-  it("PATCH enabled／ask 持久化", async () => {
+  it("PATCH enabled／ask 持久化並關跟市", async () => {
     const patched = await shelf.patchShelf({ enabled: true, ask: 12 });
     expect(patched.enabled).toBe(true);
+    expect(patched.followMarket).toBe(false);
     expect(patched.ask).toBe(12);
 
     const again = await shelf.getShelf();
     expect(again.ask).toBe(12);
+    expect(again.followMarket).toBe(false);
+
+    const row = await prisma.playerRetailState.findUnique({ where: { playerId: "player_local" } });
+    expect(row?.shelfFollowMarket).toBe(false);
+  });
+
+  it("PATCH followMarket 再開跟市", async () => {
+    await shelf.patchShelf({ enabled: true, ask: 99 });
+    const on = await shelf.patchShelf({ followMarket: true });
+    expect(on.followMarket).toBe(true);
+    expect(on.ask).toBe(7);
   });
 
   it("tick 出貨加金、扣麵包、累加今日收入；busy 不變", async () => {
@@ -121,6 +134,11 @@ describe("AFK-BE-2 商行貨架", () => {
   it("GET state 含 retailShelf", async () => {
     await shelf.patchShelf({ enabled: true, ask: 7 });
     const state = await inventory.state();
-    expect(state.retailShelf).toEqual({ enabled: true, ask: 7, todayRevenueGold: 0 });
+    expect(state.retailShelf).toEqual({
+      enabled: true,
+      followMarket: false,
+      ask: 7,
+      todayRevenueGold: 0,
+    });
   });
 });

@@ -3,10 +3,12 @@ import { RETAIL_SKU_ID, type RetailShelfPublicState } from "@ascent/shared";
 
 export type RetailShelfSnapshot = RetailShelfPublicState;
 
-export type RetailShelfStateSlice = Pick<
-  RetailShelfPublicState,
-  "enabled" | "ask" | "todayRevenueGold"
->;
+export type RetailShelfStateSlice = {
+  enabled: boolean;
+  followMarket?: boolean;
+  ask: number;
+  todayRevenueGold: number;
+};
 
 export async function fetchRetailShelf(): Promise<RetailShelfSnapshot> {
   return api<RetailShelfSnapshot>("/api/v1/market/retail/shelf");
@@ -42,6 +44,7 @@ export function mergeRetailShelfFromState(
   const skuId = current?.skuId ?? RETAIL_SKU_ID;
   return {
     enabled: slice.enabled,
+    followMarket: slice.followMarket ?? current?.followMarket ?? true,
     ask: slice.ask,
     todayRevenueGold: slice.todayRevenueGold,
     skuId,

@@ -30,6 +30,7 @@ function syncRevenueForGameDay(
 export function shelfPublicStateFromRow(
   row: {
     shelfEnabled: boolean;
+    shelfFollowMarket: boolean;
     shelfAskGold: number | null;
     shelfTodayRevenueGold: number;
     shelfRevenueGameDay: number | null;
@@ -39,6 +40,7 @@ export function shelfPublicStateFromRow(
 ): RetailShelfPublicState {
   return {
     enabled: row.shelfEnabled,
+    followMarket: row.shelfFollowMarket,
     ask,
     todayRevenueGold,
     skuId: RETAIL_SKU_ID,
@@ -81,8 +83,6 @@ export async function settleRetailShelfUnlocked(
   );
   let todayRevenue = revenueSync.todayRevenueGold;
   let revenueGameDay = revenueSync.gameDay;
-
-  const ask = resolveShelfAskGold(row.shelfAskGold, sim.marketPriceBook, sim.retailConfig);
 
   if (!row.shelfLastTickAt) {
     await tx.playerRetailState.update({
@@ -127,9 +127,15 @@ export async function settleRetailShelfUnlocked(
 
   for (let i = 0; i < tickCount; i++) {
     if (!row.shelfEnabled || breadQty < 1) continue;
+    const tickAsk = resolveShelfAskGold(
+      row.shelfAskGold,
+      row.shelfFollowMarket,
+      sim.marketPriceBook,
+      sim.retailConfig,
+    );
     const qty = rollShelfSaleQty(breadQty, rnd);
     if (qty < 1) continue;
-    const gold = ask * qty;
+    const gold = tickAsk * qty;
     await deductPlayerItem(tx, RETAIL_SKU_ID, qty);
     await creditPlayerItem(tx, ITEM_GOLD_ID, gold);
     breadQty -= qty;
@@ -162,8 +168,8 @@ export async function loadRetailShelfPublicState(
         );
   const row = await tx.playerRetailState.findUnique({ where: { playerId: LOCAL_PLAYER_ID } });
   if (!row) {
-    const ask = resolveShelfAskGold(null, sim.marketPriceBook, sim.retailConfig);
-    return { enabled: false, ask, todayRevenueGold: 0, skuId: RETAIL_SKU_ID };
+    const ask = resolveShelfAskGold(null, true, sim.marketPriceBook, sim.retailConfig);
+    return { enabled: false, followMarket: true, ask, todayRevenueGold: 0, skuId: RETAIL_SKU_ID };
   }
   const revenueSync = syncRevenueForGameDay(
     displayGameTime,
@@ -171,6 +177,11 @@ export async function loadRetailShelfPublicState(
     row.shelfRevenueGameDay,
     row.shelfTodayRevenueGold,
   );
-  const ask = resolveShelfAskGold(row.shelfAskGold, sim.marketPriceBook, sim.retailConfig);
+  const ask = resolveShelfAskGold(
+    row.shelfAskGold,
+    row.shelfFollowMarket,
+    sim.marketPriceBook,
+    sim.retailConfig,
+  );
   return shelfPublicStateFromRow(row, ask, revenueSync.todayRevenueGold);
 }
