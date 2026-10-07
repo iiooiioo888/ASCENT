@@ -5,9 +5,13 @@ import type { MarketSnapshot } from "../market";
 import { MARKET_COPY, marketBalanceLabel } from "../marketCopy";
 import { sellTransportPreview } from "../ops-depth";
 import type { OpsCostsSnapshot } from "../types";
+import type { CommoditiesSnapshot } from "../commodities";
+import { enabledCommodityListings } from "../commodities";
+import { COMMODITY_COPY } from "../commodityCopy";
+import { CommodityRow } from "./CommodityRow";
 import { MarketRow } from "./MarketRow";
 
-type Tab = "sell" | "buy";
+type Tab = "sell" | "buy" | "commodities";
 
 export type MarketTabFocusRequest = { tab: Tab; seq: number };
 
@@ -20,12 +24,20 @@ type Props = {
   successToast?: string | null;
   tabFocusRequest?: MarketTabFocusRequest;
   opsCosts?: OpsCostsSnapshot | null;
+  commodities?: CommoditiesSnapshot | null;
+  commoditiesTabVisible?: boolean;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
+  onCommodityBuy?: (commodityId: string, quantity: number) => void;
+  onCommoditySell?: (commodityId: string, quantity: number) => void;
 };
 
-function pendingKey(side: Tab, itemId: string) {
+function pendingKey(side: "sell" | "buy", itemId: string) {
   return `market:${side}:${itemId}`;
+}
+
+export function commodityPendingKey(side: "buy" | "sell", commodityId: string) {
+  return `commodity:${side}:${commodityId}`;
 }
 
 export const MarketPanel = forwardRef(function MarketPanel(
@@ -38,13 +50,18 @@ export const MarketPanel = forwardRef(function MarketPanel(
     successToast,
     tabFocusRequest,
     opsCosts,
+    commodities,
+    commoditiesTabVisible = false,
     onSell,
     onBuy,
+    onCommodityBuy,
+    onCommoditySell,
   }: Props,
   ref: Ref<HTMLElement>,
 ) {
   const [tab, setTab] = useState<Tab>("sell");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [commodityQuantities, setCommodityQuantities] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!tabFocusRequest) return;
@@ -61,8 +78,13 @@ export const MarketPanel = forwardRef(function MarketPanel(
     return Object.keys(market.prices.buy).sort();
   }, [market]);
 
+  const commodityListings = useMemo(
+    () => (commodities ? enabledCommodityListings(commodities) : []),
+    [commodities],
+  );
+
   const qtyFor = useCallback(
-    (side: Tab, itemId: string, holding: number, gold: number, unitPrice: number) => {
+    (side: "sell" | "buy", itemId: string, holding: number, gold: number, unitPrice: number) => {
       const key = `${side}:${itemId}`;
       const stored = quantities[key];
       if (stored !== undefined) return stored;
@@ -73,7 +95,7 @@ export const MarketPanel = forwardRef(function MarketPanel(
     [quantities],
   );
 
-  const setQty = useCallback((side: Tab, itemId: string, next: number) => {
+  const setQty = useCallback((side: "sell" | "buy", itemId: string, next: number) => {
     const key = `${side}:${itemId}`;
     setQuantities((prev) => ({ ...prev, [key]: next }));
   }, []);
@@ -121,7 +143,9 @@ export const MarketPanel = forwardRef(function MarketPanel(
         </p>
       </header>
 
-      <p className="market-hint banner-muted">{MARKET_COPY.hint}</p>
+      <p className="market-hint banner-muted">
+        {tab === "commodities" ? COMMODITY_COPY.hint : MARKET_COPY.hint}
+      </p>
 
       {successToast ? (
         <p className="market-trade-toast" role="status" aria-live="polite" data-testid="market-success-toast">
@@ -154,9 +178,52 @@ export const MarketPanel = forwardRef(function MarketPanel(
         >
           {MARKET_COPY.buyTab}
         </button>
+        {commoditiesTabVisible ? (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "commodities"}
+            className={tab === "commodities" ? "active" : ""}
+            onClick={() => setTab("commodities")}
+            data-testid="market-tab-commodities"
+          >
+            {COMMODITY_COPY.tab}
+          </button>
+        ) : null}
       </div>
 
-      {!market ? (
+      {tab === "commodities" ? (
+        <div className="market-table commodity-table" role="tabpanel" data-testid="market-commodities-panel">
+          {!commodities ? (
+            <p className="market-loading">{COMMODITY_COPY.loading}</p>
+          ) : (
+            <>
+              <p className="commodity-panel-subtitle">{COMMODITY_COPY.subtitle}</p>
+              {commodityListings.map((listing) => {
+                const qty = commodityQuantities[listing.id] ?? 1;
+                const pendingBuy = pendingKeys.has(commodityPendingKey("buy", listing.id));
+                const pendingSell = pendingKeys.has(commodityPendingKey("sell", listing.id));
+                return (
+                  <CommodityRow
+                    key={listing.id}
+                    listing={listing}
+                    snapshot={commodities}
+                    quantity={qty}
+                    pendingBuy={pendingBuy}
+                    pendingSell={pendingSell}
+                    onQuantityChange={(n) =>
+                      setCommodityQuantities((prev) => ({ ...prev, [listing.id]: n }))
+                    }
+                    onBuy={() => onCommodityBuy?.(listing.id, qty)}
+                    onSell={() => onCommoditySell?.(listing.id, qty)}
+                  />
+                );
+              })}
+              <p className="commodity-disclaimer banner-muted">{COMMODITY_COPY.disclaimer}</p>
+            </>
+          )}
+        </div>
+      ) : !market ? (
         <p className="market-loading">載入商行價目…</p>
       ) : tab === "sell" ? (
         <div className="market-table" role="tabpanel">

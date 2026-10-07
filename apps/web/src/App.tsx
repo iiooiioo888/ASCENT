@@ -7,7 +7,11 @@ import { TradingPostBuildingCard } from "./components/TradingPostBuildingCard";
 import { ConnectionStatusBar } from "./components/ConnectionStatusBar";
 import { DepletionNotice } from "./components/DepletionNotice";
 import { Inventory } from "./components/Inventory";
-import { marketPendingKey, type MarketTabFocusRequest } from "./components/MarketPanel";
+import {
+  commodityPendingKey,
+  marketPendingKey,
+  type MarketTabFocusRequest,
+} from "./components/MarketPanel";
 import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { maybeWorkforceHud } from "./components/WorkforceHud";
@@ -15,6 +19,15 @@ import type { BuildingActionErrorView } from "./building-action-error";
 import { mapBuildingActionError } from "./building-action-error";
 import type { MarketActionErrorView } from "./market-action-error";
 import { mapMarketActionError } from "./market-action-error";
+import { mapCommodityActionError } from "./commodity-action-error";
+import { COMMODITY_COPY } from "./commodityCopy";
+import {
+  enabledCommodityListings,
+  fetchCommoditiesOptional,
+  postCommodityBuy,
+  postCommoditySell,
+  type CommoditiesSnapshot,
+} from "./commodities";
 import { fetchMarket, postMarketBuy, postMarketSell, type MarketSnapshot } from "./market";
 import {
   canAffordAnyMarketBuy,
@@ -96,6 +109,8 @@ export default function App() {
   const marketToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [marketTabFocusRequest, setMarketTabFocusRequest] = useState<MarketTabFocusRequest | undefined>();
   const [marketOpenBuildingId, setMarketOpenBuildingId] = useState<string | null>(null);
+  const [commoditiesSnapshot, setCommoditiesSnapshot] = useState<CommoditiesSnapshot | null>(null);
+  const [commoditiesTabVisible, setCommoditiesTabVisible] = useState(false);
   const [hireError, setHireError] = useState<BuildingActionErrorView | null>(null);
   const HIRE_ACTION_KEY = "workforce:hire";
 
@@ -113,6 +128,15 @@ export default function App() {
   const refreshMarket = useCallback(async () => {
     const snapshot = await fetchMarket();
     setMarketSnapshot(snapshot);
+    return snapshot;
+  }, []);
+
+  const refreshCommodities = useCallback(async () => {
+    const snapshot = await fetchCommoditiesOptional();
+    setCommoditiesSnapshot(snapshot);
+    setCommoditiesTabVisible(
+      snapshot !== null && enabledCommodityListings(snapshot).length > 0,
+    );
     return snapshot;
   }, []);
 
@@ -199,7 +223,8 @@ export default function App() {
   useEffect(() => {
     if (!state) return;
     refreshMarket().catch(() => undefined);
-  }, [state, refreshMarket]);
+    refreshCommodities().catch(() => undefined);
+  }, [state, refreshMarket, refreshCommodities]);
 
   useEffect(() => {
     return () => {
@@ -469,6 +494,45 @@ export default function App() {
     [marketSnapshot, refresh, refreshMarket, setPending, showMarketSuccess],
   );
 
+  const commodityTrade = useCallback(
+    async (side: "buy" | "sell", commodityId: string, quantity: number) => {
+      const actionKey = commodityPendingKey(side, commodityId);
+      if (pendingKeysRef.current.has(actionKey)) return;
+
+      setPending(actionKey, true);
+      setMarketPanelError(null);
+
+      try {
+        const result =
+          side === "buy"
+            ? await postCommodityBuy(commodityId, quantity)
+            : await postCommoditySell(commodityId, quantity);
+        const goldAmount = Math.abs(result.netGoldDelta ?? result.goldDelta);
+        const message =
+          side === "buy"
+            ? COMMODITY_COPY.successBuy(quantity, goldAmount)
+            : COMMODITY_COPY.successSell(quantity, goldAmount);
+        const itemId =
+          commoditiesSnapshot?.listings.find((l) => l.id === commodityId)?.itemId ?? "item_oil";
+        showMarketSuccess(message, itemId);
+        await refresh();
+        await refreshMarket();
+        await refreshCommodities();
+      } catch (e) {
+        const mapped = mapCommodityActionError(e);
+        if (mapped.shouldRefresh) {
+          await refresh().catch(() => undefined);
+          await refreshMarket().catch(() => undefined);
+          await refreshCommodities().catch(() => undefined);
+        }
+        setMarketPanelError({ message: mapped.message, hint: mapped.hint });
+      } finally {
+        setPending(actionKey, false);
+      }
+    },
+    [commoditiesSnapshot, refresh, refreshMarket, refreshCommodities, setPending, showMarketSuccess],
+  );
+
   const retryInitialLoad = useCallback(() => {
     if (loadRetrying) return;
     setLoadRetrying(true);
@@ -587,8 +651,12 @@ export default function App() {
                 successToast={marketSuccessToast}
                 tabFocusRequest={marketTabFocusRequest}
                 opsCosts={state.opsCosts}
+                commodities={commoditiesSnapshot}
+                commoditiesTabVisible={commoditiesTabVisible}
                 onSell={(itemId, quantity) => marketTrade("sell", itemId, quantity)}
                 onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
+                onCommodityBuy={(commodityId, quantity) => commodityTrade("buy", commodityId, quantity)}
+                onCommoditySell={(commodityId, quantity) => commodityTrade("sell", commodityId, quantity)}
               />
             );
           }

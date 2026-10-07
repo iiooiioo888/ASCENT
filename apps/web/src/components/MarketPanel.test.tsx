@@ -5,7 +5,32 @@ import { MARKET_COPY } from "../marketCopy";
 import type { MarketSnapshot } from "../market";
 import { OPS_DEPTH_COPY } from "../ops-depth-copy";
 import type { OpsCostsSnapshot } from "../types";
+import type { CommoditiesSnapshot } from "../commodities";
+import { COMMODITY_COPY } from "../commodityCopy";
 import { MarketPanel } from "./MarketPanel";
+
+function makeCommodities(overrides?: Partial<CommoditiesSnapshot>): CommoditiesSnapshot {
+  return {
+    gold: 10,
+    feeRate: 0.01,
+    minFeeGold: 1,
+    maxQtyPerOrder: 20,
+    listings: [
+      {
+        id: "oil",
+        name: "石油",
+        itemId: "item_oil",
+        basePrice: 15,
+        enabled: true,
+        price: 15,
+        change: 0,
+        priceHistory: [{ t: 1, price: 15 }],
+        holding: 0,
+      },
+    ],
+    ...overrides,
+  };
+}
 
 const defaultOpsCosts: OpsCostsSnapshot = {
   hireCostGold: 8,
@@ -226,6 +251,89 @@ describe("MarketPanel", () => {
     expect(within(breadRow).getByTestId("market-row-transport-hint")).toHaveTextContent(
       OPS_DEPTH_COPY.sellTransportTooHigh,
     );
+  });
+
+  it("hides commodities tab when not visible", () => {
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        commodities={makeCommodities()}
+        commoditiesTabVisible={false}
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByTestId("market-tab-commodities")).not.toBeInTheDocument();
+  });
+
+  it("shows commodities tab and oil sparkline when enabled", async () => {
+    const user = userEvent.setup();
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        commodities={makeCommodities()}
+        commoditiesTabVisible
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+        onCommodityBuy={vi.fn()}
+        onCommoditySell={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByTestId("market-tab-commodities"));
+    expect(screen.getByTestId("market-commodities-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("commodity-sparkline-oil")).toBeInTheDocument();
+    expect(screen.getByTestId("commodity-empty-hold")).toHaveTextContent(COMMODITY_COPY.empty);
+  });
+
+  it("disables commodity buy when gold is insufficient", async () => {
+    const user = userEvent.setup();
+    render(
+      <MarketPanel
+        market={makeMarket({ gold: 0 })}
+        panelError={null}
+        pendingKeys={new Set()}
+        commodities={makeCommodities({ gold: 0 })}
+        commoditiesTabVisible
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+        onCommodityBuy={vi.fn()}
+        onCommoditySell={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByTestId("market-tab-commodities"));
+    const row = screen.getByTestId("commodity-row-oil");
+    const buyBtn = within(row).getByRole("button", { name: COMMODITY_COPY.buyCta });
+    expect(buyBtn).toBeDisabled();
+    expect(within(row).getByText(COMMODITY_COPY.needGold)).toBeInTheDocument();
+  });
+
+  it("disables commodity sell when holding is zero", async () => {
+    const user = userEvent.setup();
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        commodities={makeCommodities()}
+        commoditiesTabVisible
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+        onCommodityBuy={vi.fn()}
+        onCommoditySell={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByTestId("market-tab-commodities"));
+    const row = screen.getByTestId("commodity-row-oil");
+    const sellBtn = within(row).getByRole("button", { name: COMMODITY_COPY.sellCta });
+    expect(sellBtn).toBeDisabled();
   });
 
   it("shows panel error message", () => {

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from "react";
 import type { MarketActionErrorView } from "../market-action-error";
+import type { CommoditiesSnapshot } from "../commodities";
 import type { MarketSnapshot } from "../market";
 import { MARKET_COPY } from "../marketCopy";
 import { BUILDING_ICON } from "../meta";
@@ -17,8 +18,12 @@ type Props = {
   successToast?: string | null;
   tabFocusRequest?: MarketTabFocusRequest;
   opsCosts?: OpsCostsSnapshot | null;
+  commodities?: CommoditiesSnapshot | null;
+  commoditiesTabVisible?: boolean;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
+  onCommodityBuy?: (commodityId: string, quantity: number) => void;
+  onCommoditySell?: (commodityId: string, quantity: number) => void;
 };
 
 /** v1.2：莊外商行建築卡 — 點「交易」展開買賣 panel，無生產動作。 */
@@ -33,8 +38,12 @@ export function TradingPostBuildingCard({
   successToast,
   tabFocusRequest,
   opsCosts,
+  commodities,
+  commoditiesTabVisible,
   onSell,
   onBuy,
+  onCommodityBuy,
+  onCommoditySell,
 }: Props) {
   const panelRef = useRef<HTMLElement>(null);
   const panelHeadingId = useId();
@@ -84,8 +93,12 @@ export function TradingPostBuildingCard({
             successToast={successToast}
             tabFocusRequest={tabFocusRequest}
             opsCosts={opsCosts}
+            commodities={commodities}
+            commoditiesTabVisible={commoditiesTabVisible}
             onSell={onSell}
             onBuy={onBuy}
+            onCommodityBuy={onCommodityBuy}
+            onCommoditySell={onCommoditySell}
           />
         ) : null}
       </div>
