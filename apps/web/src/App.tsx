@@ -21,6 +21,7 @@ import {
   OFFLINE_PROGRESS_HUD_CHIP,
   SLICE_FLOW_BANNER,
   SLICE_GOAL_BANNER,
+  INDUSTRY_CHAIN_ARIA_LABEL,
 } from "./productCopy";
 import {
   collectHighlightItemIds,
@@ -311,14 +312,14 @@ export default function App() {
 
       <Inventory inventory={state.inventory} highlightItemIds={highlightItems} />
 
-      <div className="chain">
-        <span>🌾 田</span>
-        <i>→</i>
-        <span>⚙️ 磨坊</span>
-        <i>→</i>
-        <span>🔥 爐</span>
-        <i>→</i>
-        <span>🍞 麵包</span>
+      <div className="chain" aria-label={INDUSTRY_CHAIN_ARIA_LABEL}>
+        <span aria-hidden>🌾 田</span>
+        <i aria-hidden>→</i>
+        <span aria-hidden>⚙️ 磨坊</span>
+        <i aria-hidden>→</i>
+        <span aria-hidden>🔥 爐</span>
+        <i aria-hidden>→</i>
+        <span aria-hidden>🍞 麵包</span>
       </div>
 
       <section className="settlement">
@@ -359,7 +360,9 @@ export default function App() {
           return (
             <div key={d.id} className={`plot empty${pending ? " pending" : ""}`}>
               <fieldset className="plot-body" disabled={pending}>
-                <div className="bicon">{BUILDING_ICON[d.id] ?? "🪵"}</div>
+                <div className="bicon" role="img" aria-label={d.name}>
+                  {BUILDING_ICON[d.id] ?? "🪵"}
+                </div>
                 <div>空地 · 可放置{d.name}</div>
                 {actionErrors[actionKey] ? (
                   <p className="plot-action-error" role="alert" title={actionErrors[actionKey].hint}>

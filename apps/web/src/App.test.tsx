@@ -135,3 +135,64 @@ describe("App U10 connection status", () => {
     });
   });
 });
+
+describe("App P0 stale building action refresh", () => {
+  beforeEach(() => {
+    apiMock.mockReset();
+  });
+
+  it("refreshes state after HTTP 409 on collect", async () => {
+    const user = userEvent.setup();
+    const ready = makeReadyFieldState();
+    let stateFetches = 0;
+
+    apiMock.mockImplementation(async (path: string, init?: RequestInit) => {
+      if (path === "/api/v1/state") {
+        stateFetches += 1;
+        return ready;
+      }
+      if (path === "/api/v1/buildings/pb_field/collect" && init?.method === "POST") {
+        const { ApiError } = await import("./api");
+        throw new ApiError("建築狀態已變更，請重新整理", 409);
+      }
+      throw new Error(`unexpected api call: ${path}`);
+    });
+
+    render(<App />);
+    const collectBtn = await screen.findByRole("button", { name: "收取" });
+    const beforeCollect = stateFetches;
+    await user.click(collectBtn);
+
+    await waitFor(() => {
+      expect(stateFetches).toBeGreaterThan(beforeCollect);
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(/狀態已變更|重新整理/);
+  });
+
+  it("refreshes state after pre-PR#8 HTTP 400 race on collect", async () => {
+    const user = userEvent.setup();
+    const ready = makeReadyFieldState();
+    let stateFetches = 0;
+
+    apiMock.mockImplementation(async (path: string, init?: RequestInit) => {
+      if (path === "/api/v1/state") {
+        stateFetches += 1;
+        return ready;
+      }
+      if (path === "/api/v1/buildings/pb_field/collect" && init?.method === "POST") {
+        const { ApiError } = await import("./api");
+        throw new ApiError("尚無可收取產出", 400);
+      }
+      throw new Error(`unexpected api call: ${path}`);
+    });
+
+    render(<App />);
+    const collectBtn = await screen.findByRole("button", { name: "收取" });
+    const beforeCollect = stateFetches;
+    await user.click(collectBtn);
+
+    await waitFor(() => {
+      expect(stateFetches).toBeGreaterThan(beforeCollect);
+    });
+  });
+});

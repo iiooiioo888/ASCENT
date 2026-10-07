@@ -17,6 +17,7 @@ export function Inventory({ inventory, highlightItemIds }: Props) {
           const qty = Number(row.quantity);
           const meta = ITEM_META[row.itemId] ?? { name: row.item.code, icon: "📦" };
           const purpose = itemPurposeHint(row.itemId);
+          const qtyLabel = formatQuantity(qty);
           return (
             <div
               key={row.itemId}
@@ -26,10 +27,11 @@ export function Inventory({ inventory, highlightItemIds }: Props) {
               ]
                 .filter(Boolean)
                 .join(" ")}
+              aria-label={`${meta.name} ${qtyLabel}`}
             >
-              <div className="icon">{meta.icon}</div>
+              <div className="icon" aria-hidden>{meta.icon}</div>
               <div className="name">{meta.name}</div>
-              <div className="qty">{formatQuantity(qty)}</div>
+              <div className="qty" aria-hidden>{qtyLabel}</div>
               {purpose ? <div className="item-purpose">{purpose}</div> : null}
             </div>
           );

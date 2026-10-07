@@ -99,3 +99,16 @@ export const CONNECTION_LOAD_SEED_HINT = "若為本地開發，請先執行 pnpm
 export function isUnseededWorldClockError(message: string): boolean {
   return message.includes("尚未種子世界時鐘");
 }
+
+/** Accessible name for per-building production method `<select>` (U15). */
+export function methodSelectAriaLabel(buildingName: string): string {
+  return `選擇${buildingName}的生產方式`;
+}
+
+/** `aria-label` for building / production progress bars (U15). */
+export function productionProgressAriaLabel(buildingName: string, percent: number): string {
+  return `${buildingName}生產進度 ${percent}%`;
+}
+
+/** Decorative industry chain strip (U15). */
+export const INDUSTRY_CHAIN_ARIA_LABEL = "產業鏈：田、磨坊、爐至麵包";

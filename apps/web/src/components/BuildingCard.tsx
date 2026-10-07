@@ -4,7 +4,7 @@ import type { BuildingActionErrorView } from "../building-action-error";
 import { fmtBuffered, fmtIo, realRemainSec, statusLabel } from "../format";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
-import { methodPurposeHint } from "../productCopy";
+import { methodPurposeHint, methodSelectAriaLabel, productionProgressAriaLabel } from "../productCopy";
 import type { Building, InvRow, Method } from "../types";
 import { StopConfirmDialog } from "./StopConfirmDialog";
 
@@ -57,6 +57,9 @@ export function BuildingCard({
 
   const runningMethod = b.methodId ? options.find((m) => m.id === b.methodId) : undefined;
   const purposeHint = methodPurposeHint(displayMethod?.id);
+  const progressPercent = Math.round(b.status === "ready" ? 100 : progress);
+  const methodSelectId = `method-select-${b.id}`;
+  const buildingIconLabel = b.buildingDef.name;
 
   const handleStopConfirm = () => {
     setStopConfirmOpen(false);
@@ -68,7 +71,9 @@ export function BuildingCard({
       <fieldset className="plot-body" disabled={pending}>
         <div className="plot-head">
           <div style={{ display: "flex", gap: "0.7rem", alignItems: "center" }}>
-            <div className="bicon">{BUILDING_ICON[b.buildingDefId] ?? "🏠"}</div>
+            <div className="bicon" role="img" aria-label={buildingIconLabel}>
+              {BUILDING_ICON[b.buildingDefId] ?? "🏠"}
+            </div>
             <div>
               <h3 className="bname">{b.buildingDef.name}</h3>
               <span className={`badge ${b.status}`}>{statusLabel(b.status)}</span>
@@ -86,17 +91,23 @@ export function BuildingCard({
 
         {options.length ? (
           <>
-            <select
-              value={displayMethodId ?? ""}
-              disabled={methodLocked}
-              onChange={(e) => onSelectMethod(e.target.value)}
-            >
+            <div className="method-field">
+              <label className="method-label" htmlFor={methodSelectId}>
+                {methodSelectAriaLabel(b.buildingDef.name)}
+              </label>
+              <select
+                id={methodSelectId}
+                value={displayMethodId ?? ""}
+                disabled={methodLocked}
+                onChange={(e) => onSelectMethod(e.target.value)}
+              >
               {options.map((m) => (
                 <option key={m.id} value={m.id}>
                   {METHOD_NAME[m.id] ?? m.code} · {(m.durationGameSec / timeScale).toFixed(0)} 秒
                 </option>
               ))}
-            </select>
+              </select>
+            </div>
             <div className="recipe">
               {displayMethod ? (
                 <>
@@ -156,8 +167,15 @@ export function BuildingCard({
           </button>
         </div>
         {job || b.status === "ready" ? (
-          <div className="bar">
-            <i style={{ width: `${b.status === "ready" ? 100 : progress}%` }} />
+          <div
+            className="bar"
+            role="progressbar"
+            aria-valuenow={progressPercent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={productionProgressAriaLabel(b.buildingDef.name, progressPercent)}
+          >
+            <i style={{ width: `${progressPercent}%` }} aria-hidden />
           </div>
         ) : null}
       </fieldset>
