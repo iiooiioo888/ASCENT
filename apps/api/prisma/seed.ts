@@ -9,7 +9,9 @@ import {
   GAME_DAY_GAME_SEC,
   buildingDefs,
   seedPlacedBuildingDefIds,
+  enabledCommodityListings,
   generateMethods,
+  initialPriceHistory,
   itemTypes,
   items,
   rules,
@@ -39,6 +41,7 @@ async function main() {
   await prisma.buildingDef.deleteMany();
   await prisma.gameConfig.deleteMany();
   await prisma.serverState.deleteMany();
+  await prisma.commodityMarketState.deleteMany();
 
   await prisma.gameConfig.create({
     data: {
@@ -160,6 +163,17 @@ async function main() {
         playerId: LOCAL_PLAYER_ID,
         itemId,
         quantity: qty,
+      },
+    });
+  }
+
+  const seedNowMs = now.getTime();
+  for (const listing of enabledCommodityListings()) {
+    await prisma.commodityMarketState.create({
+      data: {
+        commodityId: listing.id,
+        netPressureVolume: 0,
+        priceHistory: initialPriceHistory(listing.basePrice, seedNowMs),
       },
     });
   }
