@@ -270,3 +270,5 @@ pnpm --filter @ascent/api test
 ```
 
 本機可先 `pnpm db:up` 啟動 Compose Postgres，再執行上列指令（`ci-postgres-setup.mjs` 會把 `schema.prisma` provider 改為 `postgresql` 並寫入 `apps/api/.env`）。
+
+**VPS 正式部署（Postgres + API + nginx）**：見 [docs/deploy-docker.md](docs/deploy-docker.md)（`docker compose -f docker-compose.prod.yml up --build`）。
