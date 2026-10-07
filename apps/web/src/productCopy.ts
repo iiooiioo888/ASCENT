@@ -67,3 +67,18 @@ export function methodPurposeHint(methodId: string | undefined): string | undefi
 export function itemPurposeHint(itemId: string): string | undefined {
   return ITEM_PURPOSE_HINTS[itemId];
 }
+
+/** Shown after repeated poll failures while the game view is open (U10). */
+export const CONNECTION_INTERRUPTED_BANNER = "連線中斷，重試中…";
+
+/** Initial load failure heading (U10). */
+export const CONNECTION_LOAD_FAILED_TITLE = "無法連接伺服器";
+
+export const CONNECTION_RETRY_BUTTON_LABEL = "重試";
+
+/** Shown under load error when API reports unseeded world clock (developer hint). */
+export const CONNECTION_LOAD_SEED_HINT = "若為本地開發，請先執行 pnpm setup:db 並啟動 API。";
+
+export function isUnseededWorldClockError(message: string): boolean {
+  return message.includes("尚未種子世界時鐘");
+}

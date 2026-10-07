@@ -16,6 +16,7 @@ type Props = {
   selected: Method | undefined;
   timeScale: number;
   actionError?: BuildingActionErrorView;
+  actionSuccess?: string;
   pending: boolean;
   onSelectMethod: (methodId: string) => void;
   onStart: () => void;
@@ -31,6 +32,7 @@ export function BuildingCard({
   selected,
   timeScale,
   actionError,
+  actionSuccess,
   pending,
   onSelectMethod,
   onStart,
@@ -125,6 +127,11 @@ export function BuildingCard({
         {actionError ? (
           <p className="plot-action-error" role="alert" title={actionError.hint}>
             {actionError.message}
+          </p>
+        ) : null}
+        {actionSuccess && !actionError ? (
+          <p className="plot-action-success" aria-live="polite">
+            {actionSuccess}
           </p>
         ) : null}
 

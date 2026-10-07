@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import { BuildingCard } from "./components/BuildingCard";
+import { ConnectionStatusBar } from "./components/ConnectionStatusBar";
 import { DepletionNotice } from "./components/DepletionNotice";
 import { Inventory } from "./components/Inventory";
+import { LoadingScreen } from "./components/LoadingScreen";
 import type { BuildingActionErrorView } from "./building-action-error";
 import { mapBuildingActionError } from "./building-action-error";
+import { nextPollFailureCount, shouldShowConnectionLost } from "./connectionPoll";
 import { isResourceDepleted } from "./depletion";
 import { formatUserError, fmtGame } from "./format";
 import { BUILDING_ICON } from "./meta";
@@ -17,12 +20,23 @@ import {
   SLICE_FLOW_BANNER,
   SLICE_GOAL_BANNER,
 } from "./productCopy";
+import {
+  collectHighlightItemIds,
+  formatCollectSuccess,
+  SUCCESS_FEEDBACK_MS,
+} from "./successFeedback";
 import type { GameState, Method } from "./types";
 
 export default function App() {
   const [state, setState] = useState<GameState | null>(null);
-  const [pollError, setPollError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [loadRetrying, setLoadRetrying] = useState(false);
+  const [connectionLost, setConnectionLost] = useState(false);
+  const pollFailuresRef = useRef(0);
   const [actionErrors, setActionErrors] = useState<Record<string, BuildingActionErrorView>>({});
+  const [actionSuccess, setActionSuccess] = useState<Record<string, string>>({});
+  const [highlightItems, setHighlightItems] = useState<Set<string>>(() => new Set());
+  const successTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const [picked, setPicked] = useState<Record<string, string>>({});
   const pendingKeysRef = useRef(new Set<string>());
   const [pendingKeys, setPendingKeys] = useState<Set<string>>(() => new Set());
@@ -30,16 +44,45 @@ export default function App() {
   const refresh = useCallback(async () => {
     const next = await api<GameState>("/api/v1/state");
     setState(next);
-    setPollError("");
+    pollFailuresRef.current = 0;
+    setConnectionLost(false);
+    setLoadError("");
+    return next;
   }, []);
 
+  const handlePollFailure = useCallback((e: unknown) => {
+    const message = formatUserError(e);
+    pollFailuresRef.current = nextPollFailureCount(pollFailuresRef.current, true);
+    if (!state) {
+      setLoadError(message);
+      return;
+    }
+    if (shouldShowConnectionLost(pollFailuresRef.current)) {
+      setConnectionLost(true);
+    }
+  }, [state]);
+
+  const runInitialLoad = useCallback(async () => {
+    try {
+      await refresh();
+    } catch (e) {
+      handlePollFailure(e);
+    } finally {
+      setLoadRetrying(false);
+    }
+  }, [refresh, handlePollFailure]);
+
   useEffect(() => {
-    refresh().catch((e) => setPollError(formatUserError(e)));
+    runInitialLoad();
+  }, [runInitialLoad]);
+
+  useEffect(() => {
+    if (!state) return undefined;
     const t = setInterval(() => {
-      refresh().catch((e) => setPollError(formatUserError(e)));
+      refresh().catch(handlePollFailure);
     }, 2000);
     return () => clearInterval(t);
-  }, [refresh]);
+  }, [state, refresh, handlePollFailure]);
 
   const methodsByRule = useMemo(() => {
     const m = new Map<string, Method[]>();
@@ -64,11 +107,64 @@ export default function App() {
     setPendingKeys(next);
   }, []);
 
+  const clearSuccessFeedback = useCallback((actionKey: string) => {
+    const existing = successTimersRef.current.get(actionKey);
+    if (existing) {
+      clearTimeout(existing);
+      successTimersRef.current.delete(actionKey);
+    }
+    setActionSuccess((prev) => {
+      if (!prev[actionKey]) return prev;
+      const next = { ...prev };
+      delete next[actionKey];
+      return next;
+    });
+  }, []);
+
+  const showCollectSuccess = useCallback(
+    (actionKey: string, buffered: Record<string, number>) => {
+      const message = formatCollectSuccess(buffered);
+      if (!message) return;
+
+      const itemIds = collectHighlightItemIds(buffered);
+      clearSuccessFeedback(actionKey);
+      setActionSuccess((prev) => ({ ...prev, [actionKey]: message }));
+      setHighlightItems((prev) => {
+        const next = new Set(prev);
+        for (const id of itemIds) next.add(id);
+        return next;
+      });
+
+      const timer = setTimeout(() => {
+        successTimersRef.current.delete(actionKey);
+        setActionSuccess((prev) => {
+          if (!prev[actionKey]) return prev;
+          const next = { ...prev };
+          delete next[actionKey];
+          return next;
+        });
+        setHighlightItems((prev) => {
+          const next = new Set(prev);
+          for (const id of itemIds) next.delete(id);
+          return next;
+        });
+      }, SUCCESS_FEEDBACK_MS);
+      successTimersRef.current.set(actionKey, timer);
+    },
+    [clearSuccessFeedback],
+  );
+
   const act = useCallback(
-    async (actionKey: string, path: string, body?: unknown) => {
+    async (
+      actionKey: string,
+      path: string,
+      body?: unknown,
+      opts?: { collectBuffered?: Record<string, number> },
+    ) => {
       if (pendingKeysRef.current.has(actionKey)) return;
 
       setPending(actionKey, true);
+      clearSuccessFeedback(actionKey);
       setActionErrors((prev) => {
         const next = { ...prev };
         delete next[actionKey];
@@ -82,6 +178,9 @@ export default function App() {
           delete next[actionKey];
           return next;
         });
+        if (opts?.collectBuffered) {
+          showCollectSuccess(actionKey, opts.collectBuffered);
+        }
         await refresh();
       } catch (e) {
         const mapped = mapBuildingActionError(e);
@@ -96,24 +195,33 @@ export default function App() {
         setPending(actionKey, false);
       }
     },
-    [refresh, setPending],
+    [refresh, setPending, clearSuccessFeedback, showCollectSuccess],
   );
 
+  const retryInitialLoad = useCallback(() => {
+    if (loadRetrying) return;
+    setLoadRetrying(true);
+    setLoadError("");
+    runInitialLoad();
+  }, [loadRetrying, runInitialLoad]);
+
+  useEffect(() => {
+    const timers = successTimersRef.current;
+    return () => {
+      for (const t of timers.values()) clearTimeout(t);
+      timers.clear();
+    };
+  }, []);
+
   if (!state) {
-    return (
-      <div className="loading">
-        <div>
-          <h1>{BRAND_DISPLAY_NAME}</h1>
-          <p>{pollError || "農莊正在甦醒…"}</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen error={loadError} retrying={loadRetrying} onRetry={retryInitialLoad} />;
   }
 
   const unplaced = state.buildingDefs.filter((d) => !state.buildings.some((b) => b.buildingDefId === d.id));
 
   return (
     <div className="world">
+      <ConnectionStatusBar visible={connectionLost} />
       <header className="hud">
         <div className="crest">
           <div className="crest-mark" aria-hidden>
@@ -135,9 +243,8 @@ export default function App() {
       <p className="banner">{SLICE_FLOW_BANNER}</p>
       <p className="banner banner-muted">{OFFLINE_PROGRESS_BANNER}</p>
       <DepletionNotice visible={FEATURE_SHOW_DEPLETION_EMPTY_STATE && resourceDepleted} />
-      {pollError ? <p className="banner error">{pollError}</p> : null}
 
-      <Inventory inventory={state.inventory} />
+      <Inventory inventory={state.inventory} highlightItemIds={highlightItems} />
 
       <div className="chain">
         <span>🌾 田</span>
@@ -167,11 +274,16 @@ export default function App() {
               selected={selected}
               timeScale={state.time.timeScale}
               actionError={actionErrors[actionKey]}
+              actionSuccess={actionSuccess[actionKey]}
               pending={pendingKeys.has(actionKey)}
               onSelectMethod={(methodId) => setPicked({ ...picked, [b.id]: methodId })}
               onStart={() => act(actionKey, `/api/v1/buildings/${b.id}/start`, { methodId: selectedId })}
               onStop={() => act(actionKey, `/api/v1/buildings/${b.id}/stop`)}
-              onCollect={() => act(actionKey, `/api/v1/buildings/${b.id}/collect`)}
+              onCollect={() =>
+                act(actionKey, `/api/v1/buildings/${b.id}/collect`, undefined, {
+                  collectBuffered: { ...b.bufferedOutputs },
+                })
+              }
             />
           );
         })}

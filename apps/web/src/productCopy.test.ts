@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   BRAND_DISPLAY_NAME,
+  CONNECTION_INTERRUPTED_BANNER,
   FEATURE_SHOW_DEPLETION_EMPTY_STATE,
+  isUnseededWorldClockError,
   itemPurposeHint,
   methodPurposeHint,
   parseViteBooleanEnv,
@@ -17,6 +19,12 @@ describe("productCopy", () => {
 
   it("brand constant is non-empty for HUD / loading", () => {
     expect(BRAND_DISPLAY_NAME.length).toBeGreaterThan(0);
+  });
+
+  it("U10 connection copy and seed hint detection", () => {
+    expect(CONNECTION_INTERRUPTED_BANNER).toContain("連線中斷");
+    expect(isUnseededWorldClockError("尚未種子世界時鐘")).toBe(true);
+    expect(isUnseededWorldClockError("無法連接")).toBe(false);
   });
 
   it("parseViteBooleanEnv full semantics (trim, case, unknown → default)", () => {
