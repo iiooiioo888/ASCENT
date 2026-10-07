@@ -3,6 +3,8 @@ import {
   displayGameTime,
   marketPricesFromDb,
   opsDepthFromDb,
+  retailConfigFromDb,
+  type RetailConfig,
   settleProduction,
   settleWindow,
   type BuildingQueueJob,
@@ -24,6 +26,7 @@ export class SimulationService implements OnModuleInit {
   private marketPrices: MarketPriceBook = marketPricesFromDb(null);
   private opsDepthConfig: OpsDepthConfig = opsDepthFromDb(null);
   private readonly environmentRuntime = new EnvironmentRuntime();
+  private retailConfigValues: RetailConfig = retailConfigFromDb(null);
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -37,6 +40,7 @@ export class SimulationService implements OnModuleInit {
     this.marketPrices = marketPricesFromDb(row?.marketPrices);
     this.opsDepthConfig = opsDepthFromDb(row?.opsDepth);
     this.environmentRuntime.setConfigFromDb(row?.environment);
+    this.retailConfigValues = retailConfigFromDb(row?.retailConfig);
   }
 
   get config(): GameConfigValues {
@@ -64,6 +68,10 @@ export class SimulationService implements OnModuleInit {
 
   environmentSnapshot(weatherState: PersistedWeatherState, currentGameSec: number) {
     return this.environmentRuntime.snapshot(weatherState, currentGameSec);
+  }
+
+  get retailConfig(): RetailConfig {
+    return this.retailConfigValues;
   }
 
   displayGameTime(clock: WorldClock, nowMs: number) {

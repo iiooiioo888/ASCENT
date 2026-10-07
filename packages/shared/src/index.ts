@@ -11,3 +11,4 @@ export * from "./equity-config";
 export * from "./ops-depth-config";
 export * from "./environment-config";
 export * from "./land-config";
+export * from "./retail-config";
