@@ -154,6 +154,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.production up --build
 | --- | --- |
 | `docker-compose.prod.yml` | 正式三服務編排 |
 | `apps/api/Dockerfile` | API 多階段映像 |
+| `apps/api/docker-entrypoint.sh` | 啟動前 `migrate deploy`、空庫自動 seed、以 `dist/src/main.js` 啟動 Nest |
 | `apps/web/Dockerfile` | Web 建置 + nginx |
 | `apps/web/nginx.conf` | 靜態檔與 `/api` 代理 |
 | `.env.production.example` | 環境變數範本 |
