@@ -1,3 +1,5 @@
+import type { PriceHistoryPoint } from "./commodities-config";
+
 /** EQ-D1–D12 LOCKED：莊股市集常數（min-playable）。 */
 export const EQUITY_CONFIG = {
   feeRate: 0.02,
@@ -15,8 +17,6 @@ export const EQUITY_CONFIG = {
 } as const;
 
 export type EquityListingId = (typeof EQUITY_CONFIG.listings)[number]["id"];
-
-export type PriceHistoryPoint = { t: number; price: number };
 
 export function isKnownEquityId(equityId: string): boolean {
   return EQUITY_CONFIG.listings.some((l) => l.id === equityId);

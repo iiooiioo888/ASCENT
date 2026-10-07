@@ -1,4 +1,4 @@
-import { Prisma, type PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "../../generated/prisma/client";
 
 /** Postgres `pg_advisory_xact_lock` 鍵（ASCII「ASCS」）；交易結束自動釋放。 */
 export const SETTLEMENT_ADVISORY_LOCK_KEY = 0x41534353;

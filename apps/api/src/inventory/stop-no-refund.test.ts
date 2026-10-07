@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeAll } from "vitest";
 import { LOCAL_PLAYER_ID } from "@ascent/shared";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../../generated/prisma/client";
+import { createPrismaAdapter } from "../prisma/create-prisma-adapter";
 import { InventoryService } from "./inventory.service";
 import { SimulationService } from "../simulation/simulation.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -9,7 +10,7 @@ import { PrismaService } from "../prisma/prisma.service";
  * 已拍板 D6：stop 不退還 start 已扣輸入。需已種子 DB（CI `setup:db`）。
  */
 describe("stop 不退還已扣輸入（D6）", () => {
-  const prisma = new PrismaClient() as PrismaService;
+  const prisma = new PrismaClient({ adapter: createPrismaAdapter() }) as PrismaService;
   let inventory: InventoryService;
 
   beforeAll(async () => {

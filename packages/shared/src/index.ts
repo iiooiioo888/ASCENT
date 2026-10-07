@@ -7,3 +7,5 @@ export * from "./validator";
 export * from "./agriculture-catalog";
 export * from "./market-config";
 export * from "./commodities-config";
+export * from "./equity-config";
+export * from "./ops-depth-config";

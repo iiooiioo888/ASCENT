@@ -15,7 +15,7 @@ import {
   type CommodityListingConfig,
   type PriceHistoryPoint,
 } from "@ascent/shared";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { InventoryService } from "../inventory/inventory.service";
 import { SETTLEMENT_CONFLICT_MESSAGE } from "../inventory/building-state-update";

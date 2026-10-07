@@ -1,4 +1,5 @@
 import { RELEASED_IN_VERSION } from "./config";
+import { ITEM_CURRENCY_TYPE_ID, ITEM_GOLD_ID, STARTING_GOLD } from "./market-config";
 import type { BuildingDef, ItemDef, ItemPropertyDef, ItemTypeDef, ProductionRuleDef } from "./types";
 
 /** GDD 範例屬性（純度、含水）；農業 MVP 最小集合，其餘（熱值、同位素）留待後續切片。 */
@@ -21,9 +22,23 @@ export const itemProperties: ItemPropertyDef[] = [
   },
 ];
 
+/** TODO(product) 待確認：汲水工時（遊戲秒，佔位 ≈10 現實秒 @ timeScale=60） */
+export const PLACEHOLDER_DRAW_WATER_DURATION_GAME_SEC = 600;
+/** TODO(product) 待確認：每次汲水產出水數量；無輸入消耗 */
+export const PLACEHOLDER_DRAW_WATER_OUTPUT_QTY = 5;
+/** TODO(product) 待確認：留種工時（遊戲秒） */
+export const PLACEHOLDER_SAVE_SEED_DURATION_GAME_SEC = 1800;
+/** TODO(product) 待確認：留種輸入小麥數量 */
+export const PLACEHOLDER_SAVE_SEED_WHEAT_INPUT_QTY = 2;
+/** TODO(product) 待確認：留種產出種子數量 */
+export const PLACEHOLDER_SAVE_SEED_OUTPUT_QTY = 1;
+
 export const itemTypes: ItemTypeDef[] = [
   { id: "it_crop", code: "crop", name: "作物", is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "it_produce", code: "produce", name: "農產加工", is_active: true, released_in_version: RELEASED_IN_VERSION },
+  { id: "it_commodity", code: "commodity", name: "大宗現貨", is_active: true, released_in_version: RELEASED_IN_VERSION },
+  // TODO(product): 貨幣是否獨立 Player.gold 欄未定；現用 inventory 物品佔位。
+  { id: ITEM_CURRENCY_TYPE_ID, code: "currency", name: "貨幣", is_active: true, released_in_version: RELEASED_IN_VERSION },
 ];
 
 export const items: ItemDef[] = [
@@ -35,6 +50,25 @@ export const items: ItemDef[] = [
   { id: "item_feed", code: "feed", type_id: "it_produce", layer: "P", derived_tier: 1, is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "item_dough", code: "dough", type_id: "it_produce", layer: "P", derived_tier: 1, is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "item_bread", code: "bread", type_id: "it_produce", layer: "P", derived_tier: 2, is_active: true, released_in_version: RELEASED_IN_VERSION },
+  // TODO(product): 金幣顯示名／圖示；不進生產 DAG。
+  {
+    id: ITEM_GOLD_ID,
+    code: "gold",
+    type_id: ITEM_CURRENCY_TYPE_ID,
+    layer: "C",
+    derived_tier: 0,
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
+  {
+    id: "item_oil",
+    code: "oil",
+    type_id: "it_commodity",
+    layer: "C",
+    derived_tier: 0,
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
 ];
 
 export const rules: ProductionRuleDef[] = [
@@ -117,6 +151,32 @@ export const rules: ProductionRuleDef[] = [
     released_in_version: RELEASED_IN_VERSION,
     optimizations: [{ code: "batch", output_factor: 2, input_factor: { item_dough: 2 } }],
   },
+  {
+    id: "rule_draw_water",
+    code: "draw_water",
+    parent_rule_id: null,
+    inputs: [],
+    outputs: [{ item_id: "item_water", qty: PLACEHOLDER_DRAW_WATER_OUTPUT_QTY }],
+    duration_game_sec: PLACEHOLDER_DRAW_WATER_DURATION_GAME_SEC,
+    formulas: {},
+    compositions: [],
+    overrides: {},
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
+  {
+    id: "rule_save_seed",
+    code: "save_seed",
+    parent_rule_id: null,
+    inputs: [{ item_id: "item_wheat", qty: PLACEHOLDER_SAVE_SEED_WHEAT_INPUT_QTY }],
+    outputs: [{ item_id: "item_seed_wheat", qty: PLACEHOLDER_SAVE_SEED_OUTPUT_QTY }],
+    duration_game_sec: PLACEHOLDER_SAVE_SEED_DURATION_GAME_SEC,
+    formulas: {},
+    compositions: [],
+    overrides: {},
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
 ];
 
 export const buildingDefs: BuildingDef[] = [
@@ -125,7 +185,7 @@ export const buildingDefs: BuildingDef[] = [
     code: "field",
     name: "田",
     system_code: "agriculture",
-    allowed_rule_ids: ["rule_grow_wheat"],
+    allowed_rule_ids: ["rule_grow_wheat", "rule_save_seed"],
     queue_limit: 1,
     is_active: true,
     released_in_version: RELEASED_IN_VERSION,
@@ -160,7 +220,36 @@ export const buildingDefs: BuildingDef[] = [
     is_active: true,
     released_in_version: RELEASED_IN_VERSION,
   },
+  {
+    id: "bdef_well",
+    code: "well",
+    name: "水井",
+    system_code: "agriculture",
+    allowed_rule_ids: ["rule_draw_water"],
+    queue_limit: 1,
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
+  {
+    id: "bdef_trading_post",
+    code: "trading_post",
+    name: "莊外商行",
+    system_code: "agriculture",
+    allowed_rule_ids: [],
+    queue_limit: 1,
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
 ];
+
+/** 開局預放建築（倉 `bdef_silo` 不預放；D3 未定；**已拍板 D2** 含水井）。 */
+export const seedPlacedBuildingDefIds = [
+  "bdef_field",
+  "bdef_mill",
+  "bdef_oven",
+  "bdef_well",
+  "bdef_trading_post",
+] as const;
 
 export const startingInventory: Record<string, number> = {
   item_seed_wheat: 40,
@@ -171,6 +260,7 @@ export const startingInventory: Record<string, number> = {
   item_feed: 0,
   item_dough: 0,
   item_bread: 0,
+  [ITEM_GOLD_ID]: STARTING_GOLD,
 };
 
 export const METHOD_NAME: Record<string, string> = {
@@ -181,4 +271,6 @@ export const METHOD_NAME: Record<string, string> = {
   method_make_dough_default: "和麵",
   method_bake_bread_default: "烘烤麵包",
   method_bake_bread_batch: "批量烘烤",
+  method_draw_water_default: "汲水",
+  method_save_seed_default: "留種",
 };
