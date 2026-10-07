@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
+import type { Ref } from "react";
 import type { MarketActionErrorView } from "../market-action-error";
 import type { MarketSnapshot } from "../market";
 import { MARKET_COPY, marketBalanceLabel } from "../marketCopy";
@@ -7,6 +8,8 @@ import { MarketRow } from "./MarketRow";
 type Tab = "sell" | "buy";
 
 type Props = {
+  id?: string;
+  headingId?: string;
   market: MarketSnapshot | null;
   panelError: MarketActionErrorView | null;
   pendingKeys: ReadonlySet<string>;
@@ -18,7 +21,10 @@ function pendingKey(side: Tab, itemId: string) {
   return `market:${side}:${itemId}`;
 }
 
-export function MarketPanel({ market, panelError, pendingKeys, onSell, onBuy }: Props) {
+export const MarketPanel = forwardRef(function MarketPanel(
+  { id = "market-panel", headingId, market, panelError, pendingKeys, onSell, onBuy }: Props,
+  ref: Ref<HTMLElement>,
+) {
   const [tab, setTab] = useState<Tab>("sell");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
@@ -72,11 +78,19 @@ export function MarketPanel({ market, panelError, pendingKeys, onSell, onBuy }: 
 
   const gold = market?.gold ?? 0;
 
+  const titleId = headingId ?? "market-panel-title";
+
   return (
-    <section className="market-panel pack" aria-labelledby="market-panel-title">
+    <section
+      ref={ref}
+      id={id}
+      className="market-panel pack"
+      tabIndex={-1}
+      aria-labelledby={titleId}
+    >
       <header className="market-panel-head">
         <div>
-          <h2 id="market-panel-title">{MARKET_COPY.title}</h2>
+          <h2 id={titleId}>{MARKET_COPY.title}</h2>
           <p className="market-panel-subtitle">{MARKET_COPY.subtitle}</p>
         </div>
         <p className="market-balance" data-testid="market-gold-balance">
@@ -167,6 +181,6 @@ export function MarketPanel({ market, panelError, pendingKeys, onSell, onBuy }: 
       )}
     </section>
   );
-}
+});
 
 export { pendingKey as marketPendingKey };

@@ -5,6 +5,10 @@
 
 export const MARKET_COPY = {
   title: "莊外商行",
+  /** Shown on the trading-post building card badge (v1.2). */
+  buildingStatus: "商行",
+  tradeCta: "交易",
+  closeTradeCta: "收起交易",
   subtitle: "固定收購 · 補給種子與水",
   sellTab: "賣出",
   buyTab: "買入",

@@ -6,7 +6,8 @@ import { SiloBuildingCard } from "./components/SiloBuildingCard";
 import { ConnectionStatusBar } from "./components/ConnectionStatusBar";
 import { DepletionNotice } from "./components/DepletionNotice";
 import { Inventory } from "./components/Inventory";
-import { MarketPanel, marketPendingKey } from "./components/MarketPanel";
+import { marketPendingKey } from "./components/MarketPanel";
+import { TradingPostBuildingCard } from "./components/TradingPostBuildingCard";
 import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
 import { LoadingScreen } from "./components/LoadingScreen";
 import type { BuildingActionErrorView } from "./building-action-error";
@@ -32,6 +33,7 @@ import {
   timeScaleHudChip,
 } from "./productCopy";
 import { isSiloBuilding, isSiloBuildingDef } from "./silo";
+import { isTradingPostBuilding, isTradingPostBuildingDef } from "./tradingPost";
 import {
   collectHighlightItemIds,
   formatCollectSuccess,
@@ -66,6 +68,7 @@ export default function App() {
   const [offlineSummary, setOfflineSummary] = useState<OfflineSummaryResult | null>(null);
   const [marketSnapshot, setMarketSnapshot] = useState<MarketSnapshot | null>(null);
   const [marketPanelError, setMarketPanelError] = useState<MarketActionErrorView | null>(null);
+  const [marketOpenBuildingId, setMarketOpenBuildingId] = useState<string | null>(null);
 
   stateRef.current = state;
 
@@ -339,8 +342,13 @@ export default function App() {
 
   const unplaced = state.buildingDefs.filter((d) => {
     if (!FEATURE_SHOW_SILO_PLACEMENT && isSiloBuildingDef(d.id)) return false;
+    if (isTradingPostBuildingDef(d.id)) return false;
     return !state.buildings.some((b) => b.buildingDefId === d.id);
   });
+
+  const toggleMarketPanel = (buildingId: string) => {
+    setMarketOpenBuildingId((prev) => (prev === buildingId ? null : buildingId));
+  };
 
   return (
     <div className="world">
@@ -374,14 +382,6 @@ export default function App() {
 
       <Inventory inventory={sortedInventory} highlightItemIds={highlightItems} />
 
-      <MarketPanel
-        market={marketSnapshot}
-        panelError={marketPanelError}
-        pendingKeys={pendingKeys}
-        onSell={(itemId, quantity) => marketTrade("sell", itemId, quantity)}
-        onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
-      />
-
       <IndustryChain buildings={state.buildings} />
 
       <section className="settlement">
@@ -391,6 +391,22 @@ export default function App() {
           const selectedId = picked[b.id] ?? options[0]?.id;
           const selected = options.find((m) => m.id === selectedId);
           const actionKey = b.id;
+
+          if (isTradingPostBuilding(b)) {
+            return (
+              <TradingPostBuildingCard
+                key={b.id}
+                building={b}
+                marketOpen={marketOpenBuildingId === b.id}
+                onToggleMarket={() => toggleMarketPanel(b.id)}
+                market={marketSnapshot}
+                panelError={marketPanelError}
+                pendingKeys={pendingKeys}
+                onSell={(itemId, quantity) => marketTrade("sell", itemId, quantity)}
+                onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
+              />
+            );
+          }
 
           if (isSiloBuilding(b) && FEATURE_SILO_CARD_MODE === "simplified") {
             return (

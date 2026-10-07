@@ -436,6 +436,24 @@ dialog.offline-summary-dialog::backdrop {
   color: #e8a8a8;
 }
 
+.plot.trading-post .market-panel {
+  margin: 0.75rem 0 0;
+}
+.plot.trading-post.market-open {
+  border-color: #c9a46a;
+}
+.trading-post-trade-btn {
+  min-height: 44px;
+  margin-top: 0.55rem;
+  padding: 0.4rem 1.1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(228, 195, 106, 0.55);
+  background: linear-gradient(180deg, #5a3e20, #3d2810);
+  color: #fff6d8;
+  cursor: pointer;
+  font-weight: 600;
+}
+
 .items {
   display: flex;
   flex-wrap: wrap;
