@@ -29,6 +29,13 @@ import {
   postCommoditySell,
   type CommoditiesSnapshot,
 } from "./commodities";
+import {
+  evaluateLandPurchaseUi,
+  landPurchaseStatsFromState,
+  LAND_PURCHASE_PENDING_KEY,
+  postPurchaseField,
+} from "./land-purchase";
+import { landPurchaseSuccess } from "./landCopy";
 import { fetchMarket, postMarketBuy, postMarketSell, type MarketSnapshot } from "./market";
 import {
   canAffordAnyMarketBuy,
@@ -309,6 +316,12 @@ export default function App() {
     [hudGold, marketSnapshot?.prices],
   );
 
+  const landPurchaseUi = useMemo(() => {
+    if (!state) return null;
+    const stats = landPurchaseStatsFromState(state);
+    return evaluateLandPurchaseUi(stats, hudGold);
+  }, [state, hudGold]);
+
   const goToWell = useCallback(() => {
     if (!state) return;
     const anchor = resolveWellScrollAnchorId(state.buildings);
@@ -569,6 +582,30 @@ export default function App() {
     [commoditiesSnapshot, refresh, refreshMarket, refreshCommodities, setPending, showMarketSuccess],
   );
 
+  const purchaseField = useCallback(async () => {
+    const actionKey = LAND_PURCHASE_PENDING_KEY;
+    if (pendingKeysRef.current.has(actionKey)) return;
+
+    setPending(actionKey, true);
+    setMarketPanelError(null);
+
+    try {
+      const result = await postPurchaseField();
+      showMarketSuccess(landPurchaseSuccess(result.pricePaid), FIELD_BUILDING_DEF_ID);
+      await refresh();
+      await refreshMarket();
+    } catch (e) {
+      const mapped = mapMarketActionError(e);
+      if (mapped.shouldRefresh) {
+        await refresh().catch(() => undefined);
+        await refreshMarket().catch(() => undefined);
+      }
+      setMarketPanelError({ message: mapped.message, hint: mapped.hint });
+    } finally {
+      setPending(actionKey, false);
+    }
+  }, [refresh, refreshMarket, setPending, showMarketSuccess]);
+
   const retryInitialLoad = useCallback(() => {
     if (loadRetrying) return;
     setLoadRetrying(true);
@@ -665,7 +702,10 @@ export default function App() {
           const selected = options.find((m) => m.id === selectedId);
           const actionKey = b.id;
 
-          if (isSiloBuilding(b) && FEATURE_SILO_CARD_MODE === "simplified") {
+          if (
+            isSiloBuilding(b) &&
+            (!FEATURE_SHOW_SILO_PLACEMENT || FEATURE_SILO_CARD_MODE === "simplified")
+          ) {
             return (
               <SiloBuildingCard
                 key={b.id}
@@ -696,6 +736,8 @@ export default function App() {
                 onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
                 onCommodityBuy={(commodityId, quantity) => commodityTrade("buy", commodityId, quantity)}
                 onCommoditySell={(commodityId, quantity) => commodityTrade("sell", commodityId, quantity)}
+                landPurchaseUi={landPurchaseUi}
+                onPurchaseField={() => void purchaseField()}
               />
             );
           }

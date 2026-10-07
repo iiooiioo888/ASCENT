@@ -5,6 +5,7 @@ import type { MarketSnapshot } from "../market";
 import { MARKET_COPY } from "../marketCopy";
 import { BUILDING_ICON } from "../meta";
 import type { Building, OpsCostsSnapshot } from "../types";
+import type { LandPurchaseUiState } from "../land-purchase";
 import { MarketPanel, type MarketTabFocusRequest } from "./MarketPanel";
 
 type Props = {
@@ -24,6 +25,8 @@ type Props = {
   onBuy: (itemId: string, quantity: number) => void;
   onCommodityBuy?: (commodityId: string, quantity: number) => void;
   onCommoditySell?: (commodityId: string, quantity: number) => void;
+  landPurchaseUi?: LandPurchaseUiState | null;
+  onPurchaseField?: () => void;
 };
 
 /** v1.2：莊外商行建築卡 — 點「交易」展開買賣 panel，無生產動作。 */
@@ -44,6 +47,8 @@ export function TradingPostBuildingCard({
   onBuy,
   onCommodityBuy,
   onCommoditySell,
+  landPurchaseUi,
+  onPurchaseField,
 }: Props) {
   const panelRef = useRef<HTMLElement>(null);
   const panelHeadingId = useId();
@@ -99,6 +104,8 @@ export function TradingPostBuildingCard({
             onBuy={onBuy}
             onCommodityBuy={onCommodityBuy}
             onCommoditySell={onCommoditySell}
+            landPurchaseUi={landPurchaseUi}
+            onPurchaseField={onPurchaseField}
           />
         ) : null}
       </div>

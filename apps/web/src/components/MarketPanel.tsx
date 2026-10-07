@@ -8,10 +8,13 @@ import type { OpsCostsSnapshot } from "../types";
 import type { CommoditiesSnapshot } from "../commodities";
 import { enabledCommodityListings } from "../commodities";
 import { COMMODITY_COPY } from "../commodityCopy";
+import { LAND_COPY } from "../landCopy";
+import { LAND_PURCHASE_PENDING_KEY, type LandPurchaseUiState } from "../land-purchase";
 import { CommodityRow } from "./CommodityRow";
+import { ExpandFieldPanel } from "./ExpandFieldPanel";
 import { MarketRow } from "./MarketRow";
 
-type Tab = "sell" | "buy" | "commodities";
+type Tab = "sell" | "buy" | "commodities" | "expand";
 
 export type MarketTabFocusRequest = { tab: Tab; seq: number };
 
@@ -30,6 +33,8 @@ type Props = {
   onBuy: (itemId: string, quantity: number) => void;
   onCommodityBuy?: (commodityId: string, quantity: number) => void;
   onCommoditySell?: (commodityId: string, quantity: number) => void;
+  landPurchaseUi?: LandPurchaseUiState | null;
+  onPurchaseField?: () => void;
 };
 
 function pendingKey(side: "sell" | "buy", itemId: string) {
@@ -56,6 +61,8 @@ export const MarketPanel = forwardRef(function MarketPanel(
     onBuy,
     onCommodityBuy,
     onCommoditySell,
+    landPurchaseUi,
+    onPurchaseField,
   }: Props,
   ref: Ref<HTMLElement>,
 ) {
@@ -150,6 +157,7 @@ export const MarketPanel = forwardRef(function MarketPanel(
   }, [market, sellIds]);
 
   const gold = market?.gold ?? 0;
+  const expandPending = pendingKeys.has(LAND_PURCHASE_PENDING_KEY);
 
   const titleId = headingId ?? "market-panel-title";
 
@@ -172,7 +180,11 @@ export const MarketPanel = forwardRef(function MarketPanel(
       </header>
 
       <p className="market-hint banner-muted">
-        {tab === "commodities" ? COMMODITY_COPY.hint : MARKET_COPY.hint}
+        {tab === "commodities"
+          ? COMMODITY_COPY.hint
+          : tab === "expand"
+            ? LAND_COPY.subtitle
+            : MARKET_COPY.hint}
       </p>
 
       <p
@@ -221,9 +233,27 @@ export const MarketPanel = forwardRef(function MarketPanel(
             {COMMODITY_COPY.tab}
           </button>
         ) : null}
+        {landPurchaseUi ? (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "expand"}
+            className={tab === "expand" ? "active" : ""}
+            onClick={() => setTab("expand")}
+            data-testid="market-tab-expand"
+          >
+            {LAND_COPY.tab}
+          </button>
+        ) : null}
       </div>
 
-      {tab === "commodities" ? (
+      {tab === "expand" && landPurchaseUi ? (
+        <ExpandFieldPanel
+          ui={landPurchaseUi}
+          pending={expandPending}
+          onPurchase={() => onPurchaseField?.()}
+        />
+      ) : tab === "commodities" ? (
         <div className="market-table commodity-table" role="tabpanel" data-testid="market-commodities-panel">
           {!commodities ? (
             <p className="market-loading">{COMMODITY_COPY.loading}</p>
