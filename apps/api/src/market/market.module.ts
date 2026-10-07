@@ -5,10 +5,11 @@ import { MarketController } from "./market.controller";
 import { MarketService } from "./market.service";
 import { CommodityMarketService } from "./commodity-market.service";
 import { RetailMarketService } from "./retail-market.service";
+import { RetailShelfService } from "./retail-shelf.service";
 
 @Module({
   imports: [SimulationModule, InventoryModule],
   controllers: [MarketController],
-  providers: [MarketService, CommodityMarketService, RetailMarketService],
+  providers: [MarketService, CommodityMarketService, RetailMarketService, RetailShelfService],
 })
 export class MarketModule {}

@@ -95,6 +95,13 @@ export type BuildingAfkState = {
   autoPauseReason: string | null;
 };
 
+/** GET state 上的商行貨架摘要（AFK-BE-2 / AFK-D9）。 */
+export type RetailShelfStateSummary = {
+  enabled: boolean;
+  ask: number;
+  todayRevenueGold: number;
+};
+
 export type BuildingQueueJob = {
   methodId: string;
   durationGameSec: number;
