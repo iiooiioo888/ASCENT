@@ -131,4 +131,60 @@ describe("市集（整合）", () => {
     });
     expect(Number(gold?.quantity)).toBe(8);
   });
+
+  it("開局可直接買種子毋須先賣", async () => {
+    const res = await market.buy("item_seed_wheat", 1);
+    expect(res.goldDelta).toBe(-3);
+    const gold = await prisma.playerInventory.findUnique({
+      where: { playerId_itemId: { playerId: "player_local", itemId: ITEM_GOLD_ID } },
+    });
+    expect(Number(gold?.quantity)).toBe(7);
+  });
+
+  it("重跑種子仍只有一座莊外商行", async () => {
+    seedTestDatabase(databaseUrl);
+    await sim.refreshConfig();
+    const count = await prisma.playerBuilding.count({
+      where: { playerId: "player_local", buildingDefId: "bdef_trading_post" },
+    });
+    expect(count).toBe(1);
+  });
+
+  it("莊外商行收取回 400", async () => {
+    await expect(inventory.collect(tradingPostBuildingId)).rejects.toMatchObject({
+      response: { message: "尚無可收取產出", statusCode: 400 },
+    });
+  });
+
+  it("莊外商行停止唔會 500", async () => {
+    const building = await inventory.stop(tradingPostBuildingId);
+    expect(building.status).toBe("idle");
+  });
+
+  it("併發買入唔會雙花金幣", async () => {
+    const results = await Promise.allSettled([
+      market.buy("item_seed_wheat", 3),
+      market.buy("item_seed_wheat", 3),
+    ]);
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    const rejected = results.filter((r) => r.status === "rejected");
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    const gold = await prisma.playerInventory.findUnique({
+      where: { playerId_itemId: { playerId: "player_local", itemId: ITEM_GOLD_ID } },
+    });
+    expect(Number(gold?.quantity)).toBe(1);
+  });
+
+  it("數量 0 回 400", async () => {
+    await expect(market.sell("item_bread", 0)).rejects.toMatchObject({
+      response: { message: "數量無效", statusCode: 400 },
+    });
+  });
+
+  it("未知物品回 400", async () => {
+    await expect(market.buy("item_fake", 1)).rejects.toMatchObject({
+      response: { message: "不可交易：item_fake", statusCode: 400 },
+    });
+  });
 });
