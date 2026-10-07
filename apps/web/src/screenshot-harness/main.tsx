@@ -29,6 +29,7 @@ function Harness() {
         <BuildingCard
           building={demoFieldBuilding}
           options={demoFieldMethods}
+          inventory={demoInventory}
           selectedId={methodId}
           selected={selected}
           timeScale={60}
@@ -42,6 +43,7 @@ function Harness() {
         <BuildingCard
           building={demoSiloBuilding}
           options={[]}
+          inventory={demoInventory}
           selectedId={undefined}
           selected={undefined}
           timeScale={60}
@@ -55,6 +57,7 @@ function Harness() {
         <BuildingCard
           building={demoMillBuilding}
           options={demoMillMethods}
+          inventory={demoInventory}
           selectedId={millMethodId}
           selected={millSelected}
           timeScale={60}

@@ -1,12 +1,16 @@
+import { useState } from "react";
 import { canStopBuilding } from "../building-actions";
-import { fmtBuffered, fmtIo, realRemainSec, statusLabel } from "../format";
-import { BUILDING_ICON, METHOD_NAME } from "../meta";
 import type { BuildingActionErrorView } from "../building-action-error";
-import type { Building, Method } from "../types";
+import { fmtBuffered, fmtIo, realRemainSec, statusLabel } from "../format";
+import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
+import { BUILDING_ICON, METHOD_NAME } from "../meta";
+import type { Building, InvRow, Method } from "../types";
+import { StopConfirmDialog } from "./StopConfirmDialog";
 
 type Props = {
   building: Building;
   options: Method[];
+  inventory: InvRow[];
   selectedId: string | undefined;
   selected: Method | undefined;
   timeScale: number;
@@ -21,6 +25,7 @@ type Props = {
 export function BuildingCard({
   building: b,
   options,
+  inventory,
   selectedId,
   selected,
   timeScale,
@@ -31,9 +36,28 @@ export function BuildingCard({
   onStop,
   onCollect,
 }: Props) {
+  const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
+
   const job = b.queue[0];
   const progress = job ? Math.min(100, (job.elapsedGameSec / job.durationGameSec) * 100) : 0;
   const remain = realRemainSec(job, timeScale);
+
+  const methodLocked = b.status === "running" || b.status === "ready";
+  const displayMethodId = methodLocked && b.methodId ? b.methodId : selectedId;
+  const displayMethod = options.find((m) => m.id === displayMethodId) ?? selected;
+
+  const stock = inventoryQtyMap(inventory);
+  const affordSelected =
+    selected && b.status === "idle" ? canAffordInputs(stock, selected.inputs) : true;
+  const inputRows = selected && b.status === "idle" ? inputAvailability(stock, selected.inputs) : [];
+  const anyShort = inputRows.some((r) => r.short);
+
+  const runningMethod = b.methodId ? options.find((m) => m.id === b.methodId) : undefined;
+
+  const handleStopConfirm = () => {
+    setStopConfirmOpen(false);
+    onStop();
+  };
 
   return (
     <article className={`plot ${b.status}${pending ? " pending" : ""}`}>
@@ -58,7 +82,11 @@ export function BuildingCard({
 
         {options.length ? (
           <>
-            <select value={selectedId ?? ""} onChange={(e) => onSelectMethod(e.target.value)}>
+            <select
+              value={displayMethodId ?? ""}
+              disabled={methodLocked}
+              onChange={(e) => onSelectMethod(e.target.value)}
+            >
               {options.map((m) => (
                 <option key={m.id} value={m.id}>
                   {METHOD_NAME[m.id] ?? m.code} · {(m.durationGameSec / timeScale).toFixed(0)} 秒
@@ -66,10 +94,23 @@ export function BuildingCard({
               ))}
             </select>
             <div className="recipe">
-              {selected ? (
+              {displayMethod ? (
                 <>
-                  <div>消耗 {fmtIo(selected.inputs)}</div>
-                  <div>產出 {fmtIo(selected.outputs)}</div>
+                  <div className="recipe-io">
+                    <span>消耗 </span>
+                    {anyShort ? (
+                      <span className="recipe-shortages">
+                        {inputRows.map((row) => (
+                          <span key={row.item_id} className={row.short ? "shortage" : ""}>
+                            {fmtInputHaveNeed(row)}
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span>{fmtIo(displayMethod.inputs)}</span>
+                    )}
+                  </div>
+                  <div>產出 {fmtIo(displayMethod.outputs)}</div>
                 </>
               ) : null}
             </div>
@@ -85,10 +126,19 @@ export function BuildingCard({
         ) : null}
 
         <div className="actions">
-          <button type="button" disabled={!options.length || b.status !== "idle"} onClick={onStart}>
+          <button
+            type="button"
+            disabled={!options.length || b.status !== "idle" || !selected || !affordSelected}
+            onClick={onStart}
+          >
             開工
           </button>
-          <button type="button" className="ghost" disabled={!canStopBuilding(b.status)} onClick={onStop}>
+          <button
+            type="button"
+            className="ghost"
+            disabled={!canStopBuilding(b.status)}
+            onClick={() => setStopConfirmOpen(true)}
+          >
             停止
           </button>
           <button type="button" className="collect" disabled={b.status !== "ready"} onClick={onCollect}>
@@ -101,6 +151,14 @@ export function BuildingCard({
           </div>
         ) : null}
       </fieldset>
+
+      <StopConfirmDialog
+        open={stopConfirmOpen}
+        buildingName={b.buildingDef.name}
+        method={runningMethod}
+        onCancel={() => setStopConfirmOpen(false)}
+        onConfirm={handleStopConfirm}
+      />
     </article>
   );
 }
