@@ -8,19 +8,16 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /app
 
-FROM base AS deps
+FROM base AS build
+# Skip better-sqlite3 native compile (Postgres-only image); rebuild Prisma/esbuild explicitly.
+COPY docker/pnpm-build.npmrc .npmrc
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/api/package.json apps/api/
 COPY packages/shared/package.json packages/shared/
-RUN pnpm fetch
-
-FROM base AS build
-COPY --from=deps /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/package.json ./
-COPY --from=deps /app/apps/api/package.json apps/api/
-COPY --from=deps /app/packages/shared/package.json packages/shared/
 COPY packages/shared packages/shared
 COPY apps/api apps/api
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile \
+  && pnpm rebuild @prisma/engines esbuild
 # Production images target PostgreSQL (migrations are Postgres-native).
 RUN sed -i 's/provider = "sqlite"/provider = "postgresql"/' apps/api/prisma/schema.prisma
 RUN pnpm --filter @ascent/shared build \

@@ -7,16 +7,15 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /app
 
-FROM base AS deps
+FROM base AS build
+COPY docker/pnpm-build.npmrc .npmrc
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/web/package.json apps/web/
-RUN pnpm fetch
-
-FROM base AS build
-COPY --from=deps /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/package.json ./
-COPY --from=deps /app/apps/web/package.json apps/web/
+COPY packages/shared/package.json packages/shared/
+COPY packages/shared packages/shared
 COPY apps/web apps/web
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile \
+  && pnpm rebuild esbuild
 RUN pnpm --filter @ascent/web build
 
 FROM nginx:1.27-alpine AS runner
