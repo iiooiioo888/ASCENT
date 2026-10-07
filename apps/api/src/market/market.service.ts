@@ -4,6 +4,7 @@ import {
   LOCAL_PLAYER_ID,
   parseTradeQuantity,
   resolveMarketUnitPrice,
+  resolveSellGoldAfterTransport,
 } from "@ascent/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { SimulationService } from "../simulation/simulation.service";
@@ -47,17 +48,21 @@ export class MarketService {
       const book = this.sim.marketPriceBook;
       const unitPrice = resolveMarketUnitPrice("sell", itemId, book);
       if (unitPrice === null) throw new BadRequestException(`不可交易：${itemId}`);
-      const goldGain = unitPrice * qty;
+      const depth = this.sim.opsDepth;
+      const settled = resolveSellGoldAfterTransport(itemId, unitPrice, qty, depth);
+      if (!settled) throw new BadRequestException("運費過高");
 
       return this.prisma.$transaction(async (tx) => {
         await deductPlayerItem(tx, itemId, qty);
-        await creditPlayerItem(tx, ITEM_GOLD_ID, goldGain);
+        await creditPlayerItem(tx, ITEM_GOLD_ID, settled.netGold);
         return {
           side: "sell" as const,
           itemId,
           quantity: qty,
           unitPrice,
-          goldDelta: goldGain,
+          goldDelta: settled.netGold,
+          netGoldDelta: settled.netGold,
+          transportFee: settled.transportFee,
         };
       });
     });

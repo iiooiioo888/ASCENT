@@ -5,6 +5,7 @@ import {
   iosToRecord,
   mergeQty,
   opsCostsFromDepth,
+  haulGoldForBuilding,
   wageGoldForBuilding,
   type BuildingQueueJob,
   type BuildingStatus,
@@ -160,6 +161,8 @@ export class InventoryService {
       const depth = this.sim.opsDepth;
       const laborCost = depth.workforce.laborCostPerStart;
       const wageGold = wageGoldForBuilding(building.buildingDefId, depth);
+      const haulGold = haulGoldForBuilding(building.buildingDefId, depth);
+      const startGoldCost = wageGold + haulGold;
 
       const job: BuildingQueueJob = {
         methodId: method.id,
@@ -193,8 +196,8 @@ export class InventoryService {
             data: { quantity: { decrement: qty } },
           });
         }
-        if (wageGold > 0) {
-          await deductPlayerItem(tx, ITEM_GOLD_ID, wageGold);
+        if (startGoldCost > 0) {
+          await deductPlayerItem(tx, ITEM_GOLD_ID, startGoldCost);
         }
 
         await tx.player.update({
