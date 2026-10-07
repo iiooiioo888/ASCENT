@@ -78,7 +78,8 @@ export function CommodityRow({
                 {COMMODITY_COPY.price} 🪙{formatQuantity(unitPrice)}
               </span>
               <span data-testid="commodity-row-change">
-                {COMMODITY_COPY.change} {formatCommodityChange(listing.change)}
+                {COMMODITY_COPY.change}{" "}
+                <span className="commodity-change-num">{formatCommodityChange(listing.change)}</span>
               </span>
               <span>{COMMODITY_COPY.hold(holding)}</span>
             </div>

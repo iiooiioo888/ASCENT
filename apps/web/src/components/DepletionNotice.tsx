@@ -22,10 +22,15 @@ export function DepletionNotice({
   onGoMarket,
   marketCtaProminent = false,
 }: Props) {
-  if (!visible) return null;
-
   return (
-    <section className="banner depletion" role="status" aria-live="polite">
+    <section
+      className={`banner depletion depletion-slot${visible ? " is-visible" : ""}`}
+      role="status"
+      aria-live="polite"
+      aria-hidden={!visible}
+    >
+      {!visible ? null : (
+        <>
       <strong className="depletion-title">{DEPLETION_EMPTY_TITLE}</strong>
       <p className="depletion-body">{DEPLETION_EMPTY_BODY}</p>
       <div className="depletion-cta">
@@ -45,6 +50,8 @@ export function DepletionNotice({
           </button>
         ) : null}
       </div>
+        </>
+      )}
     </section>
   );
 }

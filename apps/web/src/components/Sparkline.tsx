@@ -20,16 +20,18 @@ export function Sparkline({
   const last = priceHistory.length > 0 ? priceHistory[priceHistory.length - 1]!.price : null;
 
   return (
-    <svg
-      className={`commodity-sparkline ${className}`.trim()}
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      role="img"
-      aria-label={last !== null ? `近期價格約 ${last}` : "近期價格折線"}
-      data-testid={testId}
-    >
-      <path className="commodity-sparkline-path" d={path} fill="none" />
-    </svg>
+    <div className="sparkline-slot" style={{ width, height }} aria-hidden={priceHistory.length === 0}>
+      <svg
+        className={`commodity-sparkline ${className}`.trim()}
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        role="img"
+        aria-label={last !== null ? `近期價格約 ${last}` : "近期價格折線"}
+        data-testid={testId}
+      >
+        <path className="commodity-sparkline-path" d={path} fill="none" />
+      </svg>
+    </div>
   );
 }

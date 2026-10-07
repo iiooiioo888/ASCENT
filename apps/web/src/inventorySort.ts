@@ -13,6 +13,7 @@ export const INVENTORY_DISPLAY_ORDER: readonly string[] = [
   "item_feed",
   "item_dough",
   "item_bread",
+  "item_gold",
 ];
 
 const ORDER_INDEX = new Map(INVENTORY_DISPLAY_ORDER.map((id, index) => [id, index]));

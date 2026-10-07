@@ -8,7 +8,7 @@ type Props = {
 };
 
 /** 簡易 SVG sparkline（EQ-D12）；空或單點不崩。 */
-export function EquitySparkline({ history, width = 72, height = 28, className }: Props) {
+export function EquitySparkline({ history, width = 88, height = 28, className }: Props) {
   const padding = 2;
   const innerW = width - padding * 2;
   const innerH = height - padding * 2;

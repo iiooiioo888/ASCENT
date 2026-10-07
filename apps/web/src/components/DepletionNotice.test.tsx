@@ -11,9 +11,12 @@ import {
 import { DepletionNotice } from "./DepletionNotice";
 
 describe("DepletionNotice", () => {
-  it("renders nothing when visible is false", () => {
+  it("keeps collapsed slot when visible is false", () => {
     render(<DepletionNotice visible={false} onGoWell={() => {}} onGoSaveSeed={() => {}} />);
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    const slot = screen.getByRole("status", { hidden: true });
+    expect(slot).toHaveClass("depletion-slot");
+    expect(slot).not.toHaveClass("is-visible");
+    expect(screen.queryByText(DEPLETION_EMPTY_TITLE)).not.toBeInTheDocument();
   });
 
   it("renders depletion copy and CTAs when visible", () => {
