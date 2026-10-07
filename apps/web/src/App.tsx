@@ -7,7 +7,7 @@ import { TradingPostBuildingCard } from "./components/TradingPostBuildingCard";
 import { ConnectionStatusBar } from "./components/ConnectionStatusBar";
 import { DepletionNotice } from "./components/DepletionNotice";
 import { Inventory } from "./components/Inventory";
-import { marketPendingKey, type MarketTabFocusRequest } from "./components/MarketPanel";
+import { equityPendingKey, marketPendingKey, type MarketTabFocusRequest } from "./components/MarketPanel";
 import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { maybeWorkforceHud } from "./components/WorkforceHud";
@@ -15,6 +15,13 @@ import type { BuildingActionErrorView } from "./building-action-error";
 import { mapBuildingActionError } from "./building-action-error";
 import type { MarketActionErrorView } from "./market-action-error";
 import { mapMarketActionError } from "./market-action-error";
+import {
+  fetchEquity,
+  postEquityBuy,
+  postEquitySell,
+  type EquitySnapshot,
+} from "./equity";
+import { EQUITY_COPY } from "./equityCopy";
 import { fetchMarket, postMarketBuy, postMarketSell, type MarketSnapshot } from "./market";
 import {
   canAffordAnyMarketBuy,
@@ -91,6 +98,8 @@ export default function App() {
   const offlineEvaluatedRef = useRef(false);
   const [offlineSummary, setOfflineSummary] = useState<OfflineSummaryResult | null>(null);
   const [marketSnapshot, setMarketSnapshot] = useState<MarketSnapshot | null>(null);
+  const [equitySnapshot, setEquitySnapshot] = useState<EquitySnapshot | null>(null);
+  const [equityEnabled, setEquityEnabled] = useState(false);
   const [marketPanelError, setMarketPanelError] = useState<MarketActionErrorView | null>(null);
   const [marketSuccessToast, setMarketSuccessToast] = useState<string | null>(null);
   const marketToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -114,6 +123,22 @@ export default function App() {
     const snapshot = await fetchMarket();
     setMarketSnapshot(snapshot);
     return snapshot;
+  }, []);
+
+  const refreshEquity = useCallback(async () => {
+    try {
+      const snapshot = await fetchEquity();
+      if (snapshot) {
+        setEquityEnabled(true);
+        setEquitySnapshot(snapshot);
+      } else {
+        setEquityEnabled(false);
+        setEquitySnapshot(null);
+      }
+      return snapshot;
+    } catch {
+      return null;
+    }
   }, []);
 
   const handlePollFailure = useCallback((e: unknown) => {
@@ -199,7 +224,8 @@ export default function App() {
   useEffect(() => {
     if (!state) return;
     refreshMarket().catch(() => undefined);
-  }, [state, refreshMarket]);
+    refreshEquity().catch(() => undefined);
+  }, [state, refreshMarket, refreshEquity]);
 
   useEffect(() => {
     return () => {
@@ -469,6 +495,47 @@ export default function App() {
     [marketSnapshot, refresh, refreshMarket, setPending, showMarketSuccess],
   );
 
+  const equityTrade = useCallback(
+    async (side: "buy" | "sell", equityId: string, quantity: number) => {
+      const actionKey = equityPendingKey(side, equityId);
+      if (pendingKeysRef.current.has(actionKey)) return;
+
+      const ticker = equitySnapshot?.tickers.find((t) => t.id === equityId);
+      const name = ticker?.name ?? "莊股";
+
+      setPending(actionKey, true);
+      setMarketPanelError(null);
+
+      try {
+        const result =
+          side === "buy"
+            ? await postEquityBuy(equityId, quantity)
+            : await postEquitySell(equityId, quantity);
+        const goldMoved = Math.abs(result.goldDelta);
+        showMarketSuccess(
+          side === "buy"
+            ? EQUITY_COPY.successBuy(name, quantity, goldMoved)
+            : EQUITY_COPY.successSell(name, quantity, goldMoved),
+          "item_gold",
+        );
+        await refresh();
+        await refreshMarket();
+        await refreshEquity();
+      } catch (e) {
+        const mapped = mapMarketActionError(e);
+        if (mapped.shouldRefresh) {
+          await refresh().catch(() => undefined);
+          await refreshMarket().catch(() => undefined);
+          await refreshEquity().catch(() => undefined);
+        }
+        setMarketPanelError({ message: mapped.message, hint: mapped.hint });
+      } finally {
+        setPending(actionKey, false);
+      }
+    },
+    [equitySnapshot, refresh, refreshMarket, refreshEquity, setPending, showMarketSuccess],
+  );
+
   const retryInitialLoad = useCallback(() => {
     if (loadRetrying) return;
     setLoadRetrying(true);
@@ -582,6 +649,8 @@ export default function App() {
                 marketOpen={marketOpenBuildingId === b.id}
                 onToggleMarket={() => toggleMarketPanel(b.id)}
                 market={marketSnapshot}
+                equity={equitySnapshot}
+                equityEnabled={equityEnabled}
                 panelError={marketPanelError}
                 pendingKeys={pendingKeys}
                 successToast={marketSuccessToast}
@@ -589,6 +658,8 @@ export default function App() {
                 opsCosts={state.opsCosts}
                 onSell={(itemId, quantity) => marketTrade("sell", itemId, quantity)}
                 onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
+                onEquityBuy={(equityId, quantity) => equityTrade("buy", equityId, quantity)}
+                onEquitySell={(equityId, quantity) => equityTrade("sell", equityId, quantity)}
               />
             );
           }

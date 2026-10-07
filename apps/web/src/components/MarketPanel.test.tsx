@@ -1,6 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { EQUITY_COPY } from "../equityCopy";
+import type { EquitySnapshot } from "../equity";
 import { MARKET_COPY } from "../marketCopy";
 import type { MarketSnapshot } from "../market";
 import { OPS_DEPTH_COPY } from "../ops-depth-copy";
@@ -43,6 +45,28 @@ function makeMarket(overrides?: Partial<MarketSnapshot>): MarketSnapshot {
       item_water: 0,
       item_gold: 10,
     },
+    ...overrides,
+  };
+}
+
+function makeEquity(overrides?: Partial<EquitySnapshot>): EquitySnapshot {
+  return {
+    gold: 100,
+    feeRate: 0.02,
+    minFeeGold: 1,
+    maxSharesPerEquity: 50,
+    maxQtyPerOrder: 10,
+    holdings: { eq_wheat_coop: 0, eq_mill_share: 0, eq_oven_share: 0 },
+    tickers: [
+      {
+        id: "eq_wheat_coop",
+        name: "糧莊",
+        basePrice: 10,
+        currentPrice: 10,
+        change: 0,
+        priceHistory: [{ t: 1, price: 10 }, { t: 2, price: 11 }],
+      },
+    ],
     ...overrides,
   };
 }
@@ -226,6 +250,44 @@ describe("MarketPanel", () => {
     expect(within(breadRow).getByTestId("market-row-transport-hint")).toHaveTextContent(
       OPS_DEPTH_COPY.sellTransportTooHigh,
     );
+  });
+
+  it("shows equity tab when enabled and renders sparkline", async () => {
+    const user = userEvent.setup();
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        equity={makeEquity()}
+        equityEnabled
+        panelError={null}
+        pendingKeys={new Set()}
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+        onEquityBuy={vi.fn()}
+        onEquitySell={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("market-tab-equity")).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: EQUITY_COPY.tab }));
+    expect(screen.getByTestId("equity-empty-holdings")).toHaveTextContent(EQUITY_COPY.empty);
+    const row = screen.getByTestId("equity-row-eq_wheat_coop");
+    expect(within(row).getByTestId("equity-sparkline")).toBeInTheDocument();
+  });
+
+  it("hides equity tab when API unavailable", () => {
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        equity={null}
+        equityEnabled={false}
+        panelError={null}
+        pendingKeys={new Set()}
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId("market-tab-equity")).not.toBeInTheDocument();
   });
 
   it("shows panel error message", () => {
