@@ -6,3 +6,4 @@ export * from "./method-generator";
 export * from "./validator";
 export * from "./agriculture-catalog";
 export * from "./market-config";
+export * from "./ops-depth-config";
