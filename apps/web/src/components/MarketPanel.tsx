@@ -35,6 +35,7 @@ type Props = {
   retail?: RetailSnapshot | null;
   retailTabVisible?: boolean;
   onRetailTabOpen?: () => void;
+  onRetailTabActiveChange?: (active: boolean) => void;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
   onCommodityBuy?: (commodityId: string, quantity: number) => void;
@@ -71,6 +72,7 @@ export const MarketPanel = forwardRef(function MarketPanel(
     retail,
     retailTabVisible = false,
     onRetailTabOpen,
+    onRetailTabActiveChange,
     onSell,
     onBuy,
     onCommodityBuy,
@@ -93,9 +95,10 @@ export const MarketPanel = forwardRef(function MarketPanel(
   }, [tabFocusRequest]);
 
   useEffect(() => {
+    onRetailTabActiveChange?.(tab === "retail");
     if (tab !== "retail") return;
     onRetailTabOpen?.();
-  }, [tab, onRetailTabOpen]);
+  }, [tab, onRetailTabOpen, onRetailTabActiveChange]);
 
   const sellIds = useMemo(() => {
     if (!market?.prices?.sell) return [];

@@ -25,6 +25,7 @@ type Props = {
   retail?: RetailSnapshot | null;
   retailTabVisible?: boolean;
   onRetailTabOpen?: () => void;
+  onRetailTabActiveChange?: (active: boolean) => void;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
   onCommodityBuy?: (commodityId: string, quantity: number) => void;
@@ -51,6 +52,7 @@ export function TradingPostBuildingCard({
   retail,
   retailTabVisible,
   onRetailTabOpen,
+  onRetailTabActiveChange,
   onSell,
   onBuy,
   onCommodityBuy,
@@ -112,6 +114,7 @@ export function TradingPostBuildingCard({
             retail={retail}
             retailTabVisible={retailTabVisible}
             onRetailTabOpen={onRetailTabOpen}
+            onRetailTabActiveChange={onRetailTabActiveChange}
             onSell={onSell}
             onBuy={onBuy}
             onCommodityBuy={onCommodityBuy}

@@ -54,7 +54,11 @@ import {
 } from "./market-feedback";
 import { sortBuildingDefs } from "./buildingSort";
 import { nextPollFailureCount, shouldShowConnectionLost } from "./connectionPoll";
-import { MARKET_POLL_INTERVAL_MS, STATE_POLL_INTERVAL_MS } from "./gamePoll";
+import {
+  MARKET_POLL_INTERVAL_MS,
+  RETAIL_POLL_INTERVAL_MS,
+  STATE_POLL_INTERVAL_MS,
+} from "./gamePoll";
 import { normalizeGameState } from "./gameStateNormalize";
 import {
   buildingScrollAnchorId,
@@ -132,6 +136,7 @@ export default function App() {
   const [commoditiesTabVisible, setCommoditiesTabVisible] = useState(false);
   const [retailSnapshot, setRetailSnapshot] = useState<RetailSnapshot | null>(null);
   const [retailTabVisible, setRetailTabVisible] = useState(false);
+  const [retailTabActive, setRetailTabActive] = useState(false);
   const [hireError, setHireError] = useState<BuildingActionErrorView | null>(null);
   const HIRE_ACTION_KEY = "workforce:hire";
 
@@ -165,28 +170,32 @@ export default function App() {
     return snapshot;
   }, []);
 
+  const refreshRetail = useCallback(async () => {
+    const snapshot = await fetchRetailOptional();
+    setRetailSnapshot(snapshot);
+    setRetailTabVisible(snapshot !== null);
+    return snapshot;
+  }, []);
+
   const refreshMarketData = useCallback(async () => {
     const [market, commodities] = await Promise.all([
       fetchMarket().catch(() => null),
       fetchCommoditiesOptional().catch(() => null),
     ]);
     if (market) setMarketSnapshot(market);
-    setCommoditiesSnapshot(commodities);
+    if (commodities != null && Array.isArray(commodities.listings)) {
+      setCommoditiesSnapshot(commodities);
+    } else {
+      setCommoditiesSnapshot(null);
+    }
     setCommoditiesTabVisible((prev) => {
       const next =
-        commodities !== null &&
+        commodities != null &&
         Array.isArray(commodities.listings) &&
         enabledCommodityListings(commodities).length > 0;
       return prev === next ? prev : next;
     });
     return { market, commodities };
-  }, []);
-
-  const refreshRetail = useCallback(async () => {
-    const snapshot = await fetchRetailOptional();
-    setRetailSnapshot(snapshot);
-    setRetailTabVisible(snapshot !== null);
-    return snapshot;
   }, []);
 
   const handlePollFailure = useCallback((e: unknown) => {
@@ -282,9 +291,22 @@ export default function App() {
   }, [gamePollingActive, refreshMarketData]);
 
   useEffect(() => {
-    if (!marketOpenBuildingId) return;
+    if (!marketOpenBuildingId) {
+      setRetailTabActive(false);
+      return;
+    }
     void refreshMarketData();
-  }, [marketOpenBuildingId, refreshMarketData]);
+    void refreshRetail();
+  }, [marketOpenBuildingId, refreshMarketData, refreshRetail]);
+
+  useEffect(() => {
+    if (!marketOpenBuildingId || !retailTabActive) return undefined;
+    void refreshRetail();
+    const t = setInterval(() => {
+      void refreshRetail();
+    }, RETAIL_POLL_INTERVAL_MS);
+    return () => clearInterval(t);
+  }, [marketOpenBuildingId, retailTabActive, refreshRetail]);
 
   useEffect(() => {
     return () => {
@@ -784,6 +806,7 @@ export default function App() {
                 onRetailTabOpen={() => {
                   refreshRetail().catch(() => undefined);
                 }}
+                onRetailTabActiveChange={setRetailTabActive}
                 onSell={(itemId, quantity) => marketTrade("sell", itemId, quantity)}
                 onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
                 onCommodityBuy={(commodityId, quantity) => commodityTrade("buy", commodityId, quantity)}

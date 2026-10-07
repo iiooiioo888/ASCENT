@@ -1,4 +1,5 @@
 import { DEFAULT_MARKET_PRICES } from "@ascent/shared";
+import { ApiError } from "../api";
 import type { MarketSnapshot } from "../market";
 
 /** Minimal market payload for App integration tests. */
@@ -21,6 +22,9 @@ export function withMarketApiRoute(
   return async (path, init) => {
     if (path === "/api/v1/market") {
       return getMarket();
+    }
+    if (path === "/api/v1/market/commodities" || path === "/api/v1/market/retail") {
+      throw new ApiError("not found", 404);
     }
     return handler(path, init);
   };
