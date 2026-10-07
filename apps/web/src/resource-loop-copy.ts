@@ -16,9 +16,14 @@ export const WELL_IDLE_JOBLINE = "等待汲水";
 export const DEPLETION_BANNER = {
   title: "生產已暫停：種子或水不足",
   body: "用水井汲水，或用小麥留種後即可繼續。",
-  ctaWell: "前往水井",
-  ctaSeed: "查看留種",
+  ctaWell: "用水井汲水",
+  ctaSeed: "用小麥留種",
 } as const;
+
+/** 開局由 BE seed 預放水井；前端不提供放置水井空地卡（規格 v1.1）。 */
+export function isBuildingDefPlaceableInUi(defId: string): boolean {
+  return defId !== WELL_BUILDING_DEF_ID;
+}
 
 /**
  * TODO(product): 待確認配方展示（與 shared catalog 佔位數值對齊）

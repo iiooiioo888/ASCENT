@@ -11,6 +11,7 @@ import { isProductionDepleted } from "./production-depleted";
 import {
   FIELD_BUILDING_DEF_ID,
   METHOD_SAVE_SEED_ID,
+  isBuildingDefPlaceableInUi,
   RESOURCE_LOOP_GOAL_HINT,
   WELL_BUILDING_DEF_ID,
 } from "./resource-loop-copy";
@@ -118,7 +119,7 @@ export default function App() {
     if (!state) return;
     flashHighlight(WELL_BUILDING_DEF_ID);
     const placed = state.buildings.find((b) => b.buildingDefId === WELL_BUILDING_DEF_ID);
-    scrollToAnchor(placed ? `building-${placed.id}` : `plot-unplaced-${WELL_BUILDING_DEF_ID}`);
+    if (placed) scrollToAnchor(`building-${placed.id}`);
   }, [flashHighlight, scrollToAnchor, state]);
 
   const goToSaveSeed = useCallback(() => {
@@ -142,7 +143,9 @@ export default function App() {
     );
   }
 
-  const unplaced = state.buildingDefs.filter((d) => !state.buildings.some((b) => b.buildingDefId === d.id));
+  const unplaced = state.buildingDefs.filter(
+    (d) => isBuildingDefPlaceableInUi(d.id) && !state.buildings.some((b) => b.buildingDefId === d.id),
+  );
   const depleted = isProductionDepleted(state);
 
   return (

@@ -7,7 +7,9 @@ import {
   METHOD_RECIPE_DISPLAY,
   METHOD_SAVE_SEED_ID,
   RESOURCE_LOOP_GOAL_HINT,
+  WELL_BUILDING_DEF_ID,
   WELL_IDLE_JOBLINE,
+  isBuildingDefPlaceableInUi,
 } from "./resource-loop-copy";
 
 describe("resource loop copy constants", () => {
@@ -35,9 +37,27 @@ describe("resource loop copy constants", () => {
     });
   });
 
-  it("defines depletion CTA copy", () => {
-    expect(DEPLETION_BANNER.ctaWell).toBe("前往水井");
-    expect(DEPLETION_BANNER.ctaSeed).toBe("查看留種");
+  it("defines depletion CTA copy (v1.1)", () => {
+    expect(DEPLETION_BANNER.ctaWell).toBe("用水井汲水");
+    expect(DEPLETION_BANNER.ctaSeed).toBe("用小麥留種");
+  });
+
+  it("never offers well placement in UI (seeded by BE)", () => {
+    expect(isBuildingDefPlaceableInUi(WELL_BUILDING_DEF_ID)).toBe(false);
+    expect(isBuildingDefPlaceableInUi("bdef_silo")).toBe(true);
+  });
+
+  it("filters unplaced defs without well placement cards", () => {
+    const defs = [
+      { id: WELL_BUILDING_DEF_ID, name: "水井" },
+      { id: "bdef_silo", name: "倉" },
+    ];
+    const buildings: { buildingDefId: string }[] = [];
+    const unplaced = defs.filter(
+      (d) => isBuildingDefPlaceableInUi(d.id) && !buildings.some((b) => b.buildingDefId === d.id),
+    );
+    expect(unplaced.map((d) => d.name)).toEqual(["倉"]);
+    expect(unplaced.some((d) => d.name === "水井")).toBe(false);
   });
 
   it("defines well idle jobline", () => {
