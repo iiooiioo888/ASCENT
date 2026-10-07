@@ -1,0 +1,24 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "..",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      {
+        "tsconfig": {
+          "module": "commonjs",
+          "esModuleInterop": true,
+          "emitDecoratorMetadata": true,
+          "experimentalDecorators": true
+        }
+      }
+    ]
+  },
+  "moduleNameMapper": {
+    "^@nestjs/schedule$": "<rootDir>/test/__mocks__/nestjs-schedule.ts"
+  },
+  "modulePathIgnorePatterns": ["<rootDir>/dist/"],
+  "testPathIgnorePatterns": ["<rootDir>/dist/"]
+}
