@@ -7,19 +7,23 @@ import {
   settleWindow,
   type BuildingQueueJob,
   type BuildingStatus,
+  type EnvironmentConfig,
   type GameConfigValues,
   type MarketPriceBook,
   type OpsDepthConfig,
+  type PersistedWeatherState,
   type WorldClock,
 } from "@ascent/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { gameConfigFromRow } from "./game-config.loader";
+import { EnvironmentRuntime } from "./environment-runtime";
 
 @Injectable()
 export class SimulationService implements OnModuleInit {
   private runtimeConfig: GameConfigValues = gameConfigFromRow(null);
   private marketPrices: MarketPriceBook = marketPricesFromDb(null);
   private opsDepthConfig: OpsDepthConfig = opsDepthFromDb(null);
+  private readonly environmentRuntime = new EnvironmentRuntime();
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -32,6 +36,7 @@ export class SimulationService implements OnModuleInit {
     this.runtimeConfig = gameConfigFromRow(row);
     this.marketPrices = marketPricesFromDb(row?.marketPrices);
     this.opsDepthConfig = opsDepthFromDb(row?.opsDepth);
+    this.environmentRuntime.setConfigFromDb(row?.environment);
   }
 
   get config(): GameConfigValues {
@@ -44,6 +49,21 @@ export class SimulationService implements OnModuleInit {
 
   get opsDepth(): OpsDepthConfig {
     return this.opsDepthConfig;
+  }
+
+  get environmentConfig(): EnvironmentConfig {
+    return this.environmentRuntime.configSnapshot;
+  }
+
+  async ensureWeatherFresh(
+    tx: Pick<PrismaService, "serverState" | "gameConfig">,
+    currentGameSec: number,
+  ): Promise<PersistedWeatherState> {
+    return this.environmentRuntime.ensureWeatherFresh(tx, currentGameSec);
+  }
+
+  environmentSnapshot(weatherState: PersistedWeatherState, currentGameSec: number) {
+    return this.environmentRuntime.snapshot(weatherState, currentGameSec);
   }
 
   displayGameTime(clock: WorldClock, nowMs: number) {

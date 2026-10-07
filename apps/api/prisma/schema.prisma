@@ -119,6 +119,8 @@ model GameConfig {
   marketPrices       Json? @map("market_prices")
   // TODO(product): JSON 覆寫 DEFAULT_OPS_DEPTH。
   opsDepth           Json? @map("ops_depth")
+  /** ENV：休地／天氣倍率與切換（覆写 shared DEFAULT_ENVIRONMENT_CONFIG）。 */
+  environment        Json? @map("environment")
 
   @@map("game_config")
 }
@@ -129,6 +131,8 @@ model ServerState {
   startGameTime  BigInt   @map("start_game_time")
   finishAt       DateTime? @map("finish_at")
   lastUpdate     DateTime @map("last_update")
+  weather              String   @default("fair")
+  weatherNextChangeAtGame BigInt? @map("weather_next_change_at_game")
 
   @@map("server_state")
 }
@@ -206,6 +210,7 @@ model PlayerBuilding {
   outputs          Json
   bufferedOutputs  Json     @map("buffered_outputs")
   status           String
+  fallowUntilGame  BigInt?  @map("fallow_until_game")
 
   @@map("player_buildings")
 }
