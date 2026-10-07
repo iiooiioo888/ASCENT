@@ -17,6 +17,7 @@ import {
   MarketPanel,
   RETAIL_SHELF_PENDING_ASK_KEY,
   RETAIL_SHELF_PENDING_ENABLED_KEY,
+  RETAIL_SHELF_PENDING_FOLLOW_MARKET_KEY,
   retailPendingKey,
 } from "./MarketPanel";
 
@@ -544,6 +545,7 @@ describe("MarketPanel", () => {
   it("shows shelf tab with toggle, ask, and revenue", async () => {
     const user = userEvent.setup();
     const onToggle = vi.fn();
+    const onToggleFollowMarket = vi.fn();
     const onSaveAsk = vi.fn();
 
     render(
@@ -551,9 +553,10 @@ describe("MarketPanel", () => {
         market={makeMarket()}
         panelError={null}
         pendingKeys={new Set()}
-        retailShelf={makeShelf({ enabled: true, ask: 10, todayRevenueGold: 15 })}
+        retailShelf={makeShelf({ enabled: true, followMarket: false, ask: 10, todayRevenueGold: 15 })}
         retailShelfTabVisible
         onRetailShelfToggleEnabled={onToggle}
+        onRetailShelfToggleFollowMarket={onToggleFollowMarket}
         onRetailShelfSaveAsk={onSaveAsk}
         onSell={vi.fn()}
         onBuy={vi.fn()}
@@ -570,9 +573,31 @@ describe("MarketPanel", () => {
     await user.click(screen.getByTestId("retail-shelf-enabled"));
     expect(onToggle).toHaveBeenCalledWith(false);
 
+    await user.click(screen.getByTestId("retail-shelf-follow-market"));
+    expect(onToggleFollowMarket).toHaveBeenCalledWith(true);
+
     await user.click(screen.getByRole("button", { name: "提高標價" }));
     await user.click(screen.getByTestId("retail-shelf-ask-apply"));
     expect(onSaveAsk).toHaveBeenCalledWith(11);
+  });
+
+  it("disables shelf ask apply while following market", async () => {
+    const user = userEvent.setup();
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        retailShelf={makeShelf({ enabled: true, followMarket: true })}
+        retailShelfTabVisible
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByTestId("market-tab-shelf"));
+    expect(screen.getByTestId("retail-shelf-ask-apply")).toBeDisabled();
+    expect(screen.getByTestId("retail-shelf-follow-hint")).toBeInTheDocument();
   });
 
   it("disables shelf controls while pending", async () => {
@@ -581,10 +606,17 @@ describe("MarketPanel", () => {
       <MarketPanel
         market={makeMarket()}
         panelError={null}
-        pendingKeys={new Set([RETAIL_SHELF_PENDING_ENABLED_KEY, RETAIL_SHELF_PENDING_ASK_KEY])}
+        pendingKeys={
+          new Set([
+            RETAIL_SHELF_PENDING_ENABLED_KEY,
+            RETAIL_SHELF_PENDING_FOLLOW_MARKET_KEY,
+            RETAIL_SHELF_PENDING_ASK_KEY,
+          ])
+        }
         retailShelf={makeShelf({ enabled: true })}
         retailShelfTabVisible
         retailShelfPendingEnabled
+        retailShelfPendingFollowMarket
         retailShelfPendingAsk
         onSell={vi.fn()}
         onBuy={vi.fn()}
@@ -593,6 +625,7 @@ describe("MarketPanel", () => {
 
     await user.click(screen.getByTestId("market-tab-shelf"));
     expect(screen.getByTestId("retail-shelf-enabled")).toBeDisabled();
+    expect(screen.getByTestId("retail-shelf-follow-market")).toBeDisabled();
     expect(screen.getByTestId("retail-shelf-ask-apply")).toBeDisabled();
   });
 

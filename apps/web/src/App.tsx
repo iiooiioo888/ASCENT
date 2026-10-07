@@ -13,6 +13,7 @@ import {
   retailPendingKey,
   RETAIL_SHELF_PENDING_ASK_KEY,
   RETAIL_SHELF_PENDING_ENABLED_KEY,
+  RETAIL_SHELF_PENDING_FOLLOW_MARKET_KEY,
   type MarketTabFocusRequest,
 } from "./components/MarketPanel";
 import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
@@ -713,9 +714,14 @@ export default function App() {
   );
 
   const patchRetailShelfSetting = useCallback(
-    async (patch: { enabled?: boolean; ask?: number }) => {
+    async (patch: { enabled?: boolean; followMarket?: boolean; ask?: number }) => {
       const enabledPatch = patch.enabled !== undefined;
-      const actionKey = enabledPatch ? RETAIL_SHELF_PENDING_ENABLED_KEY : RETAIL_SHELF_PENDING_ASK_KEY;
+      const followMarketPatch = patch.followMarket !== undefined;
+      const actionKey = enabledPatch
+        ? RETAIL_SHELF_PENDING_ENABLED_KEY
+        : followMarketPatch
+          ? RETAIL_SHELF_PENDING_FOLLOW_MARKET_KEY
+          : RETAIL_SHELF_PENDING_ASK_KEY;
       if (pendingKeysRef.current.has(actionKey)) return;
 
       setPending(actionKey, true);
@@ -727,8 +733,10 @@ export default function App() {
         setRetailShelfTabVisible(true);
         if (enabledPatch && patch.enabled !== undefined) {
           showMarketSuccess(RETAIL_SHELF_COPY.successEnabled(patch.enabled), "item_bread");
+        } else if (followMarketPatch && patch.followMarket !== undefined) {
+          showMarketSuccess(RETAIL_SHELF_COPY.successFollowMarket(patch.followMarket), "item_bread");
         } else if (patch.ask !== undefined) {
-          showMarketSuccess(RETAIL_SHELF_COPY.successAsk(patch.ask), "item_bread");
+          showMarketSuccess(RETAIL_SHELF_COPY.successManualAsk, "item_bread");
         }
         await refresh();
         await refreshRetailShelf();
@@ -882,12 +890,16 @@ export default function App() {
                 retailShelf={retailShelfSnapshot}
                 retailShelfTabVisible={retailShelfTabVisible}
                 retailShelfPendingEnabled={pendingKeys.has(RETAIL_SHELF_PENDING_ENABLED_KEY)}
+                retailShelfPendingFollowMarket={pendingKeys.has(RETAIL_SHELF_PENDING_FOLLOW_MARKET_KEY)}
                 retailShelfPendingAsk={pendingKeys.has(RETAIL_SHELF_PENDING_ASK_KEY)}
                 onRetailShelfTabOpen={() => {
                   refreshRetailShelf().catch(() => undefined);
                 }}
                 onRetailShelfToggleEnabled={(enabled) => {
                   void patchRetailShelfSetting({ enabled });
+                }}
+                onRetailShelfToggleFollowMarket={(followMarket) => {
+                  void patchRetailShelfSetting({ followMarket });
                 }}
                 onRetailShelfSaveAsk={(ask) => {
                   void patchRetailShelfSetting({ ask });

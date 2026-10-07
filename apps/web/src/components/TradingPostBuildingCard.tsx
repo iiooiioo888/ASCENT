@@ -30,10 +30,12 @@ type Props = {
   retailShelf?: RetailShelfSnapshot | null;
   retailShelfTabVisible?: boolean;
   retailShelfPendingEnabled?: boolean;
+  retailShelfPendingFollowMarket?: boolean;
   retailShelfPendingAsk?: boolean;
   onRetailShelfTabOpen?: () => void;
   onRetailShelfTabActiveChange?: (active: boolean) => void;
   onRetailShelfToggleEnabled?: (enabled: boolean) => void;
+  onRetailShelfToggleFollowMarket?: (followMarket: boolean) => void;
   onRetailShelfSaveAsk?: (ask: number) => void;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
@@ -65,10 +67,12 @@ export function TradingPostBuildingCard({
   retailShelf,
   retailShelfTabVisible,
   retailShelfPendingEnabled,
+  retailShelfPendingFollowMarket,
   retailShelfPendingAsk,
   onRetailShelfTabOpen,
   onRetailShelfTabActiveChange,
   onRetailShelfToggleEnabled,
+  onRetailShelfToggleFollowMarket,
   onRetailShelfSaveAsk,
   onSell,
   onBuy,
@@ -135,10 +139,12 @@ export function TradingPostBuildingCard({
             retailShelf={retailShelf}
             retailShelfTabVisible={retailShelfTabVisible}
             retailShelfPendingEnabled={retailShelfPendingEnabled}
+            retailShelfPendingFollowMarket={retailShelfPendingFollowMarket}
             retailShelfPendingAsk={retailShelfPendingAsk}
             onRetailShelfTabOpen={onRetailShelfTabOpen}
             onRetailShelfTabActiveChange={onRetailShelfTabActiveChange}
             onRetailShelfToggleEnabled={onRetailShelfToggleEnabled}
+            onRetailShelfToggleFollowMarket={onRetailShelfToggleFollowMarket}
             onRetailShelfSaveAsk={onRetailShelfSaveAsk}
             onSell={onSell}
             onBuy={onBuy}
