@@ -24,7 +24,7 @@ export class RetailShelfService {
     });
   }
 
-  async patchShelf(body: { enabled?: unknown; ask?: unknown }) {
+  async patchShelf(body: { enabled?: boolean; ask?: number }) {
     if (body.enabled !== undefined && typeof body.enabled !== "boolean") {
       throw new BadRequestException("enabled 須為布林");
     }
@@ -37,6 +37,9 @@ export class RetailShelfService {
       throw new BadRequestException("請提供 enabled 或 ask");
     }
 
+    const nextEnabled = body.enabled;
+    const nextAsk = body.ask;
+
     return this.inventory.runExclusive(async () => {
       await this.inventory.settleAllUnlocked();
       const now = new Date();
@@ -44,8 +47,8 @@ export class RetailShelfService {
         const existing = await tx.playerRetailState.findUnique({ where: { playerId: LOCAL_PLAYER_ID } });
         const createData = {
           playerId: LOCAL_PLAYER_ID,
-          shelfEnabled: body.enabled === true,
-          shelfAskGold: typeof body.ask === "number" ? body.ask : null,
+          shelfEnabled: nextEnabled === true,
+          shelfAskGold: nextAsk ?? null,
           shelfLastTickAt: now,
         };
         if (!existing) {
@@ -57,9 +60,9 @@ export class RetailShelfService {
           shelfAskGold?: number | null;
           shelfLastTickAt?: Date;
         } = {};
-        if (body.enabled !== undefined) data.shelfEnabled = body.enabled;
-        if (body.ask !== undefined) data.shelfAskGold = body.ask;
-        if (body.enabled === true && !existing.shelfLastTickAt) {
+        if (nextEnabled !== undefined) data.shelfEnabled = nextEnabled;
+        if (nextAsk !== undefined) data.shelfAskGold = nextAsk;
+        if (nextEnabled === true && !existing.shelfLastTickAt) {
           data.shelfLastTickAt = now;
         }
         await tx.playerRetailState.update({
