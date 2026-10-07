@@ -15,6 +15,10 @@ import {
   SILO_CARD_BODY,
 } from "../productCopy";
 import { StopConfirmDialog } from "./StopConfirmDialog";
+import { fieldYieldPreviewLine } from "../environment-copy";
+import { isFieldFallow, scaledGrowOutputsPreview } from "../environment-ui";
+import { isFieldGrowRuleId } from "@ascent/shared";
+import { FieldFallowNotice } from "./FieldFallowNotice";
 
 type Props = {
   building: Building;
@@ -37,6 +41,8 @@ type Props = {
   workforce?: WorkforceSnapshot;
   opsCosts?: OpsCostsSnapshot;
   onGoMarket?: () => void;
+  displayGameTime?: number;
+  environmentYieldMult?: number;
 };
 
 export function BuildingCard({
@@ -60,6 +66,8 @@ export function BuildingCard({
   workforce,
   opsCosts,
   onGoMarket,
+  displayGameTime = 0,
+  environmentYieldMult,
 }: Props) {
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
@@ -90,7 +98,16 @@ export function BuildingCard({
     ? startOpsPrecheck(b.buildingDefId, goldBalance, workforce, opsCosts)
     : null;
   const purposeHint = methodPurposeHint(displayMethod?.id);
+  const inFallow = isFieldFallow(b.buildingDefId, b.fallowUntil);
   const showActions = showProductionActionButtons(b);
+  const yieldMult =
+    environmentYieldMult != null && selected && isFieldGrowRuleId(selected.ruleId)
+      ? environmentYieldMult
+      : undefined;
+  const previewOutputs =
+    displayMethod && yieldMult != null
+      ? scaledGrowOutputsPreview(displayMethod.ruleId, displayMethod.outputs, yieldMult)
+      : displayMethod?.outputs;
   const methodSelectId = `method-select-${b.id}`;
   const buildingIconLabel = b.buildingDef.name;
 
@@ -125,6 +142,15 @@ export function BuildingCard({
           serverRealTime={serverRealTime}
           bufferedOutputs={b.bufferedOutputs}
         />
+
+        {inFallow && b.fallowUntil != null ? (
+          <FieldFallowNotice
+            fallowUntil={b.fallowUntil}
+            displayGameTime={displayGameTime}
+            timeScale={timeScale}
+            serverRealTime={serverRealTime}
+          />
+        ) : null}
 
         {options.length ? (
           <>
@@ -162,7 +188,12 @@ export function BuildingCard({
                       <span>{fmtIo(displayMethod.inputs)}</span>
                     )}
                   </div>
-                  <div>產出 {fmtIo(displayMethod.outputs)}</div>
+                  <div>產出 {fmtIo(previewOutputs ?? displayMethod.outputs)}</div>
+                  {yieldMult != null && yieldMult !== 1 ? (
+                    <p className="env-yield-preview" data-testid="env-yield-preview">
+                      {fieldYieldPreviewLine(yieldMult)}
+                    </p>
+                  ) : null}
                   {purposeHint ? <p className="purpose-hint">{purposeHint}</p> : null}
                   {showOpsPreview && ops ? (
                     <div className="ops-cost-preview" data-testid="ops-cost-preview">
@@ -208,7 +239,12 @@ export function BuildingCard({
             <button
               type="button"
               disabled={
-                !options.length || b.status !== "idle" || !selected || !affordSelected || !opsOk
+                !options.length ||
+                b.status !== "idle" ||
+                !selected ||
+                !affordSelected ||
+                !opsOk ||
+                inFallow
               }
               onClick={onStart}
             >

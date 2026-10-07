@@ -11,6 +11,7 @@ import {
 import { demoSiloBuilding } from "../screenshot-harness/fixtures";
 import { BuildingCard } from "./BuildingCard";
 import { DEMO_SERVER_REAL_TIME } from "../test/demoTime";
+import { FALLOW_ACTIVE_COPY } from "../environment-copy";
 import { DEPLETION_CTA_MARKET } from "../productCopy";
 
 const baseInventory = [
@@ -367,5 +368,36 @@ describe("BuildingCard a11y (U15)", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent("資源不足：水");
+  });
+});
+
+describe("BuildingCard environment fallow", () => {
+  it("休地時禁用開工並顯示倒數", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={{ ...demoFieldIdle, fallowUntil: 100_000 }}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        inventory={baseInventory}
+        displayGameTime={99_000}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "開工" })).toBeDisabled();
+    expect(screen.getByTestId("field-fallow-notice")).toHaveTextContent(FALLOW_ACTIVE_COPY);
+  });
+
+  it("雨天倍率預覽調整產出顯示", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoFieldIdle}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        inventory={baseInventory}
+        environmentYieldMult={1.15}
+      />,
+    );
+    expect(screen.getByTestId("env-yield-preview")).toHaveTextContent("115%");
   });
 });

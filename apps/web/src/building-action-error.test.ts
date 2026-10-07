@@ -55,6 +55,11 @@ describe("mapBuildingActionError — known mappings", () => {
     ).toBe(true);
   });
 
+  it("maps fallow field start rejection", () => {
+    expect(mapBuildingActionError(new ApiError("土地休耕中", 400)).message).toBe("土地休耕中");
+    expect(mapBuildingActionError(new ApiError("土地休耕中", 400)).shouldRefresh).toBe(false);
+  });
+
   it("maps ops-depth workforce and gold errors", () => {
     expect(mapBuildingActionError(new ApiError("人手不足", 400)).message).toBe(OPS_DEPTH_COPY.needHands);
     expect(mapBuildingActionError(new ApiError("金幣不足", 400)).message).toBe(OPS_DEPTH_COPY.needGold);

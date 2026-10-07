@@ -15,6 +15,7 @@ import {
 import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { maybeWorkforceHud } from "./components/WorkforceHud";
+import { maybeEnvironmentHud } from "./components/EnvironmentHud";
 import type { BuildingActionErrorView } from "./building-action-error";
 import { mapBuildingActionError } from "./building-action-error";
 import type { MarketActionErrorView } from "./market-action-error";
@@ -621,6 +622,7 @@ export default function App() {
           <span className="chip chip-gold" data-testid="hud-gold-chip">
             {hudGoldChipLabel(hudGold)}
           </span>
+          {maybeEnvironmentHud(state.environment)}
           {maybeWorkforceHud({
             workforce: state.workforce,
             opsCosts: state.opsCosts,
@@ -725,6 +727,8 @@ export default function App() {
               workforce={state.workforce}
               opsCosts={state.opsCosts}
               onGoMarket={() => goToMarket()}
+              displayGameTime={state.time.displayGameTime}
+              environmentYieldMult={state.environment?.yieldMult}
             />
           );
         })}
