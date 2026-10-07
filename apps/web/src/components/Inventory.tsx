@@ -1,14 +1,19 @@
 import { formatQuantity } from "../format";
 import { ITEM_META } from "../meta";
-import { itemPurposeHint } from "../productCopy";
+import { LOW_STOCK_THRESHOLD } from "../resource-loop-copy";
 import type { InvRow } from "../types";
+
+const LOW_STOCK_ITEM_IDS = new Set(["item_water", "item_seed_wheat"]);
+
+function isLowStock(itemId: string, qty: number): boolean {
+  return LOW_STOCK_ITEM_IDS.has(itemId) && qty > 0 && qty <= LOW_STOCK_THRESHOLD;
+}
 
 type Props = {
   inventory: InvRow[];
-  highlightItemIds?: ReadonlySet<string>;
 };
 
-export function Inventory({ inventory, highlightItemIds }: Props) {
+export function Inventory({ inventory }: Props) {
   return (
     <section className="pack">
       <h2>背包</h2>
@@ -16,23 +21,20 @@ export function Inventory({ inventory, highlightItemIds }: Props) {
         {inventory.map((row) => {
           const qty = Number(row.quantity);
           const meta = ITEM_META[row.itemId] ?? { name: row.item.code, icon: "📦" };
-          const purpose = itemPurposeHint(row.itemId);
-          const qtyLabel = formatQuantity(qty);
           return (
             <div
               key={row.itemId}
               className={[
-                qty <= 0 ? "item empty" : "item",
-                highlightItemIds?.has(row.itemId) ? "highlight" : "",
+                "item",
+                qty <= 0 ? "empty" : "",
+                isLowStock(row.itemId, qty) ? "low-stock" : "",
               ]
                 .filter(Boolean)
                 .join(" ")}
-              aria-label={`${meta.name} ${qtyLabel}`}
             >
-              <div className="icon" aria-hidden>{meta.icon}</div>
+              <div className="icon">{meta.icon}</div>
               <div className="name">{meta.name}</div>
-              <div className="qty" aria-hidden>{qtyLabel}</div>
-              {purpose ? <div className="item-purpose">{purpose}</div> : null}
+              <div className="qty">{formatQuantity(qty)}</div>
             </div>
           );
         })}
