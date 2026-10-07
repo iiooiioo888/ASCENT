@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildingScrollAnchorId,
   pickSaveSeedMethodId,
+  isWellPlacementUiHidden,
   resolveWellScrollAnchorId,
   unplacedPlotAnchorId,
 } from "./depletion-scroll";
@@ -31,9 +32,14 @@ describe("depletion scroll anchors", () => {
     expect(resolveWellScrollAnchorId(buildings)).toBe("building-b_well");
   });
 
-  it("resolves well scroll to unplaced plot when well not placed", () => {
+  it("returns null when well not placed (v1.1: no unplaced well plot in UI)", () => {
     const buildings = [building({ id: "b_field", buildingDefId: FIELD_BUILDING_DEF_ID })];
-    expect(resolveWellScrollAnchorId(buildings)).toBe("plot-unplaced-bdef_well");
+    expect(resolveWellScrollAnchorId(buildings)).toBeNull();
+  });
+
+  it("hides unplaced well placement card in App filter", () => {
+    expect(isWellPlacementUiHidden(WELL_BUILDING_DEF_ID)).toBe(true);
+    expect(isWellPlacementUiHidden(FIELD_BUILDING_DEF_ID)).toBe(false);
   });
 
   it("picks save-seed method only when listed on field options", () => {

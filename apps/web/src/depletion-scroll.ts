@@ -15,10 +15,15 @@ export function unplacedPlotAnchorId(buildingDefId: string): string {
   return `plot-unplaced-${buildingDefId}`;
 }
 
-/** Scroll target for「前往水井」— placed well card or unplaced well plot. */
-export function resolveWellScrollAnchorId(buildings: Building[]): string {
+/** v1.1：開局預放水井；UI 唔再顯示未放置水井空地，捲動僅指向已放水井卡。 */
+export function resolveWellScrollAnchorId(buildings: Building[]): string | null {
   const placed = buildings.find((b) => b.buildingDefId === WELL_BUILDING_DEF_ID);
-  return placed ? buildingScrollAnchorId(placed.id) : unplacedPlotAnchorId(WELL_BUILDING_DEF_ID);
+  return placed ? buildingScrollAnchorId(placed.id) : null;
+}
+
+/** 是否隱藏「空地 · 可放置水井」（開局預放，唔再讓玩家放置）。 */
+export function isWellPlacementUiHidden(buildingDefId: string): boolean {
+  return buildingDefId === WELL_BUILDING_DEF_ID;
 }
 
 export function findFieldBuilding(buildings: Building[]): Building | undefined {

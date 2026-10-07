@@ -1,12 +1,8 @@
-/**
- * Player-facing disclaimer about whether inputs are refunded when stopping production.
- *
- * TODO(product): Awaiting product confirmation — do not assert refund or non-refund in the UI
- * until policy is decided. Wire this constant into {@link StopConfirmDialog} when copy is approved.
- */
-export const STOP_CONFIRM_REFUND_DISCLAIMER = "";
-
-/** Neutral body copy (no refund commitment). */
+/** 停止生產確認（U4）；產品 v1.1：停止唔退還已扣輸入，對話框列損失。 */
 export function stopConfirmIntro(buildingName: string, methodLabel: string): string {
-  return `${buildingName} 正在進行「${methodLabel}」。若確認停止，下列開工時已從背包扣減的資源將不再用於本次生產，進行中的工時與尚未入帳的產出也會結束：`;
+  return `${buildingName} 正在進行「${methodLabel}」。若確認停止，下列已投入資源將失去，進行中的工時與尚未入帳的產出也會結束：`;
+}
+
+export function stopConfirmLossHeading(): string {
+  return "將失去";
 }

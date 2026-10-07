@@ -3,7 +3,7 @@ import { trapTabKey } from "../a11y/trapFocus";
 import { fmtIo } from "../format";
 import { METHOD_NAME } from "../meta";
 import type { Method } from "../types";
-import { stopConfirmIntro } from "./stopConfirmCopy";
+import { stopConfirmIntro, stopConfirmLossHeading } from "./stopConfirmCopy";
 
 type Props = {
   open: boolean;
@@ -62,7 +62,9 @@ export function StopConfirmDialog({ open, buildingName, method, onCancel, onConf
       >
         <h4 id={titleId} className="confirm-dialog-title">確認停止生產？</h4>
         <p className="confirm-dialog-body">{stopConfirmIntro(buildingName, methodLabel)}</p>
-        <p className="confirm-dialog-loss">{lossLine}</p>
+        <p className="confirm-dialog-loss">
+          <strong>{stopConfirmLossHeading()}：</strong> {lossLine}
+        </p>
         <div className="confirm-dialog-actions">
           <button type="button" className="ghost" onClick={onCancel}>
             取消

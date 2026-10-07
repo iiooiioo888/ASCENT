@@ -15,6 +15,7 @@ vi.mock("./api", async (importOriginal) => {
 import App from "./App";
 import { growWheatDefault } from "./prb-demo/fixtures";
 
+/** TODO(BE): shared STARTING_GOLD 應為 10（#16 現仍 0）；測試 mock 金幣 10 作 v1.1 佔位期望。 */
 function makeState(overrides?: Partial<GameState>): GameState {
   return {
     time: { displayGameTime: 3600, timeScale: 60, serverRealTime: "2026-01-01T00:00:00.000Z" },

@@ -34,6 +34,8 @@ describe("StopConfirmDialog", () => {
       <StopConfirmDialog open buildingName="磨坊" method={undefined} onCancel={() => {}} onConfirm={() => {}} />,
     );
     expect(screen.getByText("（未知配方）")).toBeInTheDocument();
+    expect(screen.getByText(/下列已投入資源將失去/)).toBeInTheDocument();
+    expect(screen.getByText("將失去：")).toBeInTheDocument();
     expect(screen.getByText(/正在進行「…」/)).toBeInTheDocument();
   });
 

@@ -26,6 +26,7 @@ import {
   buildingScrollAnchorId,
   findFieldBuilding,
   pickSaveSeedMethodId,
+  isWellPlacementUiHidden,
   resolveWellScrollAnchorId,
   SCROLL_HIGHLIGHT_MS,
 } from "./depletion-scroll";
@@ -238,8 +239,10 @@ export default function App() {
 
   const goToWell = useCallback(() => {
     if (!state) return;
+    const anchor = resolveWellScrollAnchorId(state.buildings);
+    if (!anchor) return;
     flashHighlight(WELL_BUILDING_DEF_ID);
-    scrollToAnchor(resolveWellScrollAnchorId(state.buildings));
+    scrollToAnchor(anchor);
   }, [flashHighlight, scrollToAnchor, state]);
 
   const goToSaveSeed = useCallback(() => {
@@ -446,6 +449,7 @@ export default function App() {
   }
 
   const unplaced = state.buildingDefs.filter((d) => {
+    if (isWellPlacementUiHidden(d.id)) return false;
     if (!FEATURE_SHOW_SILO_PLACEMENT && isSiloBuildingDef(d.id)) return false;
     return !state.buildings.some((b) => b.buildingDefId === d.id);
   });
