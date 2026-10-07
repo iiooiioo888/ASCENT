@@ -549,6 +549,60 @@ dialog.offline-summary-dialog::backdrop {
   font-size: 0.78rem;
   color: #e8a8a8;
 }
+.market-equity-disclaimer {
+  margin: -0.35rem 0 0.65rem;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+.equity-row-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.75rem;
+  flex: 1;
+}
+.equity-row-quote {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  font-size: 0.78rem;
+  color: #c9b89a;
+}
+.equity-price {
+  font-weight: 600;
+  color: #f6ecd4;
+}
+.equity-change-up {
+  color: #9fdc8a;
+}
+.equity-change-down {
+  color: #e8a8a8;
+}
+.equity-change-flat {
+  color: #c9b89a;
+}
+.equity-sparkline {
+  color: #d4b87a;
+  flex-shrink: 0;
+}
+.equity-preview-buy,
+.equity-preview-sell {
+  font-variant-numeric: tabular-nums;
+}
+.equity-row-controls {
+  width: 100%;
+}
+.equity-sell-btn {
+  border-color: #e8a87a;
+  background: linear-gradient(180deg, #6a4028, #4a2818);
+  color: #ffe8d8;
+}
+.equity-buy-btn {
+  border-color: #8fdc6e;
+}
+.market-row.equity-row.fee-too-high {
+  opacity: 0.72;
+}
 
 .plot.trading-post .market-panel {
   margin: 0.75rem 0 0;

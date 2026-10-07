@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from "react";
 import type { MarketActionErrorView } from "../market-action-error";
+import type { EquitySnapshot } from "../equity";
 import type { MarketSnapshot } from "../market";
 import { MARKET_COPY } from "../marketCopy";
 import { BUILDING_ICON } from "../meta";
@@ -12,6 +13,8 @@ type Props = {
   marketOpen: boolean;
   onToggleMarket: () => void;
   market: MarketSnapshot | null;
+  equity?: EquitySnapshot | null;
+  equityEnabled?: boolean;
   panelError: MarketActionErrorView | null;
   pendingKeys: ReadonlySet<string>;
   successToast?: string | null;
@@ -19,6 +22,8 @@ type Props = {
   opsCosts?: OpsCostsSnapshot | null;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
+  onEquityBuy?: (equityId: string, quantity: number) => void;
+  onEquitySell?: (equityId: string, quantity: number) => void;
 };
 
 /** v1.2：莊外商行建築卡 — 點「交易」展開買賣 panel，無生產動作。 */
@@ -28,6 +33,8 @@ export function TradingPostBuildingCard({
   marketOpen,
   onToggleMarket,
   market,
+  equity,
+  equityEnabled,
   panelError,
   pendingKeys,
   successToast,
@@ -35,6 +42,8 @@ export function TradingPostBuildingCard({
   opsCosts,
   onSell,
   onBuy,
+  onEquityBuy,
+  onEquitySell,
 }: Props) {
   const panelRef = useRef<HTMLElement>(null);
   const panelHeadingId = useId();
@@ -79,6 +88,8 @@ export function TradingPostBuildingCard({
             id="market-panel"
             headingId={panelHeadingId}
             market={market}
+            equity={equity}
+            equityEnabled={equityEnabled}
             panelError={panelError}
             pendingKeys={pendingKeys}
             successToast={successToast}
@@ -86,6 +97,8 @@ export function TradingPostBuildingCard({
             opsCosts={opsCosts}
             onSell={onSell}
             onBuy={onBuy}
+            onEquityBuy={onEquityBuy}
+            onEquitySell={onEquitySell}
           />
         ) : null}
       </div>

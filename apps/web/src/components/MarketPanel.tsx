@@ -1,20 +1,25 @@
 import { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
 import type { Ref } from "react";
+import type { EquitySnapshot } from "../equity";
+import { EQUITY_COPY } from "../equityCopy";
 import type { MarketActionErrorView } from "../market-action-error";
 import type { MarketSnapshot } from "../market";
 import { MARKET_COPY, marketBalanceLabel } from "../marketCopy";
 import { sellTransportPreview } from "../ops-depth";
 import type { OpsCostsSnapshot } from "../types";
+import { EquityRow } from "./EquityRow";
 import { MarketRow } from "./MarketRow";
 
-type Tab = "sell" | "buy";
+type Tab = "sell" | "buy" | "equity";
 
-export type MarketTabFocusRequest = { tab: Tab; seq: number };
+export type MarketTabFocusRequest = { tab: "sell" | "buy"; seq: number };
 
 type Props = {
   id?: string;
   headingId?: string;
   market: MarketSnapshot | null;
+  equity?: EquitySnapshot | null;
+  equityEnabled?: boolean;
   panelError: MarketActionErrorView | null;
   pendingKeys: ReadonlySet<string>;
   successToast?: string | null;
@@ -22,10 +27,16 @@ type Props = {
   opsCosts?: OpsCostsSnapshot | null;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
+  onEquityBuy?: (equityId: string, quantity: number) => void;
+  onEquitySell?: (equityId: string, quantity: number) => void;
 };
 
 function pendingKey(side: Tab, itemId: string) {
   return `market:${side}:${itemId}`;
+}
+
+export function equityPendingKey(side: "buy" | "sell", equityId: string) {
+  return `equity:${side}:${equityId}`;
 }
 
 export const MarketPanel = forwardRef(function MarketPanel(
@@ -33,6 +44,8 @@ export const MarketPanel = forwardRef(function MarketPanel(
     id = "market-panel",
     headingId,
     market,
+    equity,
+    equityEnabled = false,
     panelError,
     pendingKeys,
     successToast,
@@ -40,11 +53,14 @@ export const MarketPanel = forwardRef(function MarketPanel(
     opsCosts,
     onSell,
     onBuy,
+    onEquityBuy,
+    onEquitySell,
   }: Props,
   ref: Ref<HTMLElement>,
 ) {
   const [tab, setTab] = useState<Tab>("sell");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [equityQuantities, setEquityQuantities] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!tabFocusRequest) return;
@@ -62,7 +78,7 @@ export const MarketPanel = forwardRef(function MarketPanel(
   }, [market]);
 
   const qtyFor = useCallback(
-    (side: Tab, itemId: string, holding: number, gold: number, unitPrice: number) => {
+    (side: "sell" | "buy", itemId: string, holding: number, gold: number, unitPrice: number) => {
       const key = `${side}:${itemId}`;
       const stored = quantities[key];
       if (stored !== undefined) return stored;
@@ -73,9 +89,18 @@ export const MarketPanel = forwardRef(function MarketPanel(
     [quantities],
   );
 
-  const setQty = useCallback((side: Tab, itemId: string, next: number) => {
+  const setQty = useCallback((side: "sell" | "buy", itemId: string, next: number) => {
     const key = `${side}:${itemId}`;
     setQuantities((prev) => ({ ...prev, [key]: next }));
+  }, []);
+
+  const equityQtyFor = useCallback(
+    (equityId: string) => equityQuantities[equityId] ?? 1,
+    [equityQuantities],
+  );
+
+  const setEquityQty = useCallback((equityId: string, next: number) => {
+    setEquityQuantities((prev) => ({ ...prev, [equityId]: next }));
   }, []);
 
   useEffect(() => {
@@ -99,9 +124,16 @@ export const MarketPanel = forwardRef(function MarketPanel(
     return sellIds.some((id) => (market.holdings[id] ?? 0) > 0);
   }, [market, sellIds]);
 
-  const gold = market?.gold ?? 0;
+  const hasAnyEquityHolding = useMemo(() => {
+    if (!equity) return false;
+    return Object.values(equity.holdings).some((n) => n > 0);
+  }, [equity]);
+
+  const gold = tab === "equity" ? (equity?.gold ?? market?.gold ?? 0) : (market?.gold ?? 0);
 
   const titleId = headingId ?? "market-panel-title";
+
+  const panelHint = tab === "equity" ? EQUITY_COPY.hint : MARKET_COPY.hint;
 
   return (
     <section
@@ -113,15 +145,23 @@ export const MarketPanel = forwardRef(function MarketPanel(
     >
       <header className="market-panel-head">
         <div>
-          <h2 id={titleId}>{MARKET_COPY.title}</h2>
-          <p className="market-panel-subtitle">{MARKET_COPY.subtitle}</p>
+          <h2 id={titleId}>{tab === "equity" ? EQUITY_COPY.title : MARKET_COPY.title}</h2>
+          <p className="market-panel-subtitle">
+            {tab === "equity" ? EQUITY_COPY.subtitle : MARKET_COPY.subtitle}
+          </p>
         </div>
         <p className="market-balance" data-testid="market-gold-balance">
           {marketBalanceLabel(gold)}
         </p>
       </header>
 
-      <p className="market-hint banner-muted">{MARKET_COPY.hint}</p>
+      <p className="market-hint banner-muted">{panelHint}</p>
+
+      {tab === "equity" ? (
+        <p className="market-equity-disclaimer banner-muted" data-testid="equity-disclaimer">
+          {EQUITY_COPY.disclaimer}
+        </p>
+      ) : null}
 
       {successToast ? (
         <p className="market-trade-toast" role="status" aria-live="polite" data-testid="market-success-toast">
@@ -154,9 +194,49 @@ export const MarketPanel = forwardRef(function MarketPanel(
         >
           {MARKET_COPY.buyTab}
         </button>
+        {equityEnabled ? (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "equity"}
+            className={tab === "equity" ? "active" : ""}
+            data-testid="market-tab-equity"
+            onClick={() => setTab("equity")}
+          >
+            {EQUITY_COPY.tab}
+          </button>
+        ) : null}
       </div>
 
-      {!market ? (
+      {tab === "equity" ? (
+        !equity ? (
+          <p className="market-loading">{EQUITY_COPY.loading}</p>
+        ) : (
+          <div className="market-table equity-table" role="tabpanel">
+            {!hasAnyEquityHolding ? (
+              <p className="market-empty" data-testid="equity-empty-holdings">{EQUITY_COPY.empty}</p>
+            ) : null}
+            {equity.tickers.map((ticker) => {
+              const quantity = equityQtyFor(ticker.id);
+              const pendingBuy = pendingKeys.has(equityPendingKey("buy", ticker.id));
+              const pendingSell = pendingKeys.has(equityPendingKey("sell", ticker.id));
+              return (
+                <EquityRow
+                  key={ticker.id}
+                  ticker={ticker}
+                  snapshot={equity}
+                  quantity={quantity}
+                  pendingBuy={pendingBuy}
+                  pendingSell={pendingSell}
+                  onQuantityChange={(n) => setEquityQty(ticker.id, n)}
+                  onBuy={() => onEquityBuy?.(ticker.id, quantity)}
+                  onSell={() => onEquitySell?.(ticker.id, quantity)}
+                />
+              );
+            })}
+          </div>
+        )
+      ) : !market ? (
         <p className="market-loading">載入商行價目…</p>
       ) : tab === "sell" ? (
         <div className="market-table" role="tabpanel">
