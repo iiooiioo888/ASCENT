@@ -349,6 +349,50 @@ dialog.offline-summary-dialog::backdrop {
   background: rgba(72, 52, 18, 0.85);
   border: 1px solid rgba(244, 193, 74, 0.45);
 }
+.hud .chip-workforce {
+  font-weight: 700;
+  color: #e8f4ff;
+  background: rgba(28, 48, 72, 0.85);
+  border: 1px solid rgba(120, 180, 255, 0.45);
+}
+.workforce-hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+.workforce-hire-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  min-height: 44px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+}
+.workforce-hire-preview {
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
+.workforce-hire-error {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #ffd8d8;
+  max-width: 12rem;
+}
+.ops-cost-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--muted, #c8c0b0);
+}
+.ops-cost-preview .shortage {
+  color: #ffb4b4;
+  font-weight: 600;
+}
 .market-panel-error {
   margin: 0 0 0.65rem;
   padding: 0.45rem 0.55rem;
