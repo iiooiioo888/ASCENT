@@ -521,6 +521,23 @@ dialog.offline-summary-dialog::backdrop {
   flex-direction: column;
   gap: 0.65rem;
 }
+.land-purchase-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.land-purchase-subtitle {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  color: #dcc9ad;
+}
+.land-purchase-row.land-purchase-blocked {
+  opacity: 0.85;
+}
+.land-purchase-meta-sep {
+  margin: 0 0.35rem;
+  opacity: 0.65;
+}
 .market-empty,
 .market-loading {
   margin: 0 0 0.65rem;

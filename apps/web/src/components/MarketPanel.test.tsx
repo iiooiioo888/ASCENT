@@ -1,6 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { LAND_COPY } from "../landCopy";
+import { evaluateLandPurchaseUi } from "../land-purchase";
 import { MARKET_COPY } from "../marketCopy";
 import type { MarketSnapshot } from "../market";
 import { OPS_DEPTH_COPY } from "../ops-depth-copy";
@@ -334,6 +336,57 @@ describe("MarketPanel", () => {
     const row = screen.getByTestId("commodity-row-oil");
     const sellBtn = within(row).getByRole("button", { name: COMMODITY_COPY.sellCta });
     expect(sellBtn).toBeDisabled();
+  });
+
+  it("renders expand field tab and calls purchase handler", async () => {
+    const user = userEvent.setup();
+    const onPurchaseField = vi.fn();
+    const landPurchaseUi = evaluateLandPurchaseUi(
+      { fieldCount: 1, fieldCap: 2, buildingCount: 5, buildingSlotCap: 6 },
+      10,
+    );
+
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+        landPurchaseUi={landPurchaseUi}
+        onPurchaseField={onPurchaseField}
+      />,
+    );
+
+    await user.click(screen.getByTestId("market-tab-expand"));
+    expect(screen.getByTestId("land-purchase-price")).toHaveTextContent("10");
+    expect(screen.getByTestId("land-field-status")).toHaveTextContent("1／2");
+    await user.click(screen.getByTestId("land-purchase-cta"));
+    expect(onPurchaseField).toHaveBeenCalledOnce();
+  });
+
+  it("disables expand when blocked", async () => {
+    const user = userEvent.setup();
+    const landPurchaseUi = evaluateLandPurchaseUi(
+      { fieldCount: 1, fieldCap: 2, buildingCount: 5, buildingSlotCap: 6 },
+      5,
+    );
+
+    render(
+      <MarketPanel
+        market={makeMarket({ gold: 5 })}
+        panelError={null}
+        pendingKeys={new Set()}
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+        landPurchaseUi={landPurchaseUi}
+        onPurchaseField={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByTestId("market-tab-expand"));
+    expect(screen.getByTestId("land-purchase-block-reason")).toHaveTextContent(LAND_COPY.needGold);
+    expect(screen.getByTestId("land-purchase-cta")).toBeDisabled();
   });
 
   it("shows panel error message", () => {

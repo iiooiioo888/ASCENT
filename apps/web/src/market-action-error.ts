@@ -2,6 +2,7 @@ import { ApiError } from "./api";
 import { itemLabel } from "./meta";
 import { OPS_DEPTH_COPY } from "./ops-depth-copy";
 import { EQUITY_COPY } from "./equityCopy";
+import { LAND_COPY } from "./landCopy";
 import { MARKET_COPY } from "./marketCopy";
 
 const INSUFFICIENT_PREFIX = "資源不足：";
@@ -21,6 +22,8 @@ type RegistryEntry = { copy: string; shouldRefresh: boolean };
 const REGISTRY: Readonly<Record<string, RegistryEntry>> = {
   數量無效: { copy: MARKET_COPY.invalidQuantity, shouldRefresh: false },
   金幣不足: { copy: MARKET_COPY.needGold, shouldRefresh: false },
+  農田已達上限: { copy: LAND_COPY.fieldAtCap, shouldRefresh: false },
+  建築欄位已滿: { copy: LAND_COPY.slotsFull, shouldRefresh: false },
   持倉不足: { copy: EQUITY_COPY.needShares, shouldRefresh: false },
   已達持倉上限: { copy: EQUITY_COPY.cap, shouldRefresh: false },
   超過單筆上限: { copy: EQUITY_COPY.qtyCap, shouldRefresh: false },
