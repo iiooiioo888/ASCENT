@@ -236,3 +236,37 @@ HUD 金幣 10、商行「交易」展開買賣面板：
 `setup:db` 會從根目錄 `.env.example` 複製 `apps/api/.env`（若不存在）。Prisma 讀 **`apps/api/.env`**。
 
 若要 PostgreSQL：`pnpm db:up`，將 `schema.prisma` 改 `postgresql`，`DATABASE_URL` 指向 Compose，再 `prisma migrate deploy` 與 `pnpm db:seed`（勿用 `db push` 覆蓋正式 migration）。
+
+### API 整合測試（Vitest）
+
+`apps/api/test/test-db.ts` 會依 `DATABASE_URL` 選擇後端：
+
+| 模式 | 條件 | 行為 |
+| --- | --- | --- |
+| **SQLite（預設）** | 未設或 `file:`／`sqlite:` | 每個整合 suite 建臨時 `.db`，`prisma db push` |
+| **PostgreSQL** | `postgresql://` 或 `postgres://` | 沿用該 URL，`prisma migrate deploy`；`beforeEach` 重跑 `seed.ts` |
+
+**SQLite（同 `build-test` CI）：**
+
+```bash
+PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=yes pnpm setup:db
+pnpm typecheck
+pnpm --filter @ascent/api test
+```
+
+整合測試會對臨時庫執行 `db push --accept-data-loss`；在 Cursor／部分環境需設 `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=yes`。`settlement-db-lock`、`inventory-multi-instance` 在 SQLite 上會 **skip**（需 Postgres advisory lock）。
+
+**PostgreSQL（同 `postgres-migrate-test` CI）：**
+
+```bash
+export DATABASE_URL="postgresql://ascent:ascent@localhost:5432/ascent"
+pnpm install --frozen-lockfile
+node scripts/ci-postgres-setup.mjs
+pnpm --filter @ascent/shared build
+pnpm --filter @ascent/api prisma:generate
+pnpm --filter @ascent/api exec -- prisma migrate deploy
+pnpm db:seed
+pnpm --filter @ascent/api test
+```
+
+本機可先 `pnpm db:up` 啟動 Compose Postgres，再執行上列指令（`ci-postgres-setup.mjs` 會把 `schema.prisma` provider 改為 `postgresql` 並寫入 `apps/api/.env`）。
