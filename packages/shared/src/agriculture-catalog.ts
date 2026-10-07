@@ -212,5 +212,5 @@ export const METHOD_NAME: Record<string, string> = {
   method_save_seed_default: "留種",
 };
 
-/** 開局預放建築（與 seed.ts `toPlace` 對齊；TODO(product) 待確認 D2 是否預放水井） */
+/** 開局預放建築（與 seed.ts 對齊；**已拍板 D2**：含 1 座水井） */
 export const seedPlacedBuildingDefIds = ["bdef_field", "bdef_mill", "bdef_oven", "bdef_well"] as const;

@@ -10,7 +10,7 @@ import {
 import { isMethodAllowedForBuilding } from "../inventory/building-method-access";
 
 describe("資源循環 catalog（API 層對齊）", () => {
-  it("種子預放建築含水井", () => {
+  it("已拍板 D2：種子預放建築含水井", () => {
     expect(seedPlacedBuildingDefIds).toContain("bdef_well");
     expect(buildingDefs.some((b) => b.id === "bdef_well" && b.code === "well")).toBe(true);
   });
