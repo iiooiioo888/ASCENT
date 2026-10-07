@@ -1,4 +1,5 @@
-export type ItemLayer = "T" | "P";
+/** C = 貨幣等非生產 DAG 物品（TODO(product)） */
+export type ItemLayer = "T" | "P" | "C";
 
 export type ItemIo = {
   item_id: string;
