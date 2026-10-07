@@ -17,6 +17,7 @@ vi.mock("./api", async (importOriginal) => {
 });
 
 import App from "./App";
+import { withMarketApiRoute } from "./test/marketFixture";
 
 function invRow(itemId: string, quantity: string) {
   return {
@@ -77,16 +78,18 @@ describe("App U9 collect success feedback", () => {
     };
 
     let collected = false;
-    apiMock.mockImplementation(async (path: string, init?: RequestInit) => {
-      if (path === "/api/v1/state") {
-        return collected ? afterCollect : ready;
-      }
-      if (path === "/api/v1/buildings/pb_field/collect" && init?.method === "POST") {
-        collected = true;
-        return { id: "pb_field", status: "idle" };
-      }
-      throw new Error(`unexpected api call: ${path}`);
-    });
+    apiMock.mockImplementation(
+      withMarketApiRoute(async (path: string, init?: RequestInit) => {
+        if (path === "/api/v1/state") {
+          return collected ? afterCollect : ready;
+        }
+        if (path === "/api/v1/buildings/pb_field/collect" && init?.method === "POST") {
+          collected = true;
+          return { id: "pb_field", status: "idle" };
+        }
+        throw new Error(`unexpected api call: ${path}`);
+      }),
+    );
   });
 
   it("shows collect success on card and highlights inventory", async () => {
@@ -97,8 +100,8 @@ describe("App U9 collect success feedback", () => {
     await user.click(collectBtn);
 
     expect(await screen.findByText("+2 小麥 +1 秸稈")).toBeInTheDocument();
-    const wheatCell = screen.getByText("小麥").closest(".item");
-    const strawCell = screen.getByText("秸稈").closest(".item");
+    const wheatCell = screen.getByLabelText("小麥 2");
+    const strawCell = screen.getByLabelText("秸稈 1");
     expect(wheatCell).toHaveClass("highlight");
     expect(strawCell).toHaveClass("highlight");
   });
@@ -117,12 +120,14 @@ describe("App U10 connection status", () => {
   it("shows connection bar after three failed polls", async () => {
     const ready = makeReadyFieldState();
     let stateCalls = 0;
-    apiMock.mockImplementation(async (path: string) => {
-      if (path !== "/api/v1/state") throw new Error("unexpected");
-      stateCalls += 1;
-      if (stateCalls === 1) return ready;
-      throw new Error("offline");
-    });
+    apiMock.mockImplementation(
+      withMarketApiRoute(async (path: string) => {
+        if (path !== "/api/v1/state") throw new Error("unexpected");
+        stateCalls += 1;
+        if (stateCalls === 1) return ready;
+        throw new Error("offline");
+      }),
+    );
 
     render(<App />);
     await vi.waitFor(() => {
@@ -147,17 +152,19 @@ describe("App P0 stale building action refresh", () => {
     const ready = makeReadyFieldState();
     let stateFetches = 0;
 
-    apiMock.mockImplementation(async (path: string, init?: RequestInit) => {
-      if (path === "/api/v1/state") {
-        stateFetches += 1;
-        return ready;
-      }
-      if (path === "/api/v1/buildings/pb_field/collect" && init?.method === "POST") {
-        const { ApiError } = await import("./api");
-        throw new ApiError("建築狀態已變更，請重新整理", 409);
-      }
-      throw new Error(`unexpected api call: ${path}`);
-    });
+    apiMock.mockImplementation(
+      withMarketApiRoute(async (path: string, init?: RequestInit) => {
+        if (path === "/api/v1/state") {
+          stateFetches += 1;
+          return ready;
+        }
+        if (path === "/api/v1/buildings/pb_field/collect" && init?.method === "POST") {
+          const { ApiError } = await import("./api");
+          throw new ApiError("建築狀態已變更，請重新整理", 409);
+        }
+        throw new Error(`unexpected api call: ${path}`);
+      }),
+    );
 
     render(<App />);
     const collectBtn = await screen.findByRole("button", { name: "收取" });
@@ -175,17 +182,19 @@ describe("App P0 stale building action refresh", () => {
     const ready = makeReadyFieldState();
     let stateFetches = 0;
 
-    apiMock.mockImplementation(async (path: string, init?: RequestInit) => {
-      if (path === "/api/v1/state") {
-        stateFetches += 1;
-        return ready;
-      }
-      if (path === "/api/v1/buildings/pb_field/collect" && init?.method === "POST") {
-        const { ApiError } = await import("./api");
-        throw new ApiError("尚無可收取產出", 400);
-      }
-      throw new Error(`unexpected api call: ${path}`);
-    });
+    apiMock.mockImplementation(
+      withMarketApiRoute(async (path: string, init?: RequestInit) => {
+        if (path === "/api/v1/state") {
+          stateFetches += 1;
+          return ready;
+        }
+        if (path === "/api/v1/buildings/pb_field/collect" && init?.method === "POST") {
+          const { ApiError } = await import("./api");
+          throw new ApiError("尚無可收取產出", 400);
+        }
+        throw new Error(`unexpected api call: ${path}`);
+      }),
+    );
 
     render(<App />);
     const collectBtn = await screen.findByRole("button", { name: "收取" });
