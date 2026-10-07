@@ -3,7 +3,11 @@ import {
   ITEM_GOLD_ID,
   LOCAL_PLAYER_ID,
   iosToRecord,
+  isFieldGrowRuleId,
+  isFallowActive,
   mergeQty,
+  scaleOutputsByYield,
+  weatherYieldMult,
   haulGoldForBuilding,
   opsCostsFromDepth,
   wageGoldForBuilding,
@@ -29,6 +33,23 @@ import { deductPlayerItem } from "./player-inventory-tx";
 
 function toGameInt(sec: number): bigint {
   return BigInt(Math.max(0, Math.floor(sec)));
+}
+
+function fallowUntilForApi(
+  fallowUntilGame: bigint | null | undefined,
+  currentGameSec: number,
+): number | undefined {
+  if (fallowUntilGame == null) return undefined;
+  const until = Number(fallowUntilGame);
+  return isFallowActive(until, currentGameSec) ? until : undefined;
+}
+
+function withBuildingEnvironmentFields<
+  T extends { fallowUntilGame?: bigint | null },
+>(building: T, currentGameSec: number): Omit<T, "fallowUntilGame"> & { fallowUntil?: number } {
+  const fallowUntil = fallowUntilForApi(building.fallowUntilGame, currentGameSec);
+  const { fallowUntilGame: _omit, ...rest } = building;
+  return fallowUntil !== undefined ? { ...rest, fallowUntil } : rest;
 }
 
 @Injectable()
@@ -92,7 +113,20 @@ export class InventoryService {
     ]);
     const workforce = await this.workforceSnapshot();
     const opsCosts = opsCostsFromDepth(this.sim.opsDepth);
-    return { time, inventory, buildings, methods, buildingDefs: defs, workforce, opsCosts };
+    const currentGame = time.displayGameTime;
+    const weatherState = await this.sim.ensureWeatherFresh(this.prisma, currentGame);
+    const environment = this.sim.environmentSnapshot(weatherState, currentGame);
+    const buildingsOut = buildings.map((b) => withBuildingEnvironmentFields(b, currentGame));
+    return {
+      time,
+      inventory,
+      buildings: buildingsOut,
+      methods,
+      buildingDefs: defs,
+      workforce,
+      opsCosts,
+      environment,
+    };
   }
 
   async workforceSnapshot() {
@@ -176,6 +210,22 @@ export class InventoryService {
       if (!isMethodAllowedForBuilding(allowed, method.ruleId)) {
         throw new BadRequestException("此建築不能使用該方式");
       }
+      const now = new Date();
+      const clock = await this.requireState(tx);
+      const game = this.sim.displayGameTime(
+        { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
+        now.getTime(),
+      );
+      if (
+        building.buildingDefId === "bdef_field" &&
+        isFieldGrowRuleId(method.ruleId) &&
+        isFallowActive(
+          building.fallowUntilGame != null ? Number(building.fallowUntilGame) : null,
+          game,
+        )
+      ) {
+        throw new BadRequestException("土地休耕中");
+      }
       const inputs = iosToRecord(method.inputs as ItemIo[]);
       const outputs = iosToRecord(method.outputs as ItemIo[]);
       const depth = this.sim.opsDepth;
@@ -192,12 +242,6 @@ export class InventoryService {
         inputs,
         outputs,
       };
-      const now = new Date();
-      const clock = await this.requireState(tx);
-      const game = this.sim.displayGameTime(
-        { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
-        now.getTime(),
-      );
       const started = await tx.playerBuilding.updateMany({
         where: { id: buildingId, status: "idle" },
         data: {
@@ -290,7 +334,10 @@ export class InventoryService {
   async collect(buildingId: string) {
     return this.withSettlementTx(async (tx) => {
       await this.settleBuildingUnlocked(tx, buildingId);
-      const building = await tx.playerBuilding.findUnique({ where: { id: buildingId } });
+      const building = await tx.playerBuilding.findUnique({
+        where: { id: buildingId },
+        include: { method: true },
+      });
       if (!building) throw new NotFoundException("建築不存在");
       const buffered =
         building.status === "ready"
@@ -302,6 +349,14 @@ export class InventoryService {
         { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
         now.getTime(),
       );
+      let fallowUntilGame: bigint | null = building.fallowUntilGame;
+      if (
+        building.buildingDefId === "bdef_field" &&
+        building.method?.ruleId &&
+        isFieldGrowRuleId(building.method.ruleId)
+      ) {
+        fallowUntilGame = toGameInt(game + this.sim.environmentConfig.fallowDurationGameSec);
+      }
       const claimed = await tx.playerBuilding.updateMany({
         where: { id: buildingId, status: "ready" },
         data: {
@@ -309,6 +364,7 @@ export class InventoryService {
           methodId: null,
           queue: [],
           bufferedOutputs: {},
+          fallowUntilGame,
           lastSettledAt: now,
           lastSettledGame: toGameInt(game),
           lastUpdate: now,
@@ -363,8 +419,20 @@ export class InventoryService {
         { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
         now.getTime(),
       );
+      const weatherState = await this.sim.ensureWeatherFresh(tx, game);
+      const yieldMult = weatherYieldMult(this.sim.environmentConfig, weatherState.weather);
+      let completedOutputs = result.completedOutputs;
+      if (Object.keys(completedOutputs).length > 0 && building.buildingDefId === "bdef_field") {
+        const job = queue[0];
+        if (job?.methodId) {
+          const method = await tx.productionMethod.findUnique({ where: { id: job.methodId } });
+          if (method && isFieldGrowRuleId(method.ruleId)) {
+            completedOutputs = scaleOutputsByYield(completedOutputs, yieldMult);
+          }
+        }
+      }
       const prevBuffered = (building.bufferedOutputs as Record<string, number>) ?? {};
-      const buffered = mergeQty(prevBuffered, result.completedOutputs);
+      const buffered = mergeQty(prevBuffered, completedOutputs);
 
       const updated = await tx.playerBuilding.updateMany({
         where: { id, lastSettledAt },
