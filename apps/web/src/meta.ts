@@ -1,3 +1,6 @@
+import { METHOD_NAME as SHARED_METHOD_NAMES } from "@ascent/shared";
+
+/** TODO(product): 待確認 — 物品顯示名／圖示單一來源（catalog 尚無 name 欄，暫留 web） */
 export const ITEM_META: Record<string, { name: string; icon: string }> = {
   item_seed_wheat: { name: "小麥種子", icon: "🌱" },
   item_wheat: { name: "小麥", icon: "🌾" },
@@ -9,15 +12,8 @@ export const ITEM_META: Record<string, { name: string; icon: string }> = {
   item_bread: { name: "麵包", icon: "🍞" },
 };
 
-export const METHOD_NAME: Record<string, string> = {
-  method_grow_wheat_default: "種植小麥",
-  method_grow_wheat_water_saving: "省水種植",
-  method_mill_flour_default: "磨粉",
-  method_mix_feed_default: "拌飼料",
-  method_make_dough_default: "和麵",
-  method_bake_bread_default: "烘烤麵包",
-  method_bake_bread_batch: "批量烘烤",
-};
+/** P3-5: method display names from shared catalog (avoid drift). */
+export const METHOD_NAME: Record<string, string> = { ...SHARED_METHOD_NAMES };
 
 export const BUILDING_ICON: Record<string, string> = {
   bdef_field: "🌾",

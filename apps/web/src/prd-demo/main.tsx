@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BuildingCard } from "../components/BuildingCard";
+import { DEMO_SERVER_REAL_TIME } from "../test/demoTime";
 import { ConnectionStatusBar } from "../components/ConnectionStatusBar";
 import { Inventory } from "../components/Inventory";
 import { formatCollectSuccess } from "../successFeedback";
@@ -26,6 +27,7 @@ function Demo() {
           selectedId={growWheatDefault.id}
           selected={growWheatDefault}
           timeScale={60}
+          serverRealTime={DEMO_SERVER_REAL_TIME}
           actionSuccess={collectSuccess}
           pending={false}
           onSelectMethod={() => undefined}

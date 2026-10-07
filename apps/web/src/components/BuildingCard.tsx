@@ -1,10 +1,17 @@
 import { useState } from "react";
-import { canStopBuilding } from "../building-actions";
-import type { BuildingActionErrorView } from "../building-action-error";
-import { fmtBuffered, fmtIo, realRemainSec, statusLabel } from "../format";
+import { canStopBuilding, showProductionActionButtons } from "../building-actions";
+import { fmtBuffered, fmtIo, statusLabel } from "../format";
+import { useProgressTick } from "../hooks/useProgressTick";
+import { jobProgressPercent, jobRemainRealSec } from "../productionProgress";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
+import type { BuildingActionErrorView } from "../building-action-error";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
-import { methodPurposeHint, methodSelectAriaLabel, productionProgressAriaLabel } from "../productCopy";
+import {
+  methodPurposeHint,
+  methodSelectAriaLabel,
+  productionProgressAriaLabel,
+  SILO_CARD_BODY,
+} from "../productCopy";
 import type { Building, InvRow, Method } from "../types";
 import { StopConfirmDialog } from "./StopConfirmDialog";
 
@@ -15,6 +22,7 @@ type Props = {
   selectedId: string | undefined;
   selected: Method | undefined;
   timeScale: number;
+  serverRealTime: string;
   actionError?: BuildingActionErrorView;
   actionSuccess?: string;
   pending: boolean;
@@ -31,6 +39,7 @@ export function BuildingCard({
   selectedId,
   selected,
   timeScale,
+  serverRealTime,
   actionError,
   actionSuccess,
   pending,
@@ -42,8 +51,12 @@ export function BuildingCard({
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
   const job = b.queue[0];
-  const progress = job ? Math.min(100, (job.elapsedGameSec / job.durationGameSec) * 100) : 0;
-  const remain = realRemainSec(job, timeScale);
+  const smoothProgress = b.status === "running" && !!job;
+  const nowMs = useProgressTick(smoothProgress);
+  const progress = job
+    ? jobProgressPercent(job, timeScale, serverRealTime, nowMs)
+    : 0;
+  const remain = job ? jobRemainRealSec(job, timeScale, serverRealTime, nowMs) : 0;
 
   const methodLocked = b.status === "running" || b.status === "ready";
   const displayMethodId = methodLocked && b.methodId ? b.methodId : selectedId;
@@ -58,6 +71,7 @@ export function BuildingCard({
   const runningMethod = b.methodId ? options.find((m) => m.id === b.methodId) : undefined;
   const purposeHint = methodPurposeHint(displayMethod?.id);
   const progressPercent = Math.round(b.status === "ready" ? 100 : progress);
+  const showActions = showProductionActionButtons(b);
   const methodSelectId = `method-select-${b.id}`;
   const buildingIconLabel = b.buildingDef.name;
 
@@ -132,7 +146,7 @@ export function BuildingCard({
             </div>
           </>
         ) : (
-          <div className="recipe">倉不開工，只佔建築槽。</div>
+          <div className="recipe">{SILO_CARD_BODY}</div>
         )}
 
         {actionError ? (
@@ -146,26 +160,28 @@ export function BuildingCard({
           </p>
         ) : null}
 
-        <div className="actions">
-          <button
-            type="button"
-            disabled={!options.length || b.status !== "idle" || !selected || !affordSelected}
-            onClick={onStart}
-          >
-            開工
-          </button>
-          <button
-            type="button"
-            className="ghost"
-            disabled={!canStopBuilding(b.status)}
-            onClick={() => setStopConfirmOpen(true)}
-          >
-            停止
-          </button>
-          <button type="button" className="collect" disabled={b.status !== "ready"} onClick={onCollect}>
-            收取
-          </button>
-        </div>
+        {showActions ? (
+          <div className="actions">
+            <button
+              type="button"
+              disabled={!options.length || b.status !== "idle" || !selected || !affordSelected}
+              onClick={onStart}
+            >
+              開工
+            </button>
+            <button
+              type="button"
+              className="ghost"
+              disabled={!canStopBuilding(b.status)}
+              onClick={() => setStopConfirmOpen(true)}
+            >
+              停止
+            </button>
+            <button type="button" className="collect" disabled={b.status !== "ready"} onClick={onCollect}>
+              收取
+            </button>
+          </div>
+        ) : null}
         {job || b.status === "ready" ? (
           <div
             className="bar"

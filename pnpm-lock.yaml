@@ -80,6 +80,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@ascent/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       react:
         specifier: ^19.0.0
         version: 19.3.0

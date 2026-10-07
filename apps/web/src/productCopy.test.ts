@@ -42,6 +42,11 @@ describe("productCopy", () => {
     expect(OFFLINE_SUMMARY_FOOTNOTE).toMatch(/只做一單/);
   });
 
+  it("parseViteBooleanEnv is case-insensitive (FALSE disables)", () => {
+    expect(parseViteBooleanEnv("FALSE", true)).toBe(false);
+    expect(parseViteBooleanEnv("TRUE", false)).toBe(true);
+  });
+
   it("parseViteBooleanEnv full semantics (trim, case, unknown → default)", () => {
     const cases: [string | undefined, boolean, boolean][] = [
       [undefined, true, true],

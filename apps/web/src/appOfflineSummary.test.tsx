@@ -152,7 +152,7 @@ describe("App offline summary (PR-E U11)", () => {
     vi.resetModules();
     const App2 = await importApp();
     render(<App2 />);
-    await waitFor(() => expect(screen.getByText("田")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { name: "田" })).toBeInTheDocument());
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
@@ -195,7 +195,7 @@ describe("App offline summary (PR-E U11)", () => {
 
     const App = await importApp();
     render(<App />);
-    await waitFor(() => expect(screen.getByText("田")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { name: "田" })).toBeInTheDocument());
     await waitFor(() => expect(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY)).toBeTruthy());
 
     localStorage.removeItem(OFFLINE_SNAPSHOT_STORAGE_KEY);
@@ -215,7 +215,7 @@ describe("App offline summary (PR-E U11)", () => {
 
     const App = await importApp();
     render(<App />);
-    await waitFor(() => expect(screen.getByText("田")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { name: "田" })).toBeInTheDocument());
     await waitFor(() => expect(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY)).toBeTruthy());
 
     localStorage.removeItem(OFFLINE_SNAPSHOT_STORAGE_KEY);
@@ -260,7 +260,7 @@ describe("FEATURE_OFFLINE_SUMMARY off", () => {
 
     const App = await importAppWithSummaryOff();
     render(<App />);
-    await waitFor(() => expect(screen.getByText("田")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { name: "田" })).toBeInTheDocument());
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
@@ -272,7 +272,7 @@ describe("FEATURE_OFFLINE_SUMMARY off", () => {
 
     const App = await importAppWithSummaryOff();
     render(<App />);
-    await waitFor(() => expect(screen.getByText("田")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { name: "田" })).toBeInTheDocument());
 
     const stored = parseStoredSnapshot(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY));
     expect(stored?.buildings.pb_field.status).toBe("running");
@@ -283,7 +283,7 @@ describe("FEATURE_OFFLINE_SUMMARY off", () => {
 
     const App = await importAppWithSummaryOff();
     render(<App />);
-    await waitFor(() => expect(screen.getByText("田")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { name: "田" })).toBeInTheDocument());
 
     expect(localStorage.getItem(OFFLINE_SNAPSHOT_STORAGE_KEY)).toBeNull();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

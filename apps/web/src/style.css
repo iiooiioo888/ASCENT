@@ -313,21 +313,78 @@ dialog.offline-summary-dialog::backdrop {
 }
 
 .chain {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  margin: 0 1.2rem 0.6rem;
+  margin: 0 1.2rem 0.75rem;
   font-size: 0.82rem;
   color: #efe2c4;
 }
-.chain span {
+.chain-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+.chain-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.chain-branch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  opacity: 0.92;
+}
+.chain-branch-label {
+  opacity: 0.65;
+  font-size: 0.72rem;
+}
+.chain-arrow { opacity: 0.7; font-style: normal; }
+.chain-node {
   background: rgba(0, 0, 0, 0.28);
   border: 1px solid rgba(255, 230, 160, 0.25);
   border-radius: 999px;
   padding: 0.2rem 0.65rem;
 }
-.chain i { opacity: 0.7; font-style: normal; }
+.chain-node.running {
+  border-color: #6db24a;
+  box-shadow: 0 0 0 1px rgba(109, 178, 74, 0.35);
+}
+.chain-node.ready {
+  border-color: #e8b84a;
+  animation: chain-ready-pulse 1.6s ease-in-out infinite;
+}
+.chain-node.missing {
+  opacity: 0.45;
+  border-style: dashed;
+}
+.chain-node.item {
+  border-color: rgba(255, 230, 160, 0.18);
+}
+@keyframes chain-ready-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.82; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chain-node.ready {
+    animation: none;
+  }
+}
+
+.hud .chip-muted {
+  opacity: 0.88;
+  font-size: 0.78rem;
+}
+
+.plot.silo .silo-copy {
+  margin: 0.35rem 0 0.15rem;
+  line-height: 1.45;
+  color: #efe2c4;
+  opacity: 0.92;
+}
 
 .settlement {
   display: grid;

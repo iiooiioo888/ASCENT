@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import { BuildingCard } from "./components/BuildingCard";
+import { IndustryChain } from "./components/IndustryChain";
+import { SiloBuildingCard } from "./components/SiloBuildingCard";
 import { ConnectionStatusBar } from "./components/ConnectionStatusBar";
 import { DepletionNotice } from "./components/DepletionNotice";
 import { Inventory } from "./components/Inventory";
@@ -10,19 +12,22 @@ import type { BuildingActionErrorView } from "./building-action-error";
 import { mapBuildingActionError } from "./building-action-error";
 import { nextPollFailureCount, shouldShowConnectionLost } from "./connectionPoll";
 import { isResourceDepleted } from "./depletion";
-import { formatUserError, fmtGame } from "./format";
+import { FEATURE_SHOW_DEPLETION_EMPTY_STATE, FEATURE_SHOW_SILO_PLACEMENT, FEATURE_SILO_CARD_MODE } from "./featureFlags";
+import { formatUserError, fmtGameClockChip } from "./format";
+import { sortInventoryRows } from "./inventorySort";
 import { BUILDING_ICON } from "./meta";
 import {
   BRAND_DISPLAY_NAME,
   BRAND_SUBTITLE,
-  FEATURE_SHOW_DEPLETION_EMPTY_STATE,
   FEATURE_OFFLINE_SUMMARY,
+  GAME_TIME_CHIP_PREFIX,
   OFFLINE_PROGRESS_BANNER,
   OFFLINE_PROGRESS_HUD_CHIP,
   SLICE_FLOW_BANNER,
   SLICE_GOAL_BANNER,
-  INDUSTRY_CHAIN_ARIA_LABEL,
+  timeScaleHudChip,
 } from "./productCopy";
+import { isSiloBuilding, isSiloBuildingDef } from "./silo";
 import {
   collectHighlightItemIds,
   formatCollectSuccess,
@@ -162,6 +167,11 @@ export default function App() {
     return isResourceDepleted(state.buildings, state.inventory, methodsByRule);
   }, [state, methodsByRule]);
 
+  const sortedInventory = useMemo(() => {
+    if (!state) return [];
+    return sortInventoryRows(state.inventory);
+  }, [state]);
+
   const setPending = useCallback((key: string, on: boolean) => {
     const next = new Set(pendingKeysRef.current);
     if (on) next.add(key);
@@ -280,7 +290,10 @@ export default function App() {
     return <LoadingScreen error={loadError} retrying={loadRetrying} onRetry={retryInitialLoad} />;
   }
 
-  const unplaced = state.buildingDefs.filter((d) => !state.buildings.some((b) => b.buildingDefId === d.id));
+  const unplaced = state.buildingDefs.filter((d) => {
+    if (!FEATURE_SHOW_SILO_PLACEMENT && isSiloBuildingDef(d.id)) return false;
+    return !state.buildings.some((b) => b.buildingDefId === d.id);
+  });
 
   return (
     <div className="world">
@@ -296,8 +309,10 @@ export default function App() {
           </div>
         </div>
         <div className="clock">
-          <span className="chip">⏳ {fmtGame(state.time.displayGameTime)}</span>
-          <span className="chip">⚖ 1 : {state.time.timeScale}</span>
+          <span className="chip chip-muted">
+            {fmtGameClockChip(state.time.displayGameTime, GAME_TIME_CHIP_PREFIX)}
+          </span>
+          <span className="chip">{timeScaleHudChip(state.time.timeScale)}</span>
           <span className="chip">{OFFLINE_PROGRESS_HUD_CHIP}</span>
         </div>
       </header>
@@ -310,17 +325,9 @@ export default function App() {
       ) : null}
       <DepletionNotice visible={FEATURE_SHOW_DEPLETION_EMPTY_STATE && resourceDepleted} />
 
-      <Inventory inventory={state.inventory} highlightItemIds={highlightItems} />
+      <Inventory inventory={sortedInventory} highlightItemIds={highlightItems} />
 
-      <div className="chain" aria-label={INDUSTRY_CHAIN_ARIA_LABEL}>
-        <span aria-hidden>🌾 田</span>
-        <i aria-hidden>→</i>
-        <span aria-hidden>⚙️ 磨坊</span>
-        <i aria-hidden>→</i>
-        <span aria-hidden>🔥 爐</span>
-        <i aria-hidden>→</i>
-        <span aria-hidden>🍞 麵包</span>
-      </div>
+      <IndustryChain buildings={state.buildings} />
 
       <section className="settlement">
         {state.buildings.map((b) => {
@@ -329,6 +336,17 @@ export default function App() {
           const selectedId = picked[b.id] ?? options[0]?.id;
           const selected = options.find((m) => m.id === selectedId);
           const actionKey = b.id;
+
+          if (isSiloBuilding(b) && FEATURE_SILO_CARD_MODE === "simplified") {
+            return (
+              <SiloBuildingCard
+                key={b.id}
+                building={b}
+                actionError={actionErrors[actionKey]}
+                pending={pendingKeys.has(actionKey)}
+              />
+            );
+          }
 
           return (
             <BuildingCard
@@ -339,6 +357,7 @@ export default function App() {
               selectedId={selectedId}
               selected={selected}
               timeScale={state.time.timeScale}
+              serverRealTime={state.time.serverRealTime}
               actionError={actionErrors[actionKey]}
               actionSuccess={actionSuccess[actionKey]}
               pending={pendingKeys.has(actionKey)}

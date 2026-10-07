@@ -14,9 +14,11 @@
     "screenshot:pr-c": "node scripts/capture-pr-c-screenshot.mjs",
     "screenshot:pr-d": "node scripts/capture-pr-d-screenshot.mjs",
     "screenshot:pr-e": "node scripts/capture-pr-e-screenshot.mjs",
-    "screenshot:pr-f": "node scripts/capture-pr-f-screenshot.mjs"
+    "screenshot:pr-f": "node scripts/capture-pr-f-screenshot.mjs",
+    "screenshot:pr-g": "node scripts/capture-pr-g-screenshot.mjs"
   },
   "dependencies": {
+    "@ascent/shared": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

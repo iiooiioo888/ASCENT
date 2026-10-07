@@ -8,7 +8,9 @@ import {
   growWheatDefault,
   mixFeedDefault,
 } from "../prb-demo/fixtures";
+import { demoSiloBuilding } from "../screenshot-harness/fixtures";
 import { BuildingCard } from "./BuildingCard";
+import { DEMO_SERVER_REAL_TIME } from "../test/demoTime";
 
 const baseInventory = [
   {
@@ -27,6 +29,7 @@ const baseProps = {
   options: [growWheatDefault, mixFeedDefault],
   inventory: demoInventoryShortWater,
   timeScale: 60,
+  serverRealTime: DEMO_SERVER_REAL_TIME,
   pending: false,
   onSelectMethod: vi.fn(),
   onStart: vi.fn(),
@@ -170,6 +173,31 @@ describe("BuildingCard U7 method lock", () => {
   });
 });
 
+describe("BuildingCard U12 silo (legacy mode)", () => {
+  it("does not render production action buttons for silo", () => {
+    render(
+      <BuildingCard
+        building={demoSiloBuilding}
+        options={[]}
+        inventory={baseInventory}
+        selectedId={undefined}
+        selected={undefined}
+        timeScale={60}
+        serverRealTime={DEMO_SERVER_REAL_TIME}
+        pending={false}
+        onSelectMethod={vi.fn()}
+        onStart={vi.fn()}
+        onStop={vi.fn()}
+        onCollect={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "開工" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "停止" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "收取" })).not.toBeInTheDocument();
+  });
+});
+
 describe("BuildingCard a11y (U15)", () => {
   it("associates method select with a visible label", () => {
     render(
@@ -180,6 +208,7 @@ describe("BuildingCard a11y (U15)", () => {
         selectedId={growWheatDefault.id}
         selected={growWheatDefault}
         timeScale={60}
+        serverRealTime={DEMO_SERVER_REAL_TIME}
         pending={false}
         onSelectMethod={vi.fn()}
         onStart={vi.fn()}
@@ -193,11 +222,12 @@ describe("BuildingCard a11y (U15)", () => {
   });
 
   it("exposes progressbar when running", () => {
+    const serverRealTime = new Date(Date.now() - 30_000).toISOString();
     const running = {
       ...demoFieldIdle,
       status: "running" as const,
       methodId: growWheatDefault.id,
-      queue: [{ elapsedGameSec: 1800, durationGameSec: 3600 }],
+      queue: [{ elapsedGameSec: 0, durationGameSec: 3600 }],
     };
     render(
       <BuildingCard
@@ -207,6 +237,7 @@ describe("BuildingCard a11y (U15)", () => {
         selectedId={growWheatDefault.id}
         selected={growWheatDefault}
         timeScale={60}
+        serverRealTime={serverRealTime}
         pending={false}
         onSelectMethod={vi.fn()}
         onStart={vi.fn()}
@@ -228,6 +259,7 @@ describe("BuildingCard a11y (U15)", () => {
         selectedId={growWheatDefault.id}
         selected={growWheatDefault}
         timeScale={60}
+        serverRealTime={DEMO_SERVER_REAL_TIME}
         actionError={{ message: "資源不足：水" }}
         pending={false}
         onSelectMethod={vi.fn()}
