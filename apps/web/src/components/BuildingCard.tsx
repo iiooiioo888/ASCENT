@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { canStopBuilding } from "../building-actions";
+import type { BuildingActionErrorView } from "../building-action-error";
 import { fmtBuffered, fmtIo, realRemainSec, statusLabel } from "../format";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
-import type { BuildingActionErrorView } from "../building-action-error";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
-import type { Building, InvRow, Method } from "../types";
 import { methodPurposeHint } from "../productCopy";
+import type { Building, InvRow, Method } from "../types";
 import { StopConfirmDialog } from "./StopConfirmDialog";
 
 type Props = {

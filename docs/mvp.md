@@ -99,7 +99,11 @@ MVP 結算時機（無 Redis／BullMQ）：
 
 ## 農業切片（占位，不是數值定案）
 
-**ID 與 DAG 已定**：[gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md)（8 物品、4 建築、5 根規則、5–10 方式）。顯示名可改；層、依賴、驗證對照不可另寫一套。產率與工時倍數仍留給開工後的數值表。結構必須合法（不跳級、DAG、方式由規則生成、繼承深度 ≤ 10）。
+**ID 與 DAG 已定**：[gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md)（8 物品、**5 建築含水井**、7 根規則、5–10 方式）。顯示名可改；層、依賴、驗證對照不可另寫一套。產率與工時倍數仍留給開工後的數值表。結構必須合法（不跳級、DAG、方式由規則生成、繼承深度 ≤ 10）。
+
+**資源循環（RL-BE-1）**：`bdef_well` + `rule_draw_water`（無輸入產水）、田上 `rule_save_seed`（小麥→種子）。**已拍板 D2**：開局預放 1 座水井（`seedPlacedBuildingDefIds`）。汲水／留種數值仍為佔位（`PLACEHOLDER_*`）。不引入市場／金幣。
+
+**已拍板 D6**：`POST .../stop` **不退還** `start` 時已扣輸入；前端停止確認框應列損失（見 Draft PR #5 U4）。
 
 驗證器清單（[GDD v2.0 §15](gdd/production-system-v2.md#15-驗證清單)、[GDD 0005](gdd/0005-schema-and-api.md)、[切片對照](gdd/mvp-agriculture-catalog.md)）凡與已啟用資料有關的項目，農業切片也必須能過。`V-OFFLINE` 使用本檔的 8 現實小時常數，不用舊稿 86400。
 
