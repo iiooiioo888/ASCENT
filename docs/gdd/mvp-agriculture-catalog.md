@@ -83,11 +83,11 @@ dough → bread
 | `bdef_silo` | `silo` | 倉 | `agriculture` | 不生產亦可；若生產則只收／存。MVP 可當純展示倉，**不計入必須開工的 3 座**，但佔 4 定義之一 |
 | `bdef_mill` | `mill` | 磨坊 | `agriculture` | 磨粉、拌飼料 |
 | `bdef_oven` | `oven` | 爐 | `agriculture` | 和麵、烘烤 |
-| `bdef_well` | `well` | 水井 | `agriculture` | 僅 `rule_draw_water`；**已拍板 D2**：種子世界預放 1 座 |
+| `bdef_well` | `well` | 水井 | `agriculture` | 僅 `rule_draw_water`；**TODO(product) 待確認** 開局是否預放 1 座（實作預設預放） |
 
 `can_upgrade` / `can_specialize` 目標欄可留預設，**MVP 不驗收**。`queue_limit` 建議常數 **1**。佔地／相鄰／耐久不做。
 
-玩家實例至少能放置田、磨坊、爐各一座，才構成種植→加工→烘烤閉環；種子另預放水井（D2）以再生水，田上留種再生種子。倉可延後放置。
+玩家實例至少能放置田、磨坊、爐各一座，才構成種植→加工→烘烤閉環；水井支援再生水（**待確認** 與種子留種並存）。倉可延後放置。
 
 ---
 
