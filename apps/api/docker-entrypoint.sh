@@ -21,11 +21,12 @@ done
 
 echo "[ascent-api] Checking whether seed is required..."
 node <<'NODE'
-const { PrismaClient } = require("@prisma/client");
+const { PrismaClient } = require("./dist/generated/prisma/client");
+const { createPrismaAdapter } = require("./dist/src/prisma/create-prisma-adapter");
 const { execSync } = require("child_process");
 
 (async () => {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({ adapter: createPrismaAdapter() });
   try {
     const players = await prisma.player.count();
     if (players === 0) {
@@ -48,4 +49,4 @@ const { execSync } = require("child_process");
 NODE
 
 echo "[ascent-api] Starting NestJS..."
-exec node /app/apps/api/dist/main.js
+exec node /app/apps/api/dist/src/main.js
