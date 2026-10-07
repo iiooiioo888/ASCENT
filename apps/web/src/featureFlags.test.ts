@@ -25,4 +25,19 @@ describe("featureFlags defaults (U12 placeholders)", () => {
     const { resolveShowSiloPlacement } = await import("./featureFlags");
     expect(resolveShowSiloPlacement()).toBe(false);
   });
+
+  it("resolveShowSiloPlacement treats 0 as false", async () => {
+    vi.stubEnv("VITE_FEATURE_SHOW_SILO_PLACEMENT", "0");
+    vi.resetModules();
+    const { resolveShowSiloPlacement } = await import("./featureFlags");
+    expect(resolveShowSiloPlacement()).toBe(false);
+  });
+
+  it("resolveSiloCardMode falls back to simplified for invalid env", async () => {
+    vi.stubEnv("VITE_FEATURE_SILO_CARD_MODE", "not-a-mode");
+    vi.resetModules();
+    const { resolveSiloCardMode, FEATURE_SILO_CARD_MODE } = await import("./featureFlags");
+    expect(resolveSiloCardMode()).toBe("simplified");
+    expect(FEATURE_SILO_CARD_MODE).toBe("simplified");
+  });
 });
