@@ -190,6 +190,51 @@ body {
   line-height: 1.45;
   color: #efe2c4;
 }
+.banner.offline-summary {
+  border-style: solid;
+  border-color: rgba(120, 180, 220, 0.55);
+  background: rgba(18, 36, 52, 0.82);
+  margin-bottom: 0.75rem;
+}
+.offline-summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.offline-summary-title {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #b8e4ff;
+  letter-spacing: 0.04em;
+}
+.offline-summary-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: none;
+  color: #1a2830;
+  background: #f4c14a;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+}
+.offline-summary-lines {
+  margin: 0 0 0.65rem;
+  padding-left: 1.15rem;
+  line-height: 1.5;
+  color: #e8f4fc;
+}
+.offline-summary-footnote {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #a8c4d8;
+}
+.offline-summary-dismiss {
+  min-height: 44px;
+  min-width: 6rem;
+}
 .purpose-hint {
   margin: 0.35rem 0 0;
   font-size: 0.82rem;

@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   BRAND_DISPLAY_NAME,
   CONNECTION_INTERRUPTED_BANNER,
+  FEATURE_OFFLINE_SUMMARY,
   FEATURE_SHOW_DEPLETION_EMPTY_STATE,
   isUnseededWorldClockError,
   itemPurposeHint,
   methodPurposeHint,
+  OFFLINE_SUMMARY_FOOTNOTE,
+  OFFLINE_SUMMARY_PENDING_TAG,
   parseViteBooleanEnv,
 } from "./productCopy";
 
@@ -25,6 +28,13 @@ describe("productCopy", () => {
     expect(CONNECTION_INTERRUPTED_BANNER).toContain("連線中斷");
     expect(isUnseededWorldClockError("尚未種子世界時鐘")).toBe(true);
     expect(isUnseededWorldClockError("無法連接")).toBe(false);
+  });
+
+  it("U11 offline summary flag and pending copy", () => {
+    expect(FEATURE_OFFLINE_SUMMARY).toBe("A");
+    expect(OFFLINE_SUMMARY_PENDING_TAG).toBe("待確認");
+    expect(OFFLINE_SUMMARY_FOOTNOTE).toMatch(/8 現實小時/);
+    expect(OFFLINE_SUMMARY_FOOTNOTE).toMatch(/只做一單/);
   });
 
   it("parseViteBooleanEnv full semantics (trim, case, unknown → default)", () => {

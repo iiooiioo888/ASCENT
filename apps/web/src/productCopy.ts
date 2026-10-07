@@ -59,6 +59,23 @@ export const FEATURE_SHOW_DEPLETION_EMPTY_STATE = parseViteBooleanEnv(
   true,
 );
 
+/** TODO(product): 待確認 — 離線摘要方案 A/B（A＝localStorage 比對；off＝關閉；B＝日後 API 摘要） */
+export type OfflineSummaryFeatureMode = "A" | "off";
+
+export const FEATURE_OFFLINE_SUMMARY: OfflineSummaryFeatureMode = "A";
+
+/** TODO(product): 待確認 — 離線歸來摘要標題與整段排版（UX §E 示例以「離開期間：…」描述；標題／內文分工待策劃定案） */
+export const OFFLINE_SUMMARY_TITLE = "離開期間";
+
+/** Small tag shown beside the summary title while product picks A vs API (B). */
+export const OFFLINE_SUMMARY_PENDING_TAG = "待確認";
+
+export const OFFLINE_SUMMARY_DISMISS_LABEL = "知道了";
+
+/** Wording aligned with OFFLINE_PROGRESS_BANNER — no backend settlement promise. */
+export const OFFLINE_SUMMARY_FOOTNOTE =
+  "此為本機上次畫面與目前狀態的前端比對，並非後端結算紀錄。離線最多補算 8 現實小時；每座建築同一時間只做一單，完成後需回來收取。";
+
 export function methodPurposeHint(methodId: string | undefined): string | undefined {
   if (!methodId) return undefined;
   return METHOD_PURPOSE_HINTS[methodId];
