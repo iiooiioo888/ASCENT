@@ -117,8 +117,6 @@ model GameConfig {
   tickIntervalRealMs Int @default(5000) @map("tick_interval_real_ms")
   // TODO(product): 價目平衡未定；JSON 覆寫 DEFAULT_MARKET_PRICES。
   marketPrices       Json? @map("market_prices")
-  // TODO(product): JSON 覆寫 DEFAULT_OPS_DEPTH。
-  opsDepth           Json? @map("ops_depth")
 
   @@map("game_config")
 }
@@ -134,13 +132,12 @@ model ServerState {
 }
 
 model Player {
-  id              String   @id
-  createdAt       DateTime @map("created_at")
-  lastSeenAt      DateTime @map("last_seen_at")
-  workforceHired  Int      @default(1) @map("workforce_hired")
-  workforceBusy   Int      @default(0) @map("workforce_busy")
-  inventory       PlayerInventory[]
-  buildings       PlayerBuilding[]
+  id         String   @id
+  createdAt  DateTime @map("created_at")
+  lastSeenAt DateTime @map("last_seen_at")
+  inventory  PlayerInventory[]
+  buildings  PlayerBuilding[]
+  equityHoldings PlayerEquityHolding[]
 
   @@map("players")
 }
@@ -155,6 +152,25 @@ model PlayerInventory {
 
   @@id([playerId, itemId])
   @@map("player_inventory")
+}
+
+model PlayerEquityHolding {
+  playerId String @map("player_id")
+  player   Player @relation(fields: [playerId], references: [id])
+  equityId String @map("equity_id")
+  shares   Int    @default(0)
+
+  @@id([playerId, equityId])
+  @@map("player_equity_holdings")
+}
+
+model EquityTickerState {
+  equityId      String @id @map("equity_id")
+  netBuyVolume  Int    @default(0) @map("net_buy_volume")
+  currentPrice  Int    @map("current_price")
+  priceHistory  Json   @map("price_history")
+
+  @@map("equity_ticker_state")
 }
 
 model PlayerBuilding {
