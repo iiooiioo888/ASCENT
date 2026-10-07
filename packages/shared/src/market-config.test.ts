@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_MARKET_PRICES,
   ITEM_GOLD_ID,
+  STARTING_GOLD,
   marketPricesFromDb,
   parseTradeQuantity,
   resolveMarketUnitPrice,
@@ -14,6 +15,10 @@ describe("market-config", () => {
     expect(parseTradeQuantity(1.5)).toBeNull();
     expect(parseTradeQuantity("2")).toBe(2);
     expect(parseTradeQuantity(3)).toBe(3);
+  });
+
+  it("開局金幣已拍板為 10", () => {
+    expect(STARTING_GOLD).toBe(10);
   });
 
   it("預設價目與規格佔位一致", () => {

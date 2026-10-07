@@ -8,6 +8,7 @@ import {
   TICK_INTERVAL_REAL_MS,
   GAME_DAY_GAME_SEC,
   buildingDefs,
+  seedPlacedBuildingDefIds,
   generateMethods,
   itemTypes,
   items,

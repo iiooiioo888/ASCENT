@@ -200,7 +200,26 @@ export const buildingDefs: BuildingDef[] = [
     is_active: true,
     released_in_version: RELEASED_IN_VERSION,
   },
+  {
+    id: "bdef_trading_post",
+    code: "trading_post",
+    name: "莊外商行",
+    system_code: "agriculture",
+    allowed_rule_ids: [],
+    queue_limit: 1,
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
 ];
+
+/** 開局預放建築（倉 `bdef_silo` 不預放；D3 未定；**已拍板 D2** 含水井）。 */
+export const seedPlacedBuildingDefIds = [
+  "bdef_field",
+  "bdef_mill",
+  "bdef_oven",
+  "bdef_well",
+  "bdef_trading_post",
+] as const;
 
 export const startingInventory: Record<string, number> = {
   item_seed_wheat: 40,
@@ -225,6 +244,3 @@ export const METHOD_NAME: Record<string, string> = {
   method_draw_water_default: "汲水",
   method_save_seed_default: "留種",
 };
-
-/** 開局預放建築（與 seed.ts 對齊；**已拍板 D2**：含 1 座水井） */
-export const seedPlacedBuildingDefIds = ["bdef_field", "bdef_mill", "bdef_oven", "bdef_well"] as const;
