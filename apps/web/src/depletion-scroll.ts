@@ -16,10 +16,10 @@ export function unplacedPlotAnchorId(buildingDefId: string): string {
   return `plot-unplaced-${buildingDefId}`;
 }
 
-/** v1.1：開局預放水井；UI 唔再顯示未放置水井空地，捲動僅指向已放水井卡。 */
-export function resolveWellScrollAnchorId(buildings: Building[]): string | null {
+/** v1.1：開局預放水井；捲動僅指向已放水井卡。 */
+export function resolveWellScrollAnchorId(buildings: Building[]): string | undefined {
   const placed = buildings.find((b) => b.buildingDefId === WELL_BUILDING_DEF_ID);
-  return placed ? buildingScrollAnchorId(placed.id) : null;
+  return placed ? buildingScrollAnchorId(placed.id) : undefined;
 }
 
 /** 開局預放建築：唔顯示「空地 · 可放置…」卡（v1.1 水井、v1.2 商行）。 */
@@ -33,9 +33,9 @@ export function isWellPlacementUiHidden(buildingDefId: string): boolean {
 }
 
 /** v1.2：捲動至已放莊外商行建築卡；未放則 no-op（UI 唔提供放置）。 */
-export function resolveTradingPostScrollAnchorId(buildings: Building[]): string | null {
+export function resolveTradingPostScrollAnchorId(buildings: Building[]): string | undefined {
   const placed = buildings.find((b) => b.buildingDefId === TRADING_POST_BUILDING_DEF_ID);
-  return placed ? buildingScrollAnchorId(placed.id) : null;
+  return placed ? buildingScrollAnchorId(placed.id) : undefined;
 }
 
 export function findFieldBuilding(buildings: Building[]): Building | undefined {

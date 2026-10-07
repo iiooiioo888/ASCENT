@@ -39,9 +39,9 @@ describe("depletion scroll anchors", () => {
     expect(resolveWellScrollAnchorId(buildings)).toBe("building-b_well");
   });
 
-  it("returns null when well not placed (v1.1: no unplaced well plot in UI)", () => {
+  it("returns undefined when well is not placed (v1.1: no unplaced well plot in UI)", () => {
     const buildings = [building({ id: "b_field", buildingDefId: FIELD_BUILDING_DEF_ID })];
-    expect(resolveWellScrollAnchorId(buildings)).toBeNull();
+    expect(resolveWellScrollAnchorId(buildings)).toBeUndefined();
   });
 
   it("hides unplaced preplaced building plots in App filter (well + trading post)", () => {
@@ -52,11 +52,9 @@ describe("depletion scroll anchors", () => {
   });
 
   it("resolves trading post scroll to placed building only (v1.2)", () => {
-    const buildings = [
-      building({ id: "b_shop", buildingDefId: TRADING_POST_BUILDING_DEF_ID }),
-    ];
+    const buildings = [building({ id: "b_shop", buildingDefId: TRADING_POST_BUILDING_DEF_ID })];
     expect(resolveTradingPostScrollAnchorId(buildings)).toBe("building-b_shop");
-    expect(resolveTradingPostScrollAnchorId([])).toBeNull();
+    expect(resolveTradingPostScrollAnchorId([])).toBeUndefined();
   });
 
   it("picks save-seed method only when listed on field options", () => {
