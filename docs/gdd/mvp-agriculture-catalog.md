@@ -19,13 +19,13 @@
 | 槽 | 本切片數量 | MVP 閉區間 |
 | --- | --- | --- |
 | 物品 | **8** | 5–10 |
-| 建築定義 | **4** | 3–5 |
-| 規則 | **5** | ≤ 方式數 |
-| 方式（由規則生成） | **6**（預估；實作時 5–10） | 5–10，每筆有 `rule_id` |
+| 建築定義 | **5**（含水井；**TODO(product) 待確認 D3** 是否接受 5 座） | 3–5 |
+| 規則 | **7**（含汲水／留種） | ≤ 方式數 |
+| 方式（由規則生成） | **8**（預估；實作時 5–10） | 5–10，每筆有 `rule_id` |
 | 系統 | 僅 `agriculture` | 不得啟用礦／化／通用／能源大包 |
 | T2 同位素 | 全部 `is_active=false` | V-ACTIVE |
 
-`released_in_version` 一律 `"mvp"`。非本切片代碼不得 `is_active=true`。開局庫存（文件約定，非整數值）：給足夠的 `item_seed_wheat` 與 `item_water`，本切片不另做水源／育種建築。
+`released_in_version` 一律 `"mvp"`。非本切片代碼不得 `is_active=true`。開局庫存仍給足種子與水；**資源循環（RL-BE-1）**另加水井汲水與田留種以解軟卡死，數值為 **TODO(product) 待確認** 佔位（見 §5 新規則）。
 
 ---
 
@@ -83,10 +83,11 @@ dough → bread
 | `bdef_silo` | `silo` | 倉 | `agriculture` | 不生產亦可；若生產則只收／存。MVP 可當純展示倉，**不計入必須開工的 3 座**，但佔 4 定義之一 |
 | `bdef_mill` | `mill` | 磨坊 | `agriculture` | 磨粉、拌飼料 |
 | `bdef_oven` | `oven` | 爐 | `agriculture` | 和麵、烘烤 |
+| `bdef_well` | `well` | 水井 | `agriculture` | 僅 `rule_draw_water`；**已拍板 D2**：種子世界預放 1 座 |
 
 `can_upgrade` / `can_specialize` 目標欄可留預設，**MVP 不驗收**。`queue_limit` 建議常數 **1**。佔地／相鄰／耐久不做。
 
-玩家實例至少能放置田、磨坊、爐各一座，才構成種植→加工→烘烤閉環。倉可延後放置。
+玩家實例至少能放置田、磨坊、爐各一座，才構成種植→加工→烘烤閉環；種子另預放水井（D2）以再生水，田上留種再生種子。倉可延後放置。
 
 ---
 
@@ -101,8 +102,10 @@ dough → bread
 | `rule_mix_feed` | `mix_feed` | 秸稈 2、小麥 1 | 飼料 1 | 1200 | 1 筆 |
 | `rule_make_dough` | `make_dough` | 麵粉 1、水 1 | 麵團 1 | 600 | 1 筆 |
 | `rule_bake_bread` | `bake_bread` | 麵團 1 | 麵包 1 | 1200 | 1–2 筆 |
+| `rule_draw_water` | `draw_water` | （無） | 水 ×5 **待確認** | 600 **待確認** | 1 筆 `method_draw_water_default` |
+| `rule_save_seed` | `save_seed` | 小麥 ×2 **待確認** | 種子 ×1 **待確認** | 1800 **待確認** | 1 筆 `method_save_seed_default` |
 
-合計 **5** 條根規則。方式預估：
+合計 **7** 條根規則。方式預估：
 
 | `rule_id` | 優化維度（資料，非引擎寫死） | 方式數 |
 | --- | --- | --- |
@@ -111,6 +114,8 @@ dough → bread
 | `mix_feed` | 預設 | 1 |
 | `make_dough` | 預設 | 1 |
 | `bake_bread` | 預設；可選 `batch`（同輸入倍率，若生成器支援） | 1–2 |
+| `draw_water` | 預設 | 1 |
+| `save_seed` | 預設 | 1 |
 
 方式合計必須落在 **5–10**。禁止手寫沒有 `rule_id` 的 `production_methods`（V-METHOD）。`parent_rule_id` 本切片全 `NULL`，繼承深度 0。
 
@@ -118,9 +123,10 @@ dough → bread
 
 | 建築 | 可選方式來源規則 |
 | --- | --- |
-| 田 | `grow_wheat` |
+| 田 | `grow_wheat`、`save_seed` |
 | 磨坊 | `mill_flour`、`mix_feed` |
 | 爐 | `make_dough`、`bake_bread` |
+| 水井 | `draw_water` |
 | 倉 | 無開工方式 |
 
 ---
