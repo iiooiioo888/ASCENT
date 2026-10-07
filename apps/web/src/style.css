@@ -967,6 +967,81 @@ dialog.offline-summary-dialog::backdrop {
   50% { border-color: var(--gold); }
 }
 
+.plot-auto-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+  margin-bottom: 0.55rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 2px dashed rgba(232, 200, 96, 0.35);
+}
+.auto-pause-reason {
+  margin: 0;
+  flex: 1 1 100%;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: #e8c860;
+  letter-spacing: 0.04em;
+}
+.plot-auto-error {
+  flex: 1 1 100%;
+  margin: 0;
+}
+.auto-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0.45rem 0.2rem 0.25rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--cream);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--cream);
+  box-shadow: 2px 2px 0 var(--ink);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+}
+.auto-toggle:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.auto-toggle.on {
+  border-color: var(--ok);
+  background: rgba(47, 122, 58, 0.35);
+}
+.auto-toggle-track {
+  position: relative;
+  width: 2.1rem;
+  height: 1.1rem;
+  border-radius: 2px;
+  border: 2px solid var(--cream);
+  background: #2a2418;
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.45);
+}
+.auto-toggle.on .auto-toggle-track {
+  background: rgba(47, 122, 58, 0.55);
+  border-color: #b8f0c0;
+}
+.auto-toggle-thumb {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 0.75rem;
+  height: calc(100% - 2px);
+  border-radius: 1px;
+  background: linear-gradient(180deg, var(--cream) 0%, #e8c860 100%);
+  border: 1px solid var(--ink);
+  transition: transform 0.12s ease-out;
+}
+.auto-toggle.on .auto-toggle-thumb {
+  transform: translateX(0.95rem);
+}
+.auto-toggle-label {
+  font-weight: 700;
+}
+
 .plot-head {
   display: flex;
   justify-content: space-between;

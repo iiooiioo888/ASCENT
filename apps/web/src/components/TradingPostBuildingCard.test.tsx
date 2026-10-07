@@ -36,6 +36,22 @@ const market: MarketSnapshot = {
 };
 
 describe("TradingPostBuildingCard (v1.2)", () => {
+  it("does not show AFK auto toggle", () => {
+    render(
+      <TradingPostBuildingCard
+        building={tradingPostBuilding}
+        marketOpen={false}
+        onToggleMarket={vi.fn()}
+        market={market}
+        panelError={null}
+        pendingKeys={new Set()}
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+  });
+
   it("shows trade CTA and no production buttons", () => {
     render(
       <TradingPostBuildingCard

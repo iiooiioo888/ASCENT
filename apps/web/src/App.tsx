@@ -52,6 +52,7 @@ import {
   MARKET_PANEL_ANCHOR_ID,
   resolveHudGold,
 } from "./market-feedback";
+import { buildingAutoPendingKey } from "./building-auto";
 import { sortBuildingDefs } from "./buildingSort";
 import { nextPollFailureCount, shouldShowConnectionLost } from "./connectionPoll";
 import {
@@ -483,10 +484,11 @@ export default function App() {
       actionKey: string,
       path: string,
       body?: unknown,
-      opts?: { collectBuffered?: Record<string, number> },
+      opts?: { collectBuffered?: Record<string, number>; method?: string },
     ) => {
       if (pendingKeysRef.current.has(actionKey)) return;
 
+      const httpMethod = opts?.method ?? "POST";
       setPending(actionKey, true);
       clearSuccessFeedback(actionKey);
       if (actionKey === HIRE_ACTION_KEY) {
@@ -499,7 +501,10 @@ export default function App() {
       });
 
       try {
-        await api(path, { method: "POST", body: body ? JSON.stringify(body) : undefined });
+        await api(path, {
+          method: httpMethod,
+          body: body !== undefined ? JSON.stringify(body) : undefined,
+        });
         if (actionKey === HIRE_ACTION_KEY) {
           setHireError(null);
         }
@@ -770,6 +775,7 @@ export default function App() {
           const selectedId = picked[b.id] ?? options[0]?.id;
           const selected = options.find((m) => m.id === selectedId);
           const actionKey = b.id;
+          const autoActionKey = buildingAutoPendingKey(b.id);
 
           if (
             isSiloBuilding(b) &&
@@ -840,6 +846,11 @@ export default function App() {
                 act(actionKey, `/api/v1/buildings/${b.id}/collect`, undefined, {
                   collectBuffered: { ...b.bufferedOutputs },
                 })
+              }
+              autoPending={pendingKeys.has(autoActionKey)}
+              autoActionError={actionErrors[autoActionKey]}
+              onAutoToggle={(autoEnabled) =>
+                act(autoActionKey, `/api/v1/buildings/${b.id}/auto`, { autoEnabled }, { method: "PATCH" })
               }
               goldBalance={hudGold}
               workforce={state.workforce}
