@@ -1,12 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import {
-  ITEM_GOLD_ID,
   LOCAL_PLAYER_ID,
   iosToRecord,
   mergeQty,
-  opsCostsFromDepth,
-  haulGoldForBuilding,
-  wageGoldForBuilding,
   type BuildingQueueJob,
   type BuildingStatus,
   type ItemIo,
@@ -21,7 +17,10 @@ import {
   throwIfStateConflict,
 } from "./building-state-update";
 import { SettlementMutex } from "./settlement-mutex";
-import { deductPlayerItem } from "./player-inventory-tx";
+import {
+  type SettlementTransactionClient,
+  withSettlementTransaction,
+} from "./settlement-db-lock";
 
 function toGameInt(sec: number): bigint {
   return BigInt(Math.max(0, Math.floor(sec)));
@@ -36,13 +35,12 @@ export class InventoryService {
     private readonly sim: SimulationService,
   ) {}
 
-  /** 與結算／建築寫入共用，避免並發雙花。 */
-  runExclusive<T>(fn: () => Promise<T>): Promise<T> {
-    return this.settlementMutex.runExclusive(fn);
+  private runExclusive<T>(fn: (tx: SettlementTransactionClient) => Promise<T>): Promise<T> {
+    return this.settlementMutex.runExclusive(() => withSettlementTransaction(this.prisma, fn));
   }
 
   async time() {
-    const state = await this.requireState();
+    const state = await this.requireState(this.prisma);
     const now = Date.now();
     const startRealTime = state.startRealTime.toISOString();
     const startGameTime = Number(state.startGameTime);
@@ -70,22 +68,7 @@ export class InventoryService {
       this.prisma.buildingDef.findMany({ where: { isActive: true } }),
       this.time(),
     ]);
-    const workforce = await this.workforceSnapshot();
-    const opsCosts = opsCostsFromDepth(this.sim.opsDepth);
-    return { time, inventory, buildings, methods, buildingDefs: defs, workforce, opsCosts };
-  }
-
-  async workforceSnapshot() {
-    const player = await this.prisma.player.findUniqueOrThrow({ where: { id: LOCAL_PLAYER_ID } });
-    const { maxHired } = this.sim.opsDepth.workforce;
-    const hired = player.workforceHired;
-    const busy = player.workforceBusy;
-    return {
-      hired,
-      busy,
-      free: Math.max(0, hired - busy),
-      maxHired,
-    };
+    return { time, inventory, buildings, methods, buildingDefs: defs };
   }
 
   async inventory() {
@@ -118,7 +101,7 @@ export class InventoryService {
     const def = await this.prisma.buildingDef.findFirst({ where: { id: buildingDefId, isActive: true } });
     if (!def) throw new BadRequestException("未知建築");
     const now = new Date();
-    const clock = await this.requireState();
+    const clock = await this.requireState(this.prisma);
     const game = this.sim.displayGameTime(
       { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
       now.getTime(),
@@ -142,15 +125,15 @@ export class InventoryService {
   }
 
   async start(buildingId: string, methodId: string) {
-    return this.runExclusive(async () => {
-      await this.settleBuildingUnlocked(buildingId);
-      const building = await this.prisma.playerBuilding.findUnique({
+    return this.runExclusive(async (tx) => {
+      await this.settleBuildingUnlocked(tx, buildingId);
+      const building = await tx.playerBuilding.findUnique({
         where: { id: buildingId },
         include: { buildingDef: true },
       });
       if (!building) throw new NotFoundException("建築不存在");
       if (building.status !== "idle") throw new BadRequestException("建築忙碌或待收取");
-      const method = await this.prisma.productionMethod.findFirst({ where: { id: methodId, isActive: true } });
+      const method = await tx.productionMethod.findFirst({ where: { id: methodId, isActive: true } });
       if (!method) throw new BadRequestException("未知生產方式");
       const allowed = (building.buildingDef.allowedRuleIds as string[]) ?? [];
       if (!isMethodAllowedForBuilding(allowed, method.ruleId)) {
@@ -158,12 +141,6 @@ export class InventoryService {
       }
       const inputs = iosToRecord(method.inputs as ItemIo[]);
       const outputs = iosToRecord(method.outputs as ItemIo[]);
-      const depth = this.sim.opsDepth;
-      const laborCost = depth.workforce.laborCostPerStart;
-      const wageGold = wageGoldForBuilding(building.buildingDefId, depth);
-      const haulGold = haulGoldForBuilding(building.buildingDefId, depth);
-      const startGoldCost = wageGold + haulGold;
-
       const job: BuildingQueueJob = {
         methodId: method.id,
         durationGameSec: method.durationGameSec,
@@ -172,56 +149,40 @@ export class InventoryService {
         outputs,
       };
       const now = new Date();
-      const clock = await this.requireState();
+      const clock = await this.requireState(tx);
       const game = this.sim.displayGameTime(
         { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
         now.getTime(),
       );
-
-      await this.prisma.$transaction(async (tx) => {
-        const player = await tx.player.findUniqueOrThrow({ where: { id: LOCAL_PLAYER_ID } });
-        const free = player.workforceHired - player.workforceBusy;
-        if (free < laborCost) throw new BadRequestException("人手不足");
-
-        for (const [itemId, qty] of Object.entries(inputs)) {
-          const row = await tx.playerInventory.findUnique({
-            where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
-          });
-          const have = row ? Number(row.quantity) : 0;
-          if (have + 1e-9 < qty) throw new BadRequestException(`資源不足：${itemId}`);
-        }
-        for (const [itemId, qty] of Object.entries(inputs)) {
-          await tx.playerInventory.update({
-            where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
-            data: { quantity: { decrement: qty } },
-          });
-        }
-        if (startGoldCost > 0) {
-          await deductPlayerItem(tx, ITEM_GOLD_ID, startGoldCost);
-        }
-
-        await tx.player.update({
-          where: { id: LOCAL_PLAYER_ID },
-          data: { workforceBusy: { increment: laborCost } },
-        });
-
-        const started = await tx.playerBuilding.updateMany({
-          where: { id: buildingId, status: "idle" },
-          data: {
-            methodId: method.id,
-            status: "running",
-            queue: [job] as unknown as Prisma.InputJsonValue,
-            inputs,
-            outputs,
-            lastSettledAt: now,
-            lastSettledGame: toGameInt(game),
-            lastUpdate: now,
-            lastUpdateGame: toGameInt(game),
-          },
-        });
-        throwIfStateConflict(started.count);
+      const started = await tx.playerBuilding.updateMany({
+        where: { id: buildingId, status: "idle" },
+        data: {
+          methodId: method.id,
+          status: "running",
+          queue: [job] as unknown as Prisma.InputJsonValue,
+          inputs,
+          outputs,
+          lastSettledAt: now,
+          lastSettledGame: toGameInt(game),
+          lastUpdate: now,
+          lastUpdateGame: toGameInt(game),
+        },
       });
-      return this.prisma.playerBuilding.findUniqueOrThrow({
+      throwIfStateConflict(started.count);
+      for (const [itemId, qty] of Object.entries(inputs)) {
+        const row = await tx.playerInventory.findUnique({
+          where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
+        });
+        const have = row ? Number(row.quantity) : 0;
+        if (have + 1e-9 < qty) throw new BadRequestException(`資源不足：${itemId}`);
+      }
+      for (const [itemId, qty] of Object.entries(inputs)) {
+        await tx.playerInventory.update({
+          where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
+          data: { quantity: { decrement: qty } },
+        });
+      }
+      return tx.playerBuilding.findUniqueOrThrow({
         where: { id: buildingId },
         include: { buildingDef: true, method: true },
       });
@@ -229,45 +190,31 @@ export class InventoryService {
   }
 
   async stop(buildingId: string) {
-    return this.runExclusive(async () => {
-      await this.settleBuildingUnlocked(buildingId);
-      const building = await this.prisma.playerBuilding.findUnique({ where: { id: buildingId } });
+    return this.runExclusive(async (tx) => {
+      await this.settleBuildingUnlocked(tx, buildingId);
+      const building = await tx.playerBuilding.findUnique({ where: { id: buildingId } });
       if (!building) throw new NotFoundException("建築不存在");
       const now = new Date();
-      const clock = await this.requireState();
+      const clock = await this.requireState(tx);
       const game = this.sim.displayGameTime(
         { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
         now.getTime(),
       );
       const expectedStatus = building.status;
-      const releaseWorkforce = building.status === "running";
-      const laborCost = this.sim.opsDepth.workforce.laborCostPerStart;
-      await this.prisma.$transaction(async (tx) => {
-        const stopped = await tx.playerBuilding.updateMany({
-          where: { id: buildingId, status: expectedStatus },
-          data: {
-            status: building.status === "ready" ? "ready" : "idle",
-            methodId: building.status === "ready" ? building.methodId : null,
-            queue: (building.status === "ready" ? building.queue : []) as Prisma.InputJsonValue,
-            lastSettledAt: now,
-            lastSettledGame: toGameInt(game),
-            lastUpdate: now,
-            lastUpdateGame: toGameInt(game),
-          },
-        });
-        throwIfStateConflict(stopped.count);
-        if (releaseWorkforce) {
-          const player = await tx.player.findUniqueOrThrow({ where: { id: LOCAL_PLAYER_ID } });
-          const nextBusy = Math.max(0, player.workforceBusy - laborCost);
-          if (nextBusy !== player.workforceBusy) {
-            await tx.player.update({
-              where: { id: LOCAL_PLAYER_ID },
-              data: { workforceBusy: nextBusy },
-            });
-          }
-        }
+      const stopped = await tx.playerBuilding.updateMany({
+        where: { id: buildingId, status: expectedStatus },
+        data: {
+          status: building.status === "ready" ? "ready" : "idle",
+          methodId: building.status === "ready" ? building.methodId : null,
+          queue: (building.status === "ready" ? building.queue : []) as Prisma.InputJsonValue,
+          lastSettledAt: now,
+          lastSettledGame: toGameInt(game),
+          lastUpdate: now,
+          lastUpdateGame: toGameInt(game),
+        },
       });
-      return this.prisma.playerBuilding.findUniqueOrThrow({
+      throwIfStateConflict(stopped.count);
+      return tx.playerBuilding.findUniqueOrThrow({
         where: { id: buildingId },
         include: { buildingDef: true, method: true },
       });
@@ -275,47 +222,36 @@ export class InventoryService {
   }
 
   async collect(buildingId: string) {
-    return this.runExclusive(async () => {
-      await this.settleBuildingUnlocked(buildingId);
-      const building = await this.prisma.playerBuilding.findUnique({ where: { id: buildingId } });
+    return this.runExclusive(async (tx) => {
+      await this.settleBuildingUnlocked(tx, buildingId);
+      const building = await tx.playerBuilding.findUnique({ where: { id: buildingId } });
       if (!building) throw new NotFoundException("建築不存在");
       const buffered =
         building.status === "ready"
           ? ((building.bufferedOutputs as Record<string, number>) ?? {})
           : {};
       const now = new Date();
-      const clock = await this.requireState();
+      const clock = await this.requireState(tx);
       const game = this.sim.displayGameTime(
         { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
         now.getTime(),
       );
-      const laborCost = this.sim.opsDepth.workforce.laborCostPerStart;
-      await this.prisma.$transaction(async (tx) => {
-        const claimed = await tx.playerBuilding.updateMany({
-          where: { id: buildingId, status: "ready" },
-          data: {
-            status: "idle",
-            methodId: null,
-            queue: [],
-            bufferedOutputs: {},
-            lastSettledAt: now,
-            lastSettledGame: toGameInt(game),
-            lastUpdate: now,
-            lastUpdateGame: toGameInt(game),
-          },
-        });
-        throwIfStateConflict(claimed.count);
-        const player = await tx.player.findUniqueOrThrow({ where: { id: LOCAL_PLAYER_ID } });
-        const nextBusy = Math.max(0, player.workforceBusy - laborCost);
-        if (nextBusy !== player.workforceBusy) {
-          await tx.player.update({
-            where: { id: LOCAL_PLAYER_ID },
-            data: { workforceBusy: nextBusy },
-          });
-        }
+      const claimed = await tx.playerBuilding.updateMany({
+        where: { id: buildingId, status: "ready" },
+        data: {
+          status: "idle",
+          methodId: null,
+          queue: [],
+          bufferedOutputs: {},
+          lastSettledAt: now,
+          lastSettledGame: toGameInt(game),
+          lastUpdate: now,
+          lastUpdateGame: toGameInt(game),
+        },
       });
-      await this.add(buffered);
-      return this.prisma.playerBuilding.findUniqueOrThrow({
+      throwIfStateConflict(claimed.count);
+      await this.add(tx, buffered);
+      return tx.playerBuilding.findUniqueOrThrow({
         where: { id: buildingId },
         include: { buildingDef: true, method: true },
       });
@@ -323,31 +259,28 @@ export class InventoryService {
   }
 
   async settleAll() {
-    return this.runExclusive(() => this.settleAllUnlocked());
-  }
-
-  /** 僅在已持有 {@link runExclusive} 時呼叫（例如市集交易）。 */
-  async settleAllUnlocked() {
-    const buildings = await this.prisma.playerBuilding.findMany({
-      where: { playerId: LOCAL_PLAYER_ID },
+    return this.runExclusive(async (tx) => {
+      const buildings = await tx.playerBuilding.findMany({
+        where: { playerId: LOCAL_PLAYER_ID },
+      });
+      for (const b of buildings) {
+        await this.settleBuildingUnlocked(tx, b.id);
+      }
     });
-    for (const b of buildings) {
-      await this.settleBuildingUnlocked(b.id);
-    }
   }
 
   async settleBuilding(id: string) {
-    return this.runExclusive(() => this.settleBuildingUnlocked(id));
+    return this.runExclusive((tx) => this.settleBuildingUnlocked(tx, id));
   }
 
-  private async settleBuildingUnlocked(id: string) {
+  private async settleBuildingUnlocked(tx: SettlementTransactionClient, id: string) {
     for (let attempt = 0; attempt < 3; attempt++) {
-      const building = await this.prisma.playerBuilding.findUnique({ where: { id } });
+      const building = await tx.playerBuilding.findUnique({ where: { id } });
       if (!building) return;
 
       const now = new Date();
       const lastSettledAt = building.lastSettledAt;
-      const clock = await this.requireState();
+      const clock = await this.requireState(tx);
       const window = this.sim.settleWindow(lastSettledAt.getTime(), now.getTime());
       const queue = (building.queue as unknown as BuildingQueueJob[]) ?? [];
       const result = this.sim.settleProduction(building.status as BuildingStatus, queue, window.gameDeltaSec);
@@ -358,7 +291,7 @@ export class InventoryService {
       const prevBuffered = (building.bufferedOutputs as Record<string, number>) ?? {};
       const buffered = mergeQty(prevBuffered, result.completedOutputs);
 
-      const updated = await this.prisma.playerBuilding.updateMany({
+      const updated = await tx.playerBuilding.updateMany({
         where: { id, lastSettledAt },
         data: {
           status: result.status,
@@ -371,7 +304,7 @@ export class InventoryService {
         },
       });
       if (updated.count === 1) {
-        await this.prisma.serverState.update({
+        await tx.serverState.update({
           where: { id: 1 },
           data: { lastUpdate: now },
         });
@@ -381,9 +314,9 @@ export class InventoryService {
     throwIfStateConflict(0, SETTLEMENT_CONFLICT_MESSAGE);
   }
 
-  private async add(gain: Record<string, number>) {
+  private async add(tx: SettlementTransactionClient, gain: Record<string, number>) {
     for (const [itemId, qty] of Object.entries(gain)) {
-      await this.prisma.playerInventory.upsert({
+      await tx.playerInventory.upsert({
         where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
         update: { quantity: { increment: qty } },
         create: { playerId: LOCAL_PLAYER_ID, itemId, quantity: qty },
@@ -391,8 +324,8 @@ export class InventoryService {
     }
   }
 
-  private async requireState() {
-    const state = await this.prisma.serverState.findUnique({ where: { id: 1 } });
+  private async requireState(tx: Pick<PrismaService, "serverState">) {
+    const state = await tx.serverState.findUnique({ where: { id: 1 } });
     if (!state) throw new BadRequestException("尚未種子世界時鐘");
     return state;
   }
