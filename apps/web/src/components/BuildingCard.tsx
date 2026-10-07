@@ -1,17 +1,11 @@
 import { useState } from "react";
-import { canStopBuilding, showProductionActionButtons } from "../building-actions";
-import { fmtBuffered, fmtIo, statusLabel } from "../format";
-import { useProgressTick } from "../hooks/useProgressTick";
-import { jobProgressPercent, jobRemainRealSec } from "../productionProgress";
+import { canStopBuilding } from "../building-actions";
+import { fmtBuffered, realRemainSec, statusLabel } from "../format";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
 import type { BuildingActionErrorView } from "../building-action-error";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
-import {
-  methodPurposeHint,
-  methodSelectAriaLabel,
-  productionProgressAriaLabel,
-  SILO_CARD_BODY,
-} from "../productCopy";
+import { recipeConsumeLine, recipeProduceLine } from "../recipe-display";
+import { WELL_BUILDING_DEF_ID, WELL_IDLE_JOBLINE } from "../resource-loop-copy";
 import type { Building, InvRow, Method } from "../types";
 import { StopConfirmDialog } from "./StopConfirmDialog";
 
@@ -22,14 +16,14 @@ type Props = {
   selectedId: string | undefined;
   selected: Method | undefined;
   timeScale: number;
-  serverRealTime: string;
   actionError?: BuildingActionErrorView;
-  actionSuccess?: string;
   pending: boolean;
   onSelectMethod: (methodId: string) => void;
   onStart: () => void;
   onStop: () => void;
   onCollect: () => void;
+  highlight?: boolean;
+  scrollAnchorId?: string;
 };
 
 export function BuildingCard({
@@ -39,24 +33,20 @@ export function BuildingCard({
   selectedId,
   selected,
   timeScale,
-  serverRealTime,
   actionError,
-  actionSuccess,
   pending,
   onSelectMethod,
   onStart,
   onStop,
   onCollect,
+  highlight = false,
+  scrollAnchorId,
 }: Props) {
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
   const job = b.queue[0];
-  const smoothProgress = b.status === "running" && !!job;
-  const nowMs = useProgressTick(smoothProgress);
-  const progress = job
-    ? jobProgressPercent(job, timeScale, serverRealTime, nowMs)
-    : 0;
-  const remain = job ? jobRemainRealSec(job, timeScale, serverRealTime, nowMs) : 0;
+  const progress = job ? Math.min(100, (job.elapsedGameSec / job.durationGameSec) * 100) : 0;
+  const remain = realRemainSec(job, timeScale);
 
   const methodLocked = b.status === "running" || b.status === "ready";
   const displayMethodId = methodLocked && b.methodId ? b.methodId : selectedId;
@@ -69,11 +59,6 @@ export function BuildingCard({
   const anyShort = inputRows.some((r) => r.short);
 
   const runningMethod = b.methodId ? options.find((m) => m.id === b.methodId) : undefined;
-  const purposeHint = methodPurposeHint(displayMethod?.id);
-  const progressPercent = Math.round(b.status === "ready" ? 100 : progress);
-  const showActions = showProductionActionButtons(b);
-  const methodSelectId = `method-select-${b.id}`;
-  const buildingIconLabel = b.buildingDef.name;
 
   const handleStopConfirm = () => {
     setStopConfirmOpen(false);
@@ -81,13 +66,14 @@ export function BuildingCard({
   };
 
   return (
-    <article className={`plot ${b.status}${pending ? " pending" : ""}`}>
+    <article
+      id={scrollAnchorId}
+      className={`plot ${b.status}${pending ? " pending" : ""}${highlight ? " scroll-highlight" : ""}`}
+    >
       <fieldset className="plot-body" disabled={pending}>
         <div className="plot-head">
           <div style={{ display: "flex", gap: "0.7rem", alignItems: "center" }}>
-            <div className="bicon" role="img" aria-label={buildingIconLabel}>
-              {BUILDING_ICON[b.buildingDefId] ?? "🏠"}
-            </div>
+            <div className="bicon">{BUILDING_ICON[b.buildingDefId] ?? "🏠"}</div>
             <div>
               <h3 className="bname">{b.buildingDef.name}</h3>
               <span className={`badge ${b.status}`}>{statusLabel(b.status)}</span>
@@ -100,28 +86,28 @@ export function BuildingCard({
             進行中 {progress.toFixed(0)}% · 剩 {remain.toFixed(0)} 現實秒
           </p>
         ) : (
-          <p className="jobline">{b.status === "ready" ? `可收取 ${fmtBuffered(b.bufferedOutputs)}` : "等待開工"}</p>
+          <p className="jobline">
+            {b.status === "ready"
+              ? `可收取 ${fmtBuffered(b.bufferedOutputs)}`
+              : b.buildingDefId === WELL_BUILDING_DEF_ID
+                ? WELL_IDLE_JOBLINE
+                : "等待開工"}
+          </p>
         )}
 
         {options.length ? (
           <>
-            <div className="method-field">
-              <label className="method-label" htmlFor={methodSelectId}>
-                {methodSelectAriaLabel(b.buildingDef.name)}
-              </label>
-              <select
-                id={methodSelectId}
-                value={displayMethodId ?? ""}
-                disabled={methodLocked}
-                onChange={(e) => onSelectMethod(e.target.value)}
-              >
+            <select
+              value={displayMethodId ?? ""}
+              disabled={methodLocked}
+              onChange={(e) => onSelectMethod(e.target.value)}
+            >
               {options.map((m) => (
                 <option key={m.id} value={m.id}>
                   {METHOD_NAME[m.id] ?? m.code} · {(m.durationGameSec / timeScale).toFixed(0)} 秒
                 </option>
               ))}
-              </select>
-            </div>
+            </select>
             <div className="recipe">
               {displayMethod ? (
                 <>
@@ -136,17 +122,16 @@ export function BuildingCard({
                         ))}
                       </span>
                     ) : (
-                      <span>{fmtIo(displayMethod.inputs)}</span>
+                      <span>{recipeConsumeLine(displayMethod)}</span>
                     )}
                   </div>
-                  <div>產出 {fmtIo(displayMethod.outputs)}</div>
-                  {purposeHint ? <p className="purpose-hint">{purposeHint}</p> : null}
+                  <div>產出 {recipeProduceLine(displayMethod)}</div>
                 </>
               ) : null}
             </div>
           </>
         ) : (
-          <div className="recipe">{SILO_CARD_BODY}</div>
+          <div className="recipe">倉不開工，只佔建築槽。</div>
         )}
 
         {actionError ? (
@@ -154,44 +139,30 @@ export function BuildingCard({
             {actionError.message}
           </p>
         ) : null}
-        {actionSuccess && !actionError ? (
-          <p className="plot-action-success" aria-live="polite">
-            {actionSuccess}
-          </p>
-        ) : null}
 
-        {showActions ? (
-          <div className="actions">
-            <button
-              type="button"
-              disabled={!options.length || b.status !== "idle" || !selected || !affordSelected}
-              onClick={onStart}
-            >
-              開工
-            </button>
-            <button
-              type="button"
-              className="ghost"
-              disabled={!canStopBuilding(b.status)}
-              onClick={() => setStopConfirmOpen(true)}
-            >
-              停止
-            </button>
-            <button type="button" className="collect" disabled={b.status !== "ready"} onClick={onCollect}>
-              收取
-            </button>
-          </div>
-        ) : null}
-        {job || b.status === "ready" ? (
-          <div
-            className="bar"
-            role="progressbar"
-            aria-valuenow={progressPercent}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={productionProgressAriaLabel(b.buildingDef.name, progressPercent)}
+        <div className="actions">
+          <button
+            type="button"
+            disabled={!options.length || b.status !== "idle" || !selected || !affordSelected}
+            onClick={onStart}
           >
-            <i style={{ width: `${progressPercent}%` }} aria-hidden />
+            開工
+          </button>
+          <button
+            type="button"
+            className="ghost"
+            disabled={!canStopBuilding(b.status)}
+            onClick={() => setStopConfirmOpen(true)}
+          >
+            停止
+          </button>
+          <button type="button" className="collect" disabled={b.status !== "ready"} onClick={onCollect}>
+            收取
+          </button>
+        </div>
+        {job || b.status === "ready" ? (
+          <div className="bar">
+            <i style={{ width: `${b.status === "ready" ? 100 : progress}%` }} />
           </div>
         ) : null}
       </fieldset>
