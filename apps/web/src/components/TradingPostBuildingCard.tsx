@@ -3,7 +3,7 @@ import type { MarketActionErrorView } from "../market-action-error";
 import type { MarketSnapshot } from "../market";
 import { MARKET_COPY } from "../marketCopy";
 import { BUILDING_ICON } from "../meta";
-import type { Building } from "../types";
+import type { Building, OpsCostsSnapshot } from "../types";
 import { MarketPanel, type MarketTabFocusRequest } from "./MarketPanel";
 
 type Props = {
@@ -16,6 +16,7 @@ type Props = {
   pendingKeys: ReadonlySet<string>;
   successToast?: string | null;
   tabFocusRequest?: MarketTabFocusRequest;
+  opsCosts?: OpsCostsSnapshot | null;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
 };
@@ -31,6 +32,7 @@ export function TradingPostBuildingCard({
   pendingKeys,
   successToast,
   tabFocusRequest,
+  opsCosts,
   onSell,
   onBuy,
 }: Props) {
@@ -81,6 +83,7 @@ export function TradingPostBuildingCard({
             pendingKeys={pendingKeys}
             successToast={successToast}
             tabFocusRequest={tabFocusRequest}
+            opsCosts={opsCosts}
             onSell={onSell}
             onBuy={onBuy}
           />

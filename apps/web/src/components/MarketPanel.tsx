@@ -3,6 +3,8 @@ import type { Ref } from "react";
 import type { MarketActionErrorView } from "../market-action-error";
 import type { MarketSnapshot } from "../market";
 import { MARKET_COPY, marketBalanceLabel } from "../marketCopy";
+import { sellTransportPreview } from "../ops-depth";
+import type { OpsCostsSnapshot } from "../types";
 import { MarketRow } from "./MarketRow";
 
 type Tab = "sell" | "buy";
@@ -17,6 +19,7 @@ type Props = {
   pendingKeys: ReadonlySet<string>;
   successToast?: string | null;
   tabFocusRequest?: MarketTabFocusRequest;
+  opsCosts?: OpsCostsSnapshot | null;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
 };
@@ -34,6 +37,7 @@ export const MarketPanel = forwardRef(function MarketPanel(
     pendingKeys,
     successToast,
     tabFocusRequest,
+    opsCosts,
     onSell,
     onBuy,
   }: Props,
@@ -164,6 +168,7 @@ export const MarketPanel = forwardRef(function MarketPanel(
             const holding = market.holdings[itemId] ?? 0;
             const quantity = qtyFor("sell", itemId, holding, gold, unitPrice);
             const pending = pendingKeys.has(pendingKey("sell", itemId));
+            const sellPreview = sellTransportPreview(unitPrice, quantity, itemId, opsCosts);
             return (
               <MarketRow
                 key={itemId}
@@ -174,6 +179,7 @@ export const MarketPanel = forwardRef(function MarketPanel(
                 quantity={quantity}
                 goldBalance={gold}
                 pending={pending}
+                sellPreview={sellPreview}
                 onQuantityChange={(n) => setQty("sell", itemId, n)}
                 onAction={() => onSell(itemId, quantity)}
               />

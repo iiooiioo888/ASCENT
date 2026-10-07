@@ -442,8 +442,20 @@ dialog.offline-summary-dialog::backdrop {
   border: 1px solid rgba(201, 164, 106, 0.35);
 }
 .market-row.out-of-stock,
-.market-row.insufficient-gold {
+.market-row.insufficient-gold,
+.market-row.transport-too-high {
   opacity: 0.72;
+}
+.market-row-meta .shortage {
+  color: #e8a8a8;
+}
+.market-row-fee,
+.market-row-net {
+  font-variant-numeric: tabular-nums;
+}
+.market-row-net {
+  font-weight: 600;
+  color: var(--gold);
 }
 .market-row.pending {
   opacity: 0.88;

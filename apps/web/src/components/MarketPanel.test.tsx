@@ -3,7 +3,17 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { MARKET_COPY } from "../marketCopy";
 import type { MarketSnapshot } from "../market";
+import { OPS_DEPTH_COPY } from "../ops-depth-copy";
+import type { OpsCostsSnapshot } from "../types";
 import { MarketPanel } from "./MarketPanel";
+
+const defaultOpsCosts: OpsCostsSnapshot = {
+  hireCostGold: 8,
+  laborCostPerStart: 1,
+  wageByBuilding: {},
+  haulByBuilding: {},
+  sellTransport: { item_bread: 1 },
+};
 
 function makeMarket(overrides?: Partial<MarketSnapshot>): MarketSnapshot {
   return {
@@ -170,6 +180,52 @@ describe("MarketPanel", () => {
       />,
     );
     expect(screen.getByRole("tab", { name: MARKET_COPY.buyTab })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("shows sell transport fee and net preview for bread (OD-FE-2)", () => {
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        opsCosts={defaultOpsCosts}
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+      />,
+    );
+
+    const breadRow = screen.getByTestId("market-row-sell-item_bread");
+    expect(within(breadRow).getByTestId("market-row-sell-fee")).toHaveTextContent(
+      `${OPS_DEPTH_COPY.haul} −🪙1`,
+    );
+    expect(within(breadRow).getByTestId("market-row-sell-net")).toHaveTextContent(
+      `${OPS_DEPTH_COPY.net} 🪙7`,
+    );
+  });
+
+  it("disables sell when transport fee exceeds gross", () => {
+    render(
+      <MarketPanel
+        market={makeMarket({
+          prices: {
+            sell: { item_bread: 0, item_feed: 3, item_flour: 4, item_dough: 5, item_wheat: 2, item_straw: 1 },
+            buy: { item_seed_wheat: 3, item_water: 1 },
+          },
+        })}
+        panelError={null}
+        pendingKeys={new Set()}
+        opsCosts={defaultOpsCosts}
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+      />,
+    );
+
+    const breadRow = screen.getByTestId("market-row-sell-item_bread");
+    const sellBtn = within(breadRow).getByRole("button", { name: MARKET_COPY.sellCta });
+    expect(sellBtn).toBeDisabled();
+    expect(within(breadRow).getByTestId("market-row-transport-hint")).toHaveTextContent(
+      OPS_DEPTH_COPY.sellTransportTooHigh,
+    );
   });
 
   it("shows panel error message", () => {

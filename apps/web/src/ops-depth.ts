@@ -22,6 +22,35 @@ export function haulForBuilding(opsCosts: OpsCostsSnapshot | null | undefined, b
   return opsCosts?.haulByBuilding?.[buildingDefId] ?? 0;
 }
 
+export function sellTransportPerUnit(
+  opsCosts: OpsCostsSnapshot | null | undefined,
+  itemId: string,
+): number {
+  return opsCosts?.sellTransport?.[itemId] ?? 0;
+}
+
+export type SellTransportPreview = {
+  grossGold: number;
+  transportFee: number;
+  netGold: number;
+  transportTooHigh: boolean;
+};
+
+/** 賣出淨收入預覽：缺 `sellTransport` 時運費視為 0（舊 API）。 */
+export function sellTransportPreview(
+  unitPrice: number,
+  quantity: number,
+  itemId: string,
+  opsCosts?: OpsCostsSnapshot | null,
+): SellTransportPreview {
+  const unitTransport = sellTransportPerUnit(opsCosts, itemId);
+  const grossGold = unitPrice * quantity;
+  const transportFee = unitTransport * quantity;
+  const netGold = grossGold - transportFee;
+  const transportTooHigh = transportFee > grossGold;
+  return { grossGold, transportFee, netGold, transportTooHigh };
+}
+
 export function startGoldCost(
   opsCosts: OpsCostsSnapshot | null | undefined,
   buildingDefId: string,

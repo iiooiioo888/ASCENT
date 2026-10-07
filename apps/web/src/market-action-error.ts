@@ -1,5 +1,6 @@
 import { ApiError } from "./api";
 import { itemLabel } from "./meta";
+import { OPS_DEPTH_COPY } from "./ops-depth-copy";
 import { MARKET_COPY } from "./marketCopy";
 
 const INSUFFICIENT_PREFIX = "資源不足：";
@@ -19,6 +20,7 @@ type RegistryEntry = { copy: string; shouldRefresh: boolean };
 const REGISTRY: Readonly<Record<string, RegistryEntry>> = {
   數量無效: { copy: MARKET_COPY.invalidQuantity, shouldRefresh: false },
   金幣不足: { copy: MARKET_COPY.needGold, shouldRefresh: false },
+  運費過高: { copy: OPS_DEPTH_COPY.sellTransportTooHigh, shouldRefresh: false },
   [MARKET_COPY.settlementConflict]: {
     copy: MARKET_COPY.settlementConflict,
     shouldRefresh: false,

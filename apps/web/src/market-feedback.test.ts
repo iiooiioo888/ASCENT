@@ -14,6 +14,15 @@ describe("market-feedback MK-FE-2", () => {
     expect(formatMarketTradeSuccess("buy", "item_seed_wheat", 1, 3)).toBe("已購入 小麥種子×1，－🪙3");
   });
 
+  it("formats sell success with net and transport fee (OD-FE-2)", () => {
+    expect(
+      formatMarketTradeSuccess("sell", "item_bread", 1, 8, { netGold: 7, transportFee: 1 }),
+    ).toBe("已售出 麵包×1，實收 🪙7（運費 🪙1）");
+    expect(formatMarketTradeSuccess("sell", "item_bread", 1, 8, { netGold: 8 })).toBe(
+      "已售出 麵包×1，實收 🪙8",
+    );
+  });
+
   it("resolves HUD gold from market snapshot or inventory", () => {
     const inventory = [{ itemId: "item_gold", quantity: "5", item: { code: "item_gold", layer: "T", derivedTier: 1 } }];
     expect(resolveHudGold(12, inventory)).toBe(12);

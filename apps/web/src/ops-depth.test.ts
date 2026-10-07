@@ -4,6 +4,7 @@ import {
   effectiveWorkforceFree,
   hasWorkforceUi,
   startOpsPrecheck,
+  sellTransportPreview,
   startGoldCost,
 } from "./ops-depth";
 import type { OpsCostsSnapshot, WorkforceSnapshot } from "./types";
@@ -47,6 +48,32 @@ describe("startOpsPrecheck", () => {
 
     const busy = startOpsPrecheck("bdef_field", 10, workforce, opsCosts);
     expect(busy.laborOk).toBe(false);
+  });
+});
+
+describe("sellTransportPreview", () => {
+  const withTransport: OpsCostsSnapshot = {
+    ...opsCosts,
+    sellTransport: { item_bread: 1 },
+  };
+
+  it("computes net gold for bread (T2)", () => {
+    const preview = sellTransportPreview(8, 1, "item_bread", withTransport);
+    expect(preview.grossGold).toBe(8);
+    expect(preview.transportFee).toBe(1);
+    expect(preview.netGold).toBe(7);
+    expect(preview.transportTooHigh).toBe(false);
+  });
+
+  it("treats missing sellTransport as zero fee", () => {
+    const preview = sellTransportPreview(8, 1, "item_bread", opsCosts);
+    expect(preview.transportFee).toBe(0);
+    expect(preview.netGold).toBe(8);
+  });
+
+  it("flags transportTooHigh when fee exceeds gross", () => {
+    const preview = sellTransportPreview(0, 1, "item_bread", withTransport);
+    expect(preview.transportTooHigh).toBe(true);
   });
 });
 
