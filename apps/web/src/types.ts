@@ -54,13 +54,10 @@ export type GameState = {
   buildingDefs: { id: string; name: string; code: string }[];
   workforce?: WorkforceSnapshot;
   opsCosts?: OpsCostsSnapshot;
-<<<<<<< HEAD
   environment?: EnvironmentState;
-=======
   /** LAND-BE-1：當前田數／上限（GET /state）。 */
   fieldCount?: number;
   fieldCap?: number;
   buildingCount?: number;
   buildingSlotCap?: number;
->>>>>>> 7f7731e (feat(web): LAND-FE-1 莊外商行擴田入口)
 };
