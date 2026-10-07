@@ -1,7 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import {
+  FIELD_BUILDING_DEF_ID,
+  FIELD_CAP,
   ITEM_GOLD_ID,
+  LAND_ERROR_COPY,
   LOCAL_PLAYER_ID,
+  PLAYER_BUILDING_SLOT_CAP,
+  allowsAnotherInstanceOfDef,
+  canPurchaseField,
+  countPlayerFields,
   iosToRecord,
   isFieldGrowRuleId,
   isFallowActive,
@@ -117,6 +124,8 @@ export class InventoryService {
     const weatherState = await this.sim.ensureWeatherFresh(this.prisma, currentGame);
     const environment = this.sim.environmentSnapshot(weatherState, currentGame);
     const buildingsOut = buildings.map((b) => withBuildingEnvironmentFields(b, currentGame));
+    const fieldCount = countPlayerFields(buildings);
+    const buildingCount = buildings.length;
     return {
       time,
       inventory,
@@ -126,6 +135,10 @@ export class InventoryService {
       workforce,
       opsCosts,
       environment,
+      fieldCount,
+      fieldCap: FIELD_CAP,
+      buildingCount,
+      buildingSlotCap: PLAYER_BUILDING_SLOT_CAP,
     };
   }
 
@@ -169,6 +182,9 @@ export class InventoryService {
   }
 
   async place(buildingDefId: string) {
+    if (buildingDefId === FIELD_BUILDING_DEF_ID) {
+      throw new BadRequestException(LAND_ERROR_COPY.FIELD_USE_PURCHASE_API);
+    }
     const def = await this.prisma.buildingDef.findFirst({ where: { id: buildingDefId, isActive: true } });
     if (!def) throw new BadRequestException("未知建築");
     const now = new Date();
@@ -177,22 +193,93 @@ export class InventoryService {
       { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
       now.getTime(),
     );
-    return this.prisma.playerBuilding.create({
-      data: {
-        id: `pb_${LOCAL_PLAYER_ID}_${def.id}_${now.getTime()}`,
-        playerId: LOCAL_PLAYER_ID,
-        buildingDefId: def.id,
-        lastSettledAt: now,
-        lastSettledGame: toGameInt(game),
-        lastUpdate: now,
-        lastUpdateGame: toGameInt(game),
-        queue: [],
-        inputs: {},
-        outputs: {},
-        bufferedOutputs: {},
-        status: "idle",
-      },
+    const existing = await this.prisma.playerBuilding.findMany({
+      where: { playerId: LOCAL_PLAYER_ID },
+      select: { buildingDefId: true },
     });
+    this.assertPlacementAllowed(def.id, existing);
+    return this.prisma.playerBuilding.create({
+      data: this.newPlayerBuildingData(def.id, game, now),
+    });
+  }
+
+  async purchaseField() {
+    return this.runExclusive(async () => {
+      await this.settleAllUnlocked();
+      const now = new Date();
+      const clock = await this.requireState(this.prisma);
+      const game = this.sim.displayGameTime(
+        { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
+        now.getTime(),
+      );
+
+      const def = await this.prisma.buildingDef.findFirst({
+        where: { id: FIELD_BUILDING_DEF_ID, isActive: true },
+      });
+      if (!def) throw new BadRequestException("未知建築");
+
+      let created: Awaited<ReturnType<typeof this.prisma.playerBuilding.create>>;
+      let goldAfter = 0;
+      let pricePaid = 0;
+
+      await this.prisma.$transaction(async (tx) => {
+        const buildings = await tx.playerBuilding.findMany({
+          where: { playerId: LOCAL_PLAYER_ID },
+          select: { buildingDefId: true },
+        });
+        const fieldCount = countPlayerFields(buildings);
+        const buildingCount = buildings.length;
+        const gate = canPurchaseField({ fieldCount, buildingCount });
+        if (!gate.ok) {
+          throw new BadRequestException(LAND_ERROR_COPY[gate.reason]);
+        }
+        pricePaid = gate.priceGold;
+        await deductPlayerItem(tx, ITEM_GOLD_ID, gate.priceGold, LAND_ERROR_COPY.INSUFFICIENT_GOLD);
+        created = await tx.playerBuilding.create({
+          data: this.newPlayerBuildingData(FIELD_BUILDING_DEF_ID, game, now),
+        });
+        const goldRow = await tx.playerInventory.findUnique({
+          where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+        });
+        goldAfter = Number(goldRow?.quantity ?? 0);
+      });
+
+      return { building: created!, gold: goldAfter, pricePaid };
+    });
+  }
+
+  private assertPlacementAllowed(
+    buildingDefId: string,
+    existing: { buildingDefId: string }[],
+  ): void {
+    if (existing.length >= PLAYER_BUILDING_SLOT_CAP) {
+      throw new BadRequestException(LAND_ERROR_COPY.BUILDING_SLOTS_FULL);
+    }
+    const sameDef = existing.filter((b) => b.buildingDefId === buildingDefId).length;
+    if (!allowsAnotherInstanceOfDef(buildingDefId, sameDef)) {
+      throw new BadRequestException(
+        buildingDefId === FIELD_BUILDING_DEF_ID
+          ? LAND_ERROR_COPY.FIELD_AT_CAP
+          : LAND_ERROR_COPY.DUPLICATE_BUILDING_DEF,
+      );
+    }
+  }
+
+  private newPlayerBuildingData(buildingDefId: string, game: number, now: Date) {
+    return {
+      id: `pb_${LOCAL_PLAYER_ID}_${buildingDefId}_${now.getTime()}`,
+      playerId: LOCAL_PLAYER_ID,
+      buildingDefId,
+      lastSettledAt: now,
+      lastSettledGame: toGameInt(game),
+      lastUpdate: now,
+      lastUpdateGame: toGameInt(game),
+      queue: [],
+      inputs: {},
+      outputs: {},
+      bufferedOutputs: {},
+      status: "idle" as const,
+    };
   }
 
   async start(buildingId: string, methodId: string) {

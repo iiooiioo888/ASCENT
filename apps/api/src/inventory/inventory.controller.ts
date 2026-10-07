@@ -35,6 +35,11 @@ export class InventoryController {
     return this.inventory.place(body.buildingDefId);
   }
 
+  @Post("buildings/purchase-field")
+  purchaseField() {
+    return this.inventory.purchaseField();
+  }
+
   @Post("buildings/:id/start")
   start(@Param("id") id: string, @Body() body: { methodId: string }) {
     return this.inventory.start(id, body.methodId);
