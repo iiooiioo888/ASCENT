@@ -1,14 +1,34 @@
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { config as loadEnv } from "dotenv";
+import { isPostgresDatabase } from "../src/inventory/settlement-db-lock";
 
 const apiRoot = path.join(__dirname, "..");
+loadEnv({ path: path.join(apiRoot, ".env") });
 
 function prismaEnv(databaseUrl: string): NodeJS.ProcessEnv {
   return { ...process.env, DATABASE_URL: databaseUrl };
 }
 
+/** CI／本機 Postgres：`DATABASE_URL` 為 postgresql:// 時沿用，不建臨時 file: DB。 */
+function resolvePostgresTestDatabaseUrl(): string | undefined {
+  const url = process.env.DATABASE_URL?.trim();
+  if (!url || !isPostgresDatabase(url)) return undefined;
+  return url;
+}
+
 export function createEmptyTestDatabase(): string {
+  const postgresUrl = resolvePostgresTestDatabaseUrl();
+  if (postgresUrl) {
+    execSync("pnpm exec prisma migrate deploy", {
+      cwd: apiRoot,
+      env: prismaEnv(postgresUrl),
+      stdio: "pipe",
+    });
+    return postgresUrl;
+  }
+
   const dir = path.join(__dirname, ".tmp");
   fs.mkdirSync(dir, { recursive: true });
   const dbPath = path.join(dir, `integration-${process.pid}-${Date.now()}.db`);
@@ -32,6 +52,7 @@ export function seedTestDatabase(databaseUrl: string): void {
 }
 
 export function removeTestDatabase(databaseUrl: string): void {
+  if (isPostgresDatabase(databaseUrl)) return;
   const filePath = databaseUrl.replace(/^file:/, "");
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 }
