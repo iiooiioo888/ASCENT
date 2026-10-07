@@ -276,8 +276,10 @@ export class InventoryService {
       await this.settleBuildingUnlocked(buildingId);
       const building = await this.prisma.playerBuilding.findUnique({ where: { id: buildingId } });
       if (!building) throw new NotFoundException("建築不存在");
-      if (building.status !== "ready") throw new BadRequestException("尚無可收取產出");
-      const buffered = (building.bufferedOutputs as Record<string, number>) ?? {};
+      const buffered =
+        building.status === "ready"
+          ? ((building.bufferedOutputs as Record<string, number>) ?? {})
+          : {};
       const now = new Date();
       const clock = await this.requireState();
       const game = this.sim.displayGameTime(
