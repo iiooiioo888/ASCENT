@@ -31,6 +31,9 @@ WORKDIR /app
 
 COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 COPY --from=build /app/node_modules ./node_modules
+# pnpm links workspace deps (e.g. @prisma/client) under apps/api/node_modules; without
+# this copy, Node cannot resolve @prisma/client/runtime/* from dist/generated/prisma.
+COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=build /app/packages/shared/package.json ./packages/shared/
 COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY --from=build /app/apps/api/package.json ./apps/api/
