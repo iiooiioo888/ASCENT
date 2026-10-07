@@ -4,15 +4,18 @@ import type { MarketSnapshot } from "../market";
 import { MARKET_COPY } from "../marketCopy";
 import { BUILDING_ICON } from "../meta";
 import type { Building } from "../types";
-import { MarketPanel } from "./MarketPanel";
+import { MarketPanel, type MarketTabFocusRequest } from "./MarketPanel";
 
 type Props = {
   building: Building;
+  highlight?: boolean;
   marketOpen: boolean;
   onToggleMarket: () => void;
   market: MarketSnapshot | null;
   panelError: MarketActionErrorView | null;
   pendingKeys: ReadonlySet<string>;
+  successToast?: string | null;
+  tabFocusRequest?: MarketTabFocusRequest;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
 };
@@ -20,11 +23,14 @@ type Props = {
 /** v1.2：莊外商行建築卡 — 點「交易」展開買賣 panel，無生產動作。 */
 export function TradingPostBuildingCard({
   building: b,
+  highlight = false,
   marketOpen,
   onToggleMarket,
   market,
   panelError,
   pendingKeys,
+  successToast,
+  tabFocusRequest,
   onSell,
   onBuy,
 }: Props) {
@@ -41,7 +47,8 @@ export function TradingPostBuildingCard({
   return (
     <article
       id={`building-${b.id}`}
-      className={`plot trading-post ${b.status}${marketOpen ? " market-open" : ""}`}
+      className={`plot trading-post ${b.status}${marketOpen ? " market-open" : ""}${highlight ? " scroll-highlight" : ""}`}
+      data-testid="trading-post-building-card"
     >
       <div className="plot-body">
         <div className="plot-head">
@@ -72,6 +79,8 @@ export function TradingPostBuildingCard({
             market={market}
             panelError={panelError}
             pendingKeys={pendingKeys}
+            successToast={successToast}
+            tabFocusRequest={tabFocusRequest}
             onSell={onSell}
             onBuy={onBuy}
           />

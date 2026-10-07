@@ -1,13 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
   BRAND_DISPLAY_NAME,
+  CONNECTION_INTERRUPTED_BANNER,
+  DEPLETION_CTA_MARKET,
   DEPLETION_CTA_SAVE_SEED,
   DEPLETION_CTA_WELL,
   DEPLETION_EMPTY_BODY,
   DEPLETION_EMPTY_TITLE,
+  FEATURE_OFFLINE_SUMMARY,
   FEATURE_SHOW_DEPLETION_EMPTY_STATE,
+  isUnseededWorldClockError,
   itemPurposeHint,
+  methodSelectAriaLabel,
   methodPurposeHint,
+  OFFLINE_SUMMARY_FOOTNOTE,
+  OFFLINE_SUMMARY_PENDING_TAG,
   parseViteBooleanEnv,
 } from "./productCopy";
 
@@ -21,6 +28,28 @@ describe("productCopy", () => {
 
   it("brand constant is non-empty for HUD / loading", () => {
     expect(BRAND_DISPLAY_NAME.length).toBeGreaterThan(0);
+  });
+
+  it("U10 connection copy and seed hint detection", () => {
+    expect(CONNECTION_INTERRUPTED_BANNER).toContain("連線中斷");
+    expect(isUnseededWorldClockError("尚未種子世界時鐘")).toBe(true);
+    expect(isUnseededWorldClockError("無法連接")).toBe(false);
+  });
+
+  it("U15 method select aria label helper", () => {
+    expect(methodSelectAriaLabel("田")).toBe("選擇田的生產方式");
+  });
+
+  it("U11 offline summary flag and pending copy", () => {
+    expect(FEATURE_OFFLINE_SUMMARY).toBe("A");
+    expect(OFFLINE_SUMMARY_PENDING_TAG).toBe("待確認");
+    expect(OFFLINE_SUMMARY_FOOTNOTE).toMatch(/8 現實小時/);
+    expect(OFFLINE_SUMMARY_FOOTNOTE).toMatch(/只做一單/);
+  });
+
+  it("parseViteBooleanEnv is case-insensitive (FALSE disables)", () => {
+    expect(parseViteBooleanEnv("FALSE", true)).toBe(false);
+    expect(parseViteBooleanEnv("TRUE", false)).toBe(true);
   });
 
   it("parseViteBooleanEnv full semantics (trim, case, unknown → default)", () => {
@@ -59,5 +88,6 @@ describe("productCopy", () => {
     expect(DEPLETION_EMPTY_BODY).toBe("用水井汲水，或用小麥留種後即可繼續。");
     expect(DEPLETION_CTA_WELL).toBe("用水井汲水");
     expect(DEPLETION_CTA_SAVE_SEED).toBe("用小麥留種");
+    expect(DEPLETION_CTA_MARKET).toBe("前往商行");
   });
 });

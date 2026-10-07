@@ -22,8 +22,29 @@ export const MARKET_COPY = {
   invalidQuantity: "數量無效",
   notTradable: "此物品不可交易",
   settlementConflict: "建築結算衝突，請重試",
+  successSellTemplate: "已售出 {item}×{q}，＋🪙{n}",
+  successBuyTemplate: "已購入 {item}×{q}，－🪙{n}",
 } as const;
 
 export function marketBalanceLabel(gold: number): string {
   return `金幣 ${gold}`;
+}
+
+export function successSell(item: string, q: string, n: string): string {
+  return MARKET_COPY.successSellTemplate
+    .replace("{item}", item)
+    .replace("{q}", q)
+    .replace("{n}", n);
+}
+
+export function successBuy(item: string, q: string, n: string): string {
+  return MARKET_COPY.successBuyTemplate
+    .replace("{item}", item)
+    .replace("{q}", q)
+    .replace("{n}", n);
+}
+
+/** HUD chip (§5.1). */
+export function hudGoldChip(gold: number): string {
+  return `🪙 ${gold}`;
 }

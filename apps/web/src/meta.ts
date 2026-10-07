@@ -21,6 +21,7 @@ export const BUILDING_ICON: Record<string, string> = {
   bdef_silo: "🏚️",
   bdef_mill: "⚙️",
   bdef_oven: "🔥",
+  bdef_well: "💧",
   bdef_trading_post: "🏪",
 };
 

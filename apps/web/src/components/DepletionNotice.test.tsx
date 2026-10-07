@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import {
+  DEPLETION_CTA_MARKET,
   DEPLETION_CTA_SAVE_SEED,
   DEPLETION_CTA_WELL,
   DEPLETION_EMPTY_BODY,
@@ -22,6 +23,31 @@ describe("DepletionNotice", () => {
     expect(banner).toHaveTextContent(DEPLETION_EMPTY_BODY);
     expect(screen.getByRole("button", { name: DEPLETION_CTA_WELL })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: DEPLETION_CTA_SAVE_SEED })).toBeInTheDocument();
+  });
+
+  it("shows market CTA when onGoMarket is provided", async () => {
+    const user = userEvent.setup();
+    const onGoMarket = vi.fn();
+    render(
+      <DepletionNotice visible onGoWell={() => {}} onGoSaveSeed={() => {}} onGoMarket={onGoMarket} />,
+    );
+    const marketBtn = screen.getByRole("button", { name: DEPLETION_CTA_MARKET });
+    expect(marketBtn).toHaveClass("ghost");
+    await user.click(marketBtn);
+    expect(onGoMarket).toHaveBeenCalledTimes(1);
+  });
+
+  it("styles market CTA prominently when marketCtaProminent", () => {
+    render(
+      <DepletionNotice
+        visible
+        onGoWell={() => {}}
+        onGoSaveSeed={() => {}}
+        onGoMarket={() => {}}
+        marketCtaProminent
+      />,
+    );
+    expect(screen.getByRole("button", { name: DEPLETION_CTA_MARKET })).toHaveClass("depletion-cta-market");
   });
 
   it("invokes scroll/highlight handlers when CTAs are clicked", async () => {

@@ -7,12 +7,16 @@ import { MarketRow } from "./MarketRow";
 
 type Tab = "sell" | "buy";
 
+export type MarketTabFocusRequest = { tab: Tab; seq: number };
+
 type Props = {
   id?: string;
   headingId?: string;
   market: MarketSnapshot | null;
   panelError: MarketActionErrorView | null;
   pendingKeys: ReadonlySet<string>;
+  successToast?: string | null;
+  tabFocusRequest?: MarketTabFocusRequest;
   onSell: (itemId: string, quantity: number) => void;
   onBuy: (itemId: string, quantity: number) => void;
 };
@@ -22,11 +26,26 @@ function pendingKey(side: Tab, itemId: string) {
 }
 
 export const MarketPanel = forwardRef(function MarketPanel(
-  { id = "market-panel", headingId, market, panelError, pendingKeys, onSell, onBuy }: Props,
+  {
+    id = "market-panel",
+    headingId,
+    market,
+    panelError,
+    pendingKeys,
+    successToast,
+    tabFocusRequest,
+    onSell,
+    onBuy,
+  }: Props,
   ref: Ref<HTMLElement>,
 ) {
   const [tab, setTab] = useState<Tab>("sell");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!tabFocusRequest) return;
+    setTab(tabFocusRequest.tab);
+  }, [tabFocusRequest]);
 
   const sellIds = useMemo(() => {
     if (!market?.prices?.sell) return [];
@@ -99,6 +118,12 @@ export const MarketPanel = forwardRef(function MarketPanel(
       </header>
 
       <p className="market-hint banner-muted">{MARKET_COPY.hint}</p>
+
+      {successToast ? (
+        <p className="market-trade-toast" role="status" aria-live="polite" data-testid="market-success-toast">
+          {successToast}
+        </p>
+      ) : null}
 
       {panelError ? (
         <p className="market-panel-error" role="alert" title={panelError.hint}>

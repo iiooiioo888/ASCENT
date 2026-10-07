@@ -133,6 +133,45 @@ describe("MarketPanel", () => {
     expect(onSell).toHaveBeenCalledWith("item_bread", 1);
   });
 
+  it("shows success toast when provided", () => {
+    render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        successToast="已售出 麵包×1，＋🪙8"
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId("market-success-toast")).toHaveTextContent("已售出 麵包×1，＋🪙8");
+  });
+
+  it("switches to buy tab when tabFocusRequest updates", () => {
+    const { rerender } = render(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("tab", { name: MARKET_COPY.sellTab })).toHaveAttribute("aria-selected", "true");
+
+    rerender(
+      <MarketPanel
+        market={makeMarket()}
+        panelError={null}
+        pendingKeys={new Set()}
+        tabFocusRequest={{ tab: "buy", seq: 1 }}
+        onSell={vi.fn()}
+        onBuy={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("tab", { name: MARKET_COPY.buyTab })).toHaveAttribute("aria-selected", "true");
+  });
+
   it("shows panel error message", () => {
     render(
       <MarketPanel
