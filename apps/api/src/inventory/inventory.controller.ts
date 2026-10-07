@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
 import { InventoryService } from "./inventory.service";
 
 @Controller("api/v1")
@@ -54,5 +54,10 @@ export class InventoryController {
   @HttpCode(HttpStatus.OK)
   collect(@Param("id") id: string) {
     return this.inventory.collect(id);
+  }
+
+  @Patch("buildings/:id/auto")
+  setAuto(@Param("id") id: string, @Body() body: { autoEnabled: boolean }) {
+    return this.inventory.setAutoEnabled(id, body.autoEnabled);
   }
 }
