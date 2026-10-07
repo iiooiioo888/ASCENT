@@ -54,6 +54,21 @@ describe("StopConfirmDialog", () => {
     await user.click(screen.getByRole("button", { name: "確認停止" }));
     expect(onConfirm).toHaveBeenCalledOnce();
   });
+
+  it("lists wage and haul in loss line", () => {
+    render(
+      <StopConfirmDialog
+        open
+        buildingName="磨坊"
+        method={mixFeedDefault}
+        paidOpsCosts={{ wage: 2, haul: 1 }}
+        onCancel={() => {}}
+        onConfirm={() => {}}
+      />,
+    );
+    expect(screen.getByText(/工資 🪙2/)).toBeInTheDocument();
+    expect(screen.getByText(/運費 🪙1/)).toBeInTheDocument();
+  });
 });
 
 describe("StopConfirmDialog keyboard (U15)", () => {

@@ -40,6 +40,49 @@ const baseProps = {
 const fieldMethodSelectName = "選擇田的生產方式";
 const millMethodSelectName = "選擇磨坊的生產方式";
 
+const defaultOpsCosts = {
+  hireCostGold: 8,
+  laborCostPerStart: 1,
+  wageByBuilding: { bdef_field: 1, bdef_mill: 2 },
+  haulByBuilding: { bdef_field: 0, bdef_mill: 1 },
+};
+
+describe("BuildingCard OD ops precheck", () => {
+  it("disables start when workforce free is zero", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoFieldIdle}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        inventory={baseInventory}
+        goldBalance={10}
+        workforce={{ hired: 1, busy: 1, free: 0, maxHired: 4 }}
+        opsCosts={defaultOpsCosts}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "開工" })).toBeDisabled();
+    expect(screen.getByTestId("ops-cost-preview")).toHaveTextContent("人手 1");
+  });
+
+  it("disables start when gold cannot cover wage", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoFieldIdle}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        inventory={baseInventory}
+        goldBalance={0}
+        workforce={{ hired: 1, busy: 0, free: 1, maxHired: 4 }}
+        opsCosts={defaultOpsCosts}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "開工" })).toBeDisabled();
+    expect(document.querySelector(".ops-cost-preview .shortage")).not.toBeNull();
+  });
+});
+
 describe("BuildingCard U2 inventory precheck", () => {
   it("disables start and renders shortage text when water is short", () => {
     render(

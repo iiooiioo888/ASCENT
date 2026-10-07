@@ -1,5 +1,6 @@
 import { ApiError } from "./api";
 import { itemLabel } from "./meta";
+import { OPS_DEPTH_COPY } from "./ops-depth-copy";
 
 /** Stable API `code` values (preferred lookup key). */
 export const BUILDING_ACTION_ERROR_CODES = {
@@ -109,6 +110,18 @@ const REGISTRY: Readonly<Record<string, RegistryEntry>> = {
     copy: BUILDING_ACTION_ERROR_COPY.UNKNOWN_BUILDING_DEF,
     shouldRefresh: false,
   },
+  人手不足: {
+    copy: OPS_DEPTH_COPY.needHands,
+    shouldRefresh: false,
+  },
+  金幣不足: {
+    copy: OPS_DEPTH_COPY.needGold,
+    shouldRefresh: false,
+  },
+  已達僱工上限: {
+    copy: OPS_DEPTH_COPY.workforceCap,
+    shouldRefresh: false,
+  },
 };
 
 const INSUFFICIENT_PREFIX = "資源不足：";
@@ -126,6 +139,7 @@ export type MappedBuildingActionError = BuildingActionErrorView & {
 function formatInsufficientMaterialsMessage(rawMessage: string): string {
   const rest = rawMessage.slice(INSUFFICIENT_PREFIX.length);
   const itemId = rest.trim();
+  if (itemId === "item_gold") return OPS_DEPTH_COPY.needGold;
   return `${INSUFFICIENT_PREFIX}${itemLabel(itemId)}`;
 }
 

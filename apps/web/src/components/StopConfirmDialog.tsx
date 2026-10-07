@@ -1,19 +1,31 @@
 import { useEffect, useId, useRef } from "react";
 import { trapTabKey } from "../a11y/trapFocus";
-import { fmtIo } from "../format";
 import { METHOD_NAME } from "../meta";
 import type { Method } from "../types";
-import { stopConfirmIntro, stopConfirmLossHeading } from "./stopConfirmCopy";
+import {
+  formatStopConfirmLossLine,
+  stopConfirmIntro,
+  stopConfirmLossHeading,
+  type StopPaidOpsCosts,
+} from "./stopConfirmCopy";
 
 type Props = {
   open: boolean;
   buildingName: string;
   method: Method | undefined;
+  paidOpsCosts?: StopPaidOpsCosts;
   onCancel: () => void;
   onConfirm: () => void;
 };
 
-export function StopConfirmDialog({ open, buildingName, method, onCancel, onConfirm }: Props) {
+export function StopConfirmDialog({
+  open,
+  buildingName,
+  method,
+  paidOpsCosts = { wage: 0, haul: 0 },
+  onCancel,
+  onConfirm,
+}: Props) {
   const titleId = useId();
   const panelRef = useRef<HTMLFormElement>(null);
   const onCancelRef = useRef(onCancel);
@@ -46,7 +58,7 @@ export function StopConfirmDialog({ open, buildingName, method, onCancel, onConf
 
   if (!open) return null;
 
-  const lossLine = method ? fmtIo(method.inputs) : "（未知配方）";
+  const lossLine = formatStopConfirmLossLine(method, paidOpsCosts);
   const methodLabel = method ? (METHOD_NAME[method.id] ?? method.code) : "…";
 
   return (

@@ -23,10 +23,27 @@ export type Building = {
   bufferedOutputs: Record<string, number>;
 };
 
+export type WorkforceSnapshot = {
+  hired: number;
+  busy: number;
+  free: number;
+  maxHired: number;
+};
+
+export type OpsCostsSnapshot = {
+  hireCostGold: number;
+  wageByBuilding: Record<string, number>;
+  haulByBuilding: Record<string, number>;
+  sellTransport?: Record<string, number>;
+  laborCostPerStart: number;
+};
+
 export type GameState = {
   time: { displayGameTime: number; timeScale: number; serverRealTime: string };
   inventory: InvRow[];
   buildings: Building[];
   methods: Method[];
   buildingDefs: { id: string; name: string; code: string }[];
+  workforce?: WorkforceSnapshot;
+  opsCosts?: OpsCostsSnapshot;
 };

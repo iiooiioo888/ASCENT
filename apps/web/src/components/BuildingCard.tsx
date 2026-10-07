@@ -6,7 +6,9 @@ import { jobProgressPercent, jobRemainRealSec } from "../productionProgress";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
 import type { BuildingActionErrorView } from "../building-action-error";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
-import type { Building, InvRow, Method } from "../types";
+import { startOpsPrecheck } from "../ops-depth";
+import { OPS_DEPTH_COPY } from "../ops-depth-copy";
+import type { Building, InvRow, Method, OpsCostsSnapshot, WorkforceSnapshot } from "../types";
 import {
   methodPurposeHint,
   methodSelectAriaLabel,
@@ -32,6 +34,9 @@ type Props = {
   onCollect: () => void;
   highlight?: boolean;
   scrollAnchorId?: string;
+  goldBalance?: number;
+  workforce?: WorkforceSnapshot;
+  opsCosts?: OpsCostsSnapshot;
 };
 
 export function BuildingCard({
@@ -51,6 +56,9 @@ export function BuildingCard({
   onCollect,
   highlight = false,
   scrollAnchorId,
+  goldBalance = 0,
+  workforce,
+  opsCosts,
 }: Props) {
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
@@ -72,7 +80,17 @@ export function BuildingCard({
   const inputRows = selected && b.status === "idle" ? inputAvailability(stock, selected.inputs) : [];
   const anyShort = inputRows.some((r) => r.short);
 
+  const ops =
+    b.status === "idle" && selected
+      ? startOpsPrecheck(b.buildingDefId, goldBalance, workforce, opsCosts)
+      : null;
+  const opsOk = ops ? ops.laborOk && ops.goldOk : true;
+  const showOpsPreview = b.status === "idle" && !!selected && !!opsCosts;
+
   const runningMethod = b.methodId ? options.find((m) => m.id === b.methodId) : undefined;
+  const stopPaidOps = runningMethod
+    ? startOpsPrecheck(b.buildingDefId, goldBalance, workforce, opsCosts)
+    : null;
   const purposeHint = methodPurposeHint(displayMethod?.id);
   const progressPercent = Math.round(b.status === "ready" ? 100 : progress);
   const showActions = showProductionActionButtons(b);
@@ -148,6 +166,25 @@ export function BuildingCard({
                   </div>
                   <div>產出 {fmtIo(displayMethod.outputs)}</div>
                   {purposeHint ? <p className="purpose-hint">{purposeHint}</p> : null}
+                  {showOpsPreview && ops ? (
+                    <div className="ops-cost-preview" data-testid="ops-cost-preview">
+                      {ops.wage > 0 ? (
+                        <span className={ops.goldOk ? "" : "shortage"}>
+                          {OPS_DEPTH_COPY.wage} 🪙{ops.wage}
+                        </span>
+                      ) : null}
+                      {ops.haul > 0 ? (
+                        <span className={ops.goldOk ? "" : "shortage"}>
+                          {OPS_DEPTH_COPY.haul} 🪙{ops.haul}
+                        </span>
+                      ) : null}
+                      {ops.labor > 0 ? (
+                        <span className={ops.laborOk ? "" : "shortage"}>
+                          {OPS_DEPTH_COPY.labor} {ops.labor}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </>
               ) : null}
             </div>
@@ -171,7 +208,9 @@ export function BuildingCard({
           <div className="actions">
             <button
               type="button"
-              disabled={!options.length || b.status !== "idle" || !selected || !affordSelected}
+              disabled={
+                !options.length || b.status !== "idle" || !selected || !affordSelected || !opsOk
+              }
               onClick={onStart}
             >
               開工
@@ -207,6 +246,9 @@ export function BuildingCard({
         open={stopConfirmOpen}
         buildingName={b.buildingDef.name}
         method={runningMethod}
+        paidOpsCosts={
+          stopPaidOps ? { wage: stopPaidOps.wage, haul: stopPaidOps.haul } : { wage: 0, haul: 0 }
+        }
         onCancel={() => setStopConfirmOpen(false)}
         onConfirm={handleStopConfirm}
       />

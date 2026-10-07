@@ -10,6 +10,7 @@ import { Inventory } from "./components/Inventory";
 import { marketPendingKey, type MarketTabFocusRequest } from "./components/MarketPanel";
 import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
 import { LoadingScreen } from "./components/LoadingScreen";
+import { maybeWorkforceHud } from "./components/WorkforceHud";
 import type { BuildingActionErrorView } from "./building-action-error";
 import { mapBuildingActionError } from "./building-action-error";
 import type { MarketActionErrorView } from "./market-action-error";
@@ -95,6 +96,8 @@ export default function App() {
   const marketToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [marketTabFocusRequest, setMarketTabFocusRequest] = useState<MarketTabFocusRequest | undefined>();
   const [marketOpenBuildingId, setMarketOpenBuildingId] = useState<string | null>(null);
+  const [hireError, setHireError] = useState<BuildingActionErrorView | null>(null);
+  const HIRE_ACTION_KEY = "workforce:hire";
 
   stateRef.current = state;
 
@@ -373,6 +376,9 @@ export default function App() {
 
       setPending(actionKey, true);
       clearSuccessFeedback(actionKey);
+      if (actionKey === HIRE_ACTION_KEY) {
+        setHireError(null);
+      }
       setActionErrors((prev) => {
         const next = { ...prev };
         delete next[actionKey];
@@ -381,6 +387,9 @@ export default function App() {
 
       try {
         await api(path, { method: "POST", body: body ? JSON.stringify(body) : undefined });
+        if (actionKey === HIRE_ACTION_KEY) {
+          setHireError(null);
+        }
         setActionErrors((prev) => {
           const next = { ...prev };
           delete next[actionKey];
@@ -395,16 +404,25 @@ export default function App() {
         if (mapped.shouldRefresh) {
           await refresh().catch(() => undefined);
         }
-        setActionErrors((prev) => ({
-          ...prev,
-          [actionKey]: { message: mapped.message, hint: mapped.hint },
-        }));
+        const view = { message: mapped.message, hint: mapped.hint };
+        if (actionKey === HIRE_ACTION_KEY) {
+          setHireError(view);
+        } else {
+          setActionErrors((prev) => ({
+            ...prev,
+            [actionKey]: view,
+          }));
+        }
       } finally {
         setPending(actionKey, false);
       }
     },
     [refresh, setPending, clearSuccessFeedback, showCollectSuccess],
   );
+
+  const hireWorkforce = useCallback(() => {
+    act(HIRE_ACTION_KEY, "/api/v1/workforce/hire", {});
+  }, [act]);
 
   const marketTrade = useCallback(
     async (side: "sell" | "buy", itemId: string, quantity: number) => {
@@ -494,6 +512,17 @@ export default function App() {
           <span className="chip chip-gold" data-testid="hud-gold-chip">
             {hudGoldChipLabel(hudGold)}
           </span>
+          {maybeWorkforceHud({
+            workforce: state.workforce,
+            opsCosts: state.opsCosts,
+            gold: hudGold,
+            pending: pendingKeys.has(HIRE_ACTION_KEY),
+            error: hireError ?? actionErrors[HIRE_ACTION_KEY],
+            onHire: () => {
+              setHireError(null);
+              hireWorkforce();
+            },
+          })}
           <span className="chip">{OFFLINE_PROGRESS_HUD_CHIP}</span>
         </div>
       </header>
@@ -577,6 +606,9 @@ export default function App() {
                   collectBuffered: { ...b.bufferedOutputs },
                 })
               }
+              goldBalance={hudGold}
+              workforce={state.workforce}
+              opsCosts={state.opsCosts}
             />
           );
         })}
