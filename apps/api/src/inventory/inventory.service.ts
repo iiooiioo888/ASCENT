@@ -22,6 +22,7 @@ import {
   wageGoldForBuilding,
   defaultAutoMethodIdForBuilding,
   mapStartFailureToAutoPauseReason,
+  sortBuildingsForAfkAutoStart,
   type BuildingQueueJob,
   type BuildingStatus,
   type ItemIo,
@@ -92,14 +93,23 @@ export class InventoryService {
   async settleAllUnlocked(): Promise<void> {
     const now = new Date();
     await withSettlementTransaction(this.prisma, async (tx) => {
-      const buildings = await tx.playerBuilding.findMany({
-        where: { playerId: LOCAL_PLAYER_ID },
-      });
-      for (const b of buildings) {
-        await this.settleBuildingUnlocked(tx, b.id);
-      }
+      await this.settleAllBuildingsAndAfkAutoStartUnlocked(tx);
       await settleRetailShelfUnlocked(tx, this.sim, now);
     });
+  }
+
+  /** AFK-SMART D1：先結算全建築，再按麵包鏈優先序批次嘗試自動開工。 */
+  private async settleAllBuildingsAndAfkAutoStartUnlocked(tx: SettlementTransactionClient): Promise<void> {
+    const buildings = await tx.playerBuilding.findMany({
+      where: { playerId: LOCAL_PLAYER_ID },
+    });
+    const order = sortBuildingsForAfkAutoStart(buildings);
+    for (const b of order) {
+      await this.settleBuildingUnlocked(tx, b.id, false);
+    }
+    for (const b of order) {
+      await this.maybeTryAutoStartUnlocked(tx, b.id);
+    }
   }
 
   private withSettlementTx<T>(fn: (tx: SettlementTransactionClient) => Promise<T>): Promise<T> {
@@ -161,6 +171,7 @@ export class InventoryService {
       buildingSlotCap: PLAYER_BUILDING_SLOT_CAP,
       retailShelf: {
         enabled: shelf.enabled,
+        followMarket: shelf.followMarket,
         ask: shelf.ask,
         todayRevenueGold: shelf.todayRevenueGold,
       },
@@ -579,12 +590,7 @@ export class InventoryService {
   async settleAll() {
     const now = new Date();
     return this.withSettlementTx(async (tx) => {
-      const buildings = await tx.playerBuilding.findMany({
-        where: { playerId: LOCAL_PLAYER_ID },
-      });
-      for (const b of buildings) {
-        await this.settleBuildingUnlocked(tx, b.id);
-      }
+      await this.settleAllBuildingsAndAfkAutoStartUnlocked(tx);
       await settleRetailShelfUnlocked(tx, this.sim, now);
     });
   }
@@ -593,7 +599,11 @@ export class InventoryService {
     return this.withSettlementTx((tx) => this.settleBuildingUnlocked(tx, id));
   }
 
-  private async settleBuildingUnlocked(tx: SettlementTransactionClient, id: string) {
+  private async settleBuildingUnlocked(
+    tx: SettlementTransactionClient,
+    id: string,
+    tryAutoStart = true,
+  ) {
     for (let attempt = 0; attempt < 3; attempt++) {
       const building = await tx.playerBuilding.findUnique({ where: { id } });
       if (!building) return;
@@ -640,7 +650,7 @@ export class InventoryService {
           where: { id: 1 },
           data: { lastUpdate: now },
         });
-        if (result.status === "idle") {
+        if (tryAutoStart && result.status === "idle") {
           await this.maybeTryAutoStartUnlocked(tx, id);
         }
         return;

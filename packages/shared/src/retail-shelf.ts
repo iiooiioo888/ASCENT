@@ -17,22 +17,36 @@ export type RetailShelfConfig = {
 
 export type RetailShelfPublicState = {
   enabled: boolean;
+  followMarket: boolean;
   ask: number;
   todayRevenueGold: number;
   skuId: typeof RETAIL_SKU_ID;
 };
 
-/** 預設 ask = max(1, floor(MK 麵包現價))。 */
+/** AFK-SMART D2：跟市標價為 MK 麵包賣價的 95%。 */
+export const RETAIL_SHELF_FOLLOW_MARKET_RATIO = 0.95;
+
+/** 預設 ask = max(1, floor(MK 麵包現價))（未跟市、無手動價時）。 */
 export function defaultShelfAskGold(book: MarketPriceBook, retailConfig: RetailConfig): number {
   const anchor = resolveRetailBidAnchor(book, retailConfig);
   return Math.max(1, Math.floor(anchor));
 }
 
+/** 跟市 ask = max(1, floor(MK 麵包賣價 × 0.95))。 */
+export function followMarketShelfAskGold(book: MarketPriceBook, retailConfig: RetailConfig): number {
+  const anchor = resolveRetailBidAnchor(book, retailConfig);
+  return Math.max(1, Math.floor(anchor * RETAIL_SHELF_FOLLOW_MARKET_RATIO));
+}
+
 export function resolveShelfAskGold(
   storedAsk: number | null | undefined,
+  followMarket: boolean,
   book: MarketPriceBook,
   retailConfig: RetailConfig,
 ): number {
+  if (followMarket) {
+    return followMarketShelfAskGold(book, retailConfig);
+  }
   if (typeof storedAsk === "number" && Number.isInteger(storedAsk) && storedAsk >= 1) {
     return storedAsk;
   }

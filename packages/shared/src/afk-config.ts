@@ -30,3 +30,26 @@ export type PlayerBuildingAfkFields = {
   autoEnabled: boolean;
   autoPauseReason: string | null;
 };
+
+/** AFK-SMART D1：麵包鏈搶資源時下游優先（爐 → 磨 → 田）。 */
+export const BREAD_CHAIN_AUTO_START_PRIORITY: Record<string, number> = {
+  bdef_oven: 0,
+  bdef_mill: 1,
+  bdef_field: 2,
+};
+
+export function compareBuildingsForAfkAutoStart(
+  a: { buildingDefId: string; id?: string },
+  b: { buildingDefId: string; id?: string },
+): number {
+  const pa = BREAD_CHAIN_AUTO_START_PRIORITY[a.buildingDefId] ?? 100;
+  const pb = BREAD_CHAIN_AUTO_START_PRIORITY[b.buildingDefId] ?? 100;
+  if (pa !== pb) return pa - pb;
+  return (a.id ?? "").localeCompare(b.id ?? "");
+}
+
+export function sortBuildingsForAfkAutoStart<T extends { buildingDefId: string; id: string }>(
+  buildings: T[],
+): T[] {
+  return [...buildings].sort(compareBuildingsForAfkAutoStart);
+}

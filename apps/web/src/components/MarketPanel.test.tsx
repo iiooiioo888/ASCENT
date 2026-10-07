@@ -23,6 +23,7 @@ import {
 function makeShelf(overrides?: Partial<RetailShelfSnapshot>): RetailShelfSnapshot {
   return {
     enabled: false,
+    followMarket: true,
     ask: 8,
     todayRevenueGold: 3,
     skuId: "item_bread",

@@ -24,7 +24,7 @@ export class RetailShelfService {
     });
   }
 
-  async patchShelf(body: { enabled?: boolean; ask?: number }) {
+  async patchShelf(body: { enabled?: boolean; ask?: number; followMarket?: boolean }) {
     if (body.enabled !== undefined && typeof body.enabled !== "boolean") {
       throw new BadRequestException("enabled 須為布林");
     }
@@ -33,12 +33,16 @@ export class RetailShelfService {
         throw new BadRequestException("ask 須為 ≥1 的整數");
       }
     }
-    if (body.enabled === undefined && body.ask === undefined) {
-      throw new BadRequestException("請提供 enabled 或 ask");
+    if (body.followMarket !== undefined && typeof body.followMarket !== "boolean") {
+      throw new BadRequestException("followMarket 須為布林");
+    }
+    if (body.enabled === undefined && body.ask === undefined && body.followMarket === undefined) {
+      throw new BadRequestException("請提供 enabled、ask 或 followMarket");
     }
 
     const nextEnabled = body.enabled;
     const nextAsk = body.ask;
+    const nextFollowMarket = body.followMarket;
 
     return this.inventory.runExclusive(async () => {
       await this.inventory.settleAllUnlocked();
@@ -48,6 +52,7 @@ export class RetailShelfService {
         const createData = {
           playerId: LOCAL_PLAYER_ID,
           shelfEnabled: nextEnabled === true,
+          shelfFollowMarket: nextFollowMarket ?? (nextAsk === undefined ? true : false),
           shelfAskGold: nextAsk ?? null,
           shelfLastTickAt: now,
         };
@@ -57,11 +62,16 @@ export class RetailShelfService {
         }
         const data: {
           shelfEnabled?: boolean;
+          shelfFollowMarket?: boolean;
           shelfAskGold?: number | null;
           shelfLastTickAt?: Date;
         } = {};
         if (nextEnabled !== undefined) data.shelfEnabled = nextEnabled;
-        if (nextAsk !== undefined) data.shelfAskGold = nextAsk;
+        if (nextAsk !== undefined) {
+          data.shelfAskGold = nextAsk;
+          data.shelfFollowMarket = false;
+        }
+        if (nextFollowMarket !== undefined) data.shelfFollowMarket = nextFollowMarket;
         if (nextEnabled === true && !existing.shelfLastTickAt) {
           data.shelfLastTickAt = now;
         }
@@ -83,6 +93,6 @@ export class RetailShelfService {
   }
 
   resolveDefaultAsk(): number {
-    return resolveShelfAskGold(null, this.sim.marketPriceBook, this.sim.retailConfig);
+    return resolveShelfAskGold(null, true, this.sim.marketPriceBook, this.sim.retailConfig);
   }
 }

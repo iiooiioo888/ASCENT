@@ -166,6 +166,7 @@ model PlayerRetailState {
   player   Player @relation(fields: [playerId], references: [id])
   offers   Json   @default("[]")
   shelfEnabled           Boolean   @default(false) @map("shelf_enabled")
+  shelfFollowMarket      Boolean   @default(true) @map("shelf_follow_market")
   shelfAskGold           Int?      @map("shelf_ask_gold")
   shelfTodayRevenueGold  Int       @default(0) @map("shelf_today_revenue_gold")
   shelfRevenueGameDay    Int?      @map("shelf_revenue_game_day")
