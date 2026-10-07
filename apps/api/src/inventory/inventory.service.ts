@@ -31,7 +31,8 @@ export class InventoryService {
     private readonly sim: SimulationService,
   ) {}
 
-  private runExclusive<T>(fn: () => Promise<T>): Promise<T> {
+  /** 與結算／建築寫入共用，避免並發雙花。 */
+  runExclusive<T>(fn: () => Promise<T>): Promise<T> {
     return this.settlementMutex.runExclusive(fn);
   }
 
@@ -224,8 +225,10 @@ export class InventoryService {
       await this.settleBuildingUnlocked(buildingId);
       const building = await this.prisma.playerBuilding.findUnique({ where: { id: buildingId } });
       if (!building) throw new NotFoundException("建築不存在");
-      if (building.status !== "ready") throw new BadRequestException("尚無可收取產出");
-      const buffered = (building.bufferedOutputs as Record<string, number>) ?? {};
+      const buffered =
+        building.status === "ready"
+          ? ((building.bufferedOutputs as Record<string, number>) ?? {})
+          : {};
       const now = new Date();
       const clock = await this.requireState();
       const game = this.sim.displayGameTime(
@@ -255,14 +258,17 @@ export class InventoryService {
   }
 
   async settleAll() {
-    return this.runExclusive(async () => {
-      const buildings = await this.prisma.playerBuilding.findMany({
-        where: { playerId: LOCAL_PLAYER_ID },
-      });
-      for (const b of buildings) {
-        await this.settleBuildingUnlocked(b.id);
-      }
+    return this.runExclusive(() => this.settleAllUnlocked());
+  }
+
+  /** 僅在已持有 {@link runExclusive} 時呼叫（例如市集交易）。 */
+  async settleAllUnlocked() {
+    const buildings = await this.prisma.playerBuilding.findMany({
+      where: { playerId: LOCAL_PLAYER_ID },
     });
+    for (const b of buildings) {
+      await this.settleBuildingUnlocked(b.id);
+    }
   }
 
   async settleBuilding(id: string) {
