@@ -1,6 +1,5 @@
 import path from "node:path";
 import { config as loadEnv } from "dotenv";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 let envLoaded = false;
@@ -29,6 +28,8 @@ export function createPrismaAdapterFromUrl(url: string) {
     return new PrismaPg({ connectionString: trimmed });
   }
   if (lower.startsWith("file:") || lower.startsWith("sqlite:")) {
+    // Lazy require so Postgres-only deployments (e.g. Docker prod) never load better-sqlite3.
+    const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3") as typeof import("@prisma/adapter-better-sqlite3");
     return new PrismaBetterSqlite3({ url: trimmed });
   }
 

@@ -75,7 +75,7 @@ cp .env.production.example .env.production
 docker compose -f docker-compose.prod.yml --env-file .env.production up --build -d
 ```
 
-首次建置會編譯 `@ascent/shared`、`@ascent/api`、`@ascent/web`，並拉取 `postgres:16-alpine`。
+首次建置會編譯 `@ascent/shared`、`@ascent/api`、`@ascent/web`，並拉取 `postgres:16-alpine`。映像建置**不需要**在 VPS 安裝 Python／node-gyp（正式 API 映像使用 PostgreSQL，會略過 `better-sqlite3` 的原生編譯腳本）。
 
 ### 3. 驗證
 
