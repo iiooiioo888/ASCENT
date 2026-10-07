@@ -3,6 +3,8 @@ import {
   canHireWorkforce,
   effectiveWorkforceFree,
   hasWorkforceUi,
+  showGoMarketForHire,
+  showGoMarketForStart,
   startOpsPrecheck,
   sellTransportPreview,
   startGoldCost,
@@ -82,5 +84,29 @@ describe("canHireWorkforce", () => {
     expect(canHireWorkforce({ ...workforce, hired: 1 }, 8, 8)).toBe(true);
     expect(canHireWorkforce({ ...workforce, hired: 1 }, 7, 8)).toBe(false);
     expect(canHireWorkforce({ ...workforce, hired: 4, free: 0 }, 100, 8)).toBe(false);
+  });
+});
+
+describe("P-OD-4 go-market CTA gates", () => {
+  it("showGoMarketForHire only when gold blocks hire", () => {
+    const wf = { ...workforce, hired: 1, busy: 0, free: 1 };
+    expect(showGoMarketForHire(wf, 7, 8)).toBe(true);
+    expect(showGoMarketForHire(wf, 8, 8)).toBe(false);
+    expect(showGoMarketForHire({ ...wf, hired: 4, maxHired: 4 }, 0, 8)).toBe(false);
+  });
+
+  it("showGoMarketForStart when gold blocks but not for labor-only or inputs", () => {
+    const idleOk = { affordInputs: true, statusIdle: true, hasSelected: true };
+    const poor = startOpsPrecheck("bdef_mill", 2, { ...workforce, free: 1, busy: 0 }, opsCosts);
+    expect(showGoMarketForStart(poor, idleOk.affordInputs, idleOk.statusIdle, idleOk.hasSelected)).toBe(
+      true,
+    );
+
+    const busy = startOpsPrecheck("bdef_field", 10, workforce, opsCosts);
+    expect(showGoMarketForStart(busy, idleOk.affordInputs, idleOk.statusIdle, idleOk.hasSelected)).toBe(
+      false,
+    );
+
+    expect(showGoMarketForStart(poor, false, true, true)).toBe(false);
   });
 });

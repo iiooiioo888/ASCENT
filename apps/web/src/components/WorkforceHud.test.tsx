@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { DEPLETION_CTA_MARKET } from "../productCopy";
 import { WorkforceHud } from "./WorkforceHud";
 
 const opsCosts = {
@@ -47,6 +48,39 @@ describe("WorkforceHud", () => {
       />,
     );
     expect(screen.getByRole("button", { name: /僱工/ })).toBeDisabled();
+  });
+
+  it("shows go-market CTA when gold blocks hire and wires handler", async () => {
+    const user = userEvent.setup();
+    const onGoMarket = vi.fn();
+    render(
+      <WorkforceHud
+        workforce={{ hired: 1, busy: 0, free: 1, maxHired: 4 }}
+        opsCosts={opsCosts}
+        gold={7}
+        pending={false}
+        onHire={vi.fn()}
+        onGoMarket={onGoMarket}
+      />,
+    );
+    const cta = screen.getByRole("button", { name: DEPLETION_CTA_MARKET });
+    expect(cta).toBeInTheDocument();
+    await user.click(cta);
+    expect(onGoMarket).toHaveBeenCalledOnce();
+  });
+
+  it("hides go-market CTA when hire blocked only by cap", () => {
+    render(
+      <WorkforceHud
+        workforce={{ hired: 4, busy: 0, free: 4, maxHired: 4 }}
+        opsCosts={opsCosts}
+        gold={0}
+        pending={false}
+        onHire={vi.fn()}
+        onGoMarket={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: DEPLETION_CTA_MARKET })).not.toBeInTheDocument();
   });
 
   it("calls onHire when enabled", async () => {
