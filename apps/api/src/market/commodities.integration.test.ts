@@ -132,6 +132,8 @@ describe("大宗石油（整合）", () => {
     await setQty("item_bread", 1);
     await setQty(ITEM_GOLD_ID, 0);
     const res = await market.sell("item_bread", 1);
-    expect(res.goldDelta).toBe(8);
+    expect(res.transportFee).toBe(1);
+    expect(res.netGoldDelta).toBe(7);
+    expect(res.goldDelta).toBe(7);
   });
 });

@@ -36,6 +36,7 @@ async function main() {
 
   await prisma.playerBuilding.deleteMany();
   await prisma.playerInventory.deleteMany();
+  await prisma.playerEquityHolding.deleteMany();
   await prisma.player.deleteMany();
   await prisma.buildingLevel.deleteMany();
   await prisma.productionMethod.deleteMany();
@@ -48,7 +49,6 @@ async function main() {
   await prisma.serverState.deleteMany();
   await prisma.commodityMarketState.deleteMany();
   await prisma.equityTickerState.deleteMany();
-  await prisma.playerEquityHolding.deleteMany();
 
   await prisma.gameConfig.create({
     data: {

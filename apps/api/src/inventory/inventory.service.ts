@@ -4,6 +4,7 @@ import {
   LOCAL_PLAYER_ID,
   iosToRecord,
   mergeQty,
+  haulGoldForBuilding,
   opsCostsFromDepth,
   wageGoldForBuilding,
   type BuildingQueueJob,
@@ -180,6 +181,7 @@ export class InventoryService {
       const depth = this.sim.opsDepth;
       const laborCost = depth.workforce.laborCostPerStart;
       const wageGold = wageGoldForBuilding(building.buildingDefId, depth);
+      const haulGold = haulGoldForBuilding(building.buildingDefId, depth);
       const player = await tx.player.findUniqueOrThrow({ where: { id: LOCAL_PLAYER_ID } });
       const free = player.workforceHired - player.workforceBusy;
       if (free < laborCost) throw new BadRequestException("人手不足");
@@ -226,6 +228,9 @@ export class InventoryService {
       }
       if (wageGold > 0) {
         await deductPlayerItem(tx, ITEM_GOLD_ID, wageGold);
+      }
+      if (haulGold > 0) {
+        await deductPlayerItem(tx, ITEM_GOLD_ID, haulGold);
       }
       await tx.player.update({
         where: { id: LOCAL_PLAYER_ID },

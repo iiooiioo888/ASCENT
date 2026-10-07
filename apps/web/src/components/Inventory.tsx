@@ -25,6 +25,7 @@ export function Inventory({ inventory, highlightItemIds }: Props) {
           return (
             <div
               key={row.itemId}
+              aria-label={qty > 0 ? `${meta.name} ${formatQuantity(qty)}` : undefined}
               className={[
                 "item",
                 qty <= 0 ? "empty" : "",

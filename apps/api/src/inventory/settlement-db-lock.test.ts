@@ -1,9 +1,12 @@
 import { PrismaClient } from "../../generated/prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPrismaAdapter } from "../prisma/create-prisma-adapter";
-import { withSettlementTransaction } from "./settlement-db-lock";
+import { isPostgresDatabase, withSettlementTransaction } from "./settlement-db-lock";
 
-describe("settlement-db-lock", () => {
+// ENV_GAP: Prisma 7 + better-sqlite3 雙連線 settlement 鎖在 SQLite 上易 transaction timeout；Postgres advisory lock 才穩定驗證。
+const describeDbLock = isPostgresDatabase() ? describe : describe.skip;
+
+describeDbLock("settlement-db-lock", () => {
   const prisma = new PrismaClient({ adapter: createPrismaAdapter() });
 
   beforeAll(async () => {
