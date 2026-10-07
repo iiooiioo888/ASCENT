@@ -11,6 +11,7 @@ import {
 import { demoSiloBuilding } from "../screenshot-harness/fixtures";
 import { BuildingCard } from "./BuildingCard";
 import { DEMO_SERVER_REAL_TIME } from "../test/demoTime";
+import { DEPLETION_CTA_MARKET } from "../productCopy";
 
 const baseInventory = [
   {
@@ -80,6 +81,59 @@ describe("BuildingCard OD ops precheck", () => {
     );
     expect(screen.getByRole("button", { name: "開工" })).toBeDisabled();
     expect(document.querySelector(".ops-cost-preview .shortage")).not.toBeNull();
+  });
+
+  it("shows go-market CTA when gold blocks start and calls onGoMarket", async () => {
+    const user = userEvent.setup();
+    const onGoMarket = vi.fn();
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoFieldIdle}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        inventory={baseInventory}
+        goldBalance={0}
+        workforce={{ hired: 1, busy: 0, free: 1, maxHired: 4 }}
+        opsCosts={defaultOpsCosts}
+        onGoMarket={onGoMarket}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: DEPLETION_CTA_MARKET }));
+    expect(onGoMarket).toHaveBeenCalledOnce();
+  });
+
+  it("hides go-market CTA when start blocked only by labor", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoFieldIdle}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        inventory={baseInventory}
+        goldBalance={10}
+        workforce={{ hired: 1, busy: 1, free: 0, maxHired: 4 }}
+        opsCosts={defaultOpsCosts}
+        onGoMarket={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: DEPLETION_CTA_MARKET })).not.toBeInTheDocument();
+  });
+
+  it("hides go-market CTA when inputs are short even if gold is low", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoFieldIdle}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        goldBalance={0}
+        workforce={{ hired: 1, busy: 0, free: 1, maxHired: 4 }}
+        opsCosts={defaultOpsCosts}
+        onGoMarket={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: DEPLETION_CTA_MARKET })).not.toBeInTheDocument();
   });
 });
 

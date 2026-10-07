@@ -6,7 +6,8 @@ import { jobProgressPercent, jobRemainRealSec } from "../productionProgress";
 import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap } from "../inventory";
 import type { BuildingActionErrorView } from "../building-action-error";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
-import { startOpsPrecheck } from "../ops-depth";
+import { showGoMarketForStart, startOpsPrecheck } from "../ops-depth";
+import { GoMarketCta } from "./GoMarketCta";
 import { OPS_DEPTH_COPY } from "../ops-depth-copy";
 import type { Building, InvRow, Method, OpsCostsSnapshot, WorkforceSnapshot } from "../types";
 import {
@@ -37,6 +38,7 @@ type Props = {
   goldBalance?: number;
   workforce?: WorkforceSnapshot;
   opsCosts?: OpsCostsSnapshot;
+  onGoMarket?: () => void;
 };
 
 export function BuildingCard({
@@ -59,6 +61,7 @@ export function BuildingCard({
   goldBalance = 0,
   workforce,
   opsCosts,
+  onGoMarket,
 }: Props) {
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
@@ -86,6 +89,9 @@ export function BuildingCard({
       : null;
   const opsOk = ops ? ops.laborOk && ops.goldOk : true;
   const showOpsPreview = b.status === "idle" && !!selected && !!opsCosts;
+  const showMarketCta =
+    onGoMarket &&
+    showGoMarketForStart(ops, affordSelected, b.status === "idle", !!selected);
 
   const runningMethod = b.methodId ? options.find((m) => m.id === b.methodId) : undefined;
   const stopPaidOps = runningMethod
@@ -183,6 +189,7 @@ export function BuildingCard({
                           {OPS_DEPTH_COPY.labor} {ops.labor}
                         </span>
                       ) : null}
+                      {showMarketCta ? <GoMarketCta onClick={onGoMarket} /> : null}
                     </div>
                   ) : null}
                 </>

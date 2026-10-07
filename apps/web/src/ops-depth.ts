@@ -95,6 +95,27 @@ export function startOpsPrecheck(
   return { labor, wage, haul, goldNeed, laborOk, goldOk };
 }
 
+/** P-OD-4: show「前往商行」when hire is blocked by gold (not cap-only). */
+export function showGoMarketForHire(
+  workforce: WorkforceSnapshot,
+  gold: number,
+  hireCostGold: number,
+): boolean {
+  return workforce.hired < workforce.maxHired && gold < hireCostGold;
+}
+
+/** P-OD-4: show「前往商行」when start would be blocked by gold (inputs already OK). */
+export function showGoMarketForStart(
+  precheck: StartOpsPrecheck | null,
+  affordInputs: boolean,
+  statusIdle: boolean,
+  hasSelected: boolean,
+): boolean {
+  if (!statusIdle || !hasSelected || !affordInputs || !precheck) return false;
+  if (precheck.goldNeed <= 0) return false;
+  return !precheck.goldOk;
+}
+
 export function workforceHudLabel(workforce: WorkforceSnapshot): string {
   const free = typeof workforce.free === "number" ? workforce.free : effectiveWorkforceFree(workforce);
   return OPS_DEPTH_COPY.workforceHud(free, workforce.hired);

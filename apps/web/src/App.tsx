@@ -530,6 +530,7 @@ export default function App() {
               setHireError(null);
               hireWorkforce();
             },
+            onGoMarket: () => goToMarket(),
           })}
           <span className="chip">{OFFLINE_PROGRESS_HUD_CHIP}</span>
         </div>
@@ -618,6 +619,7 @@ export default function App() {
               goldBalance={hudGold}
               workforce={state.workforce}
               opsCosts={state.opsCosts}
+              onGoMarket={() => goToMarket()}
             />
           );
         })}
