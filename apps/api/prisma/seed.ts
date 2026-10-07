@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import {
-  DEFAULT_MARKET_PRICES,
   LOCAL_PLAYER_ID,
   MAX_OFFLINE_GAME_SEC,
   MAX_OFFLINE_REAL_SEC,
@@ -8,10 +7,8 @@ import {
   TICK_INTERVAL_REAL_MS,
   GAME_DAY_GAME_SEC,
   buildingDefs,
-  seedPlacedBuildingDefIds,
-  enabledCommodityListings,
   generateMethods,
-  initialPriceHistory,
+  itemProperties,
   itemTypes,
   items,
   rules,
@@ -38,10 +35,10 @@ async function main() {
   await prisma.productionRule.deleteMany();
   await prisma.item.deleteMany();
   await prisma.itemType.deleteMany();
+  await prisma.itemProperty.deleteMany();
   await prisma.buildingDef.deleteMany();
   await prisma.gameConfig.deleteMany();
   await prisma.serverState.deleteMany();
-  await prisma.commodityMarketState.deleteMany();
 
   await prisma.gameConfig.create({
     data: {
@@ -51,7 +48,6 @@ async function main() {
       maxOfflineRealSec: MAX_OFFLINE_REAL_SEC,
       maxOfflineGameSec: MAX_OFFLINE_GAME_SEC,
       tickIntervalRealMs: TICK_INTERVAL_REAL_MS,
-      marketPrices: DEFAULT_MARKET_PRICES,
     },
   });
 
@@ -63,6 +59,27 @@ async function main() {
       lastUpdate: now,
     },
   });
+
+  for (const p of itemProperties) {
+    await prisma.itemProperty.upsert({
+      where: { id: p.id },
+      create: {
+        id: p.id,
+        code: p.code,
+        name: p.name,
+        valueKind: p.value_kind,
+        isActive: p.is_active,
+        releasedInVersion: p.released_in_version,
+      },
+      update: {
+        code: p.code,
+        name: p.name,
+        valueKind: p.value_kind,
+        isActive: p.is_active,
+        releasedInVersion: p.released_in_version,
+      },
+    });
+  }
 
   for (const t of itemTypes) {
     await prisma.itemType.create({
@@ -167,18 +184,8 @@ async function main() {
     });
   }
 
-  const seedNowMs = now.getTime();
-  for (const listing of enabledCommodityListings()) {
-    await prisma.commodityMarketState.create({
-      data: {
-        commodityId: listing.id,
-        netPressureVolume: 0,
-        priceHistory: initialPriceHistory(listing.basePrice, seedNowMs),
-      },
-    });
-  }
-
-  for (const defId of seedPlacedBuildingDefIds) {
+  const toPlace = ["bdef_field", "bdef_mill", "bdef_oven"];
+  for (const defId of toPlace) {
     await prisma.playerBuilding.create({
       data: {
         id: `pb_${LOCAL_PLAYER_ID}_${defId}`,
@@ -197,7 +204,9 @@ async function main() {
     });
   }
 
-  console.log(`種子完成：${items.length} 物品、${rules.length} 規則、${methods.length} 方式`);
+  console.log(
+    `種子完成：${items.length} 物品、${itemProperties.length} 屬性定義、${rules.length} 規則、${methods.length} 方式`,
+  );
 }
 
 main()

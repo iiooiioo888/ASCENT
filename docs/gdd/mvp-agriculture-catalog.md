@@ -38,7 +38,7 @@ MVP 最少兩個 `item_types`，足夠掛 T／P，不必開完整屬性包。
 | `it_crop` | `crop` | 作物 | T 物質 |
 | `it_produce` | `produce` | 農產加工 | P 產物 |
 
-屬性可先空。稀有度／品質欄可省略（mvp.md 非目標）。
+工程種子已寫入 **`item_properties` 定義**（`moisture` 含水、`purity` 純度，對齊 GDD 範例）；`items.properties` 與 `item_type_properties` 仍留空，公式／數值平衡後續再填。稀有度／品質欄可省略（mvp.md 非目標）。
 
 ---
 

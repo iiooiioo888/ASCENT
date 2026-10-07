@@ -2,190 +2,12 @@
 
 | 項 | 值 |
 | --- | --- |
-| 版本 | 工程 MVP 0.1.0（2026-10-07） |
-| 狀態 | **農業切片可玩**：生產鏈、資源循環、莊外商行 NPC 買賣；NestJS + Prisma + React；無登入、無 Redis、無 WebSocket |
+| 版本 | 工程 MVP 0.1.0（2026-10-06） |
+| 狀態 | **農業切片可玩骨架已開工**：NestJS + Prisma + React；無登入、無 Redis、無 WebSocket |
 
-## 現況（給 GitHub 訪客）
+《**崗起**》（Ascent）是無限發展的模擬經營。中文義譯「崛起」指**同一產品**，禁止拆成兩款遊戲。產品核心是**生產鏈深度**；引擎核心是**規則驅動生產**。無勝利條件。玩家做：**建造 + 管理 + 競爭 + 探索**。引擎只認識規則與類型，永不修改規則；生產方式由規則生成。時間採**懶結算**，`timeScale=60`（**1 真實秒 = 60 遊戲秒 = 1 遊戲分鐘**；真實 1 分鐘 = 遊戲 1 小時；真實 1 小時 = 遊戲 60 小時；真實 1 日 = 遊戲 60 日）。
 
-本倉庫已可本機跑通：**種 → 磨 → 麵 → 烤** 主線、**水井汲水**與**田留種**解卡、**莊外商行**（`bdef_trading_post`）以 NPC 固定價買賣補給與換金；開局金幣 `STARTING_GOLD = 10`。核心仍為**懶結算**、`timeScale=60`、離線上限 8 現實小時、伺服器權威。無勝利條件、無玩家對玩家市場。
-
-《**崗起**》（Ascent）與 Ascent 是**同一產品**（中文義譯「崛起」）。無限發展模擬經營，產品核心是**生產鏈深度**；引擎核心是**規則驅動生產**（方式由規則生成，引擎不改規則）。設計契約見 [docs/README.md](docs/README.md)。
-
----
-
-## 1. 項目簡介與玩法閉環
-
-### 你在做什麼
-
-在農業切片裡，用數座建築與庫存，把原料一路加工成麵包，並用副產與商行維持資源與金幣循環。沒有通關目標，只有鏈條變深、產線變順。
-
-### 主線生產鏈（種 → 磨 → 麵 → 烤）
-
-| 步驟 | 建築 | 方式（示例 id） | 輸入 → 輸出 |
-| --- | --- | --- | --- |
-| 種 | 田 `bdef_field` | `method_grow_wheat_default` | 種子 + 水 → 小麥 + 秸稈 |
-| 磨 | 磨坊 `bdef_mill` | `method_mill_flour_default` | 小麥 → 麵粉 |
-| 麵 | 爐 `bdef_oven` | `method_make_dough_default` | 麵粉 + 水 → 麵團 |
-| 烤 | 爐 `bdef_oven` | `method_bake_bread_default` | 麵團 → 麵包 |
-
-磨坊亦可 `method_mix_feed_default`（秸稈 + 小麥 → 飼料）。完整物品 id 見 [docs/gdd/mvp-agriculture-catalog.md](docs/gdd/mvp-agriculture-catalog.md)。
-
-### 資源循環（水井 + 留種）
-
-開局預放田、磨坊、爐、**水井**（`seedPlacedBuildingDefIds`；**已拍板 D2**）。
-
-| 機制 | 建築 | 方式 | 說明 |
-| --- | --- | --- | --- |
-| 汲水 | 水井 `bdef_well` | `method_draw_water_default` | 無輸入產水；數值為佔位（`PLACEHOLDER_*`） |
-| 留種 | 田 | `method_save_seed_default` | 小麥 → 種子，避免種子斷鏈 |
-
-### 莊外商行（NPC 固定價）
-
-- 獨立建築 **`bdef_trading_post`**（莊外商行），開局預放 1 座；**不能**對商行 `start` 生產，買賣只走 HTTP 市集 API。
-- 貨幣為庫存 **`item_gold`**；開局 **`STARTING_GOLD = 10`**。
-- 賣出農產換金、買入種子／水等補給；價目為伺服器固定表（非玩家掛單市場）。
-
-### 操作迴路（玩家）
-
-1. 進頁 `GET /api/v1/state` → 懶結算後看庫存與建築。
-2. 對建築 **開工** → 等待遊戲時間 → **收取** 產出。
-3. 資源不足時：水井汲水、田留種，或到商行買入。
-4. **停止**生產：已扣輸入**不退還**（**已拍板 D6**）；已入帳產出保留，需收取或停止前結算。
-
-時間：**1 真實秒 = 60 遊戲秒**；離線再開最多補 **8 現實小時**。
-
----
-
-## 2. 安裝與啟動
-
-需 [Node.js](https://nodejs.org/)（建議 LTS）與 [pnpm](https://pnpm.io/)（根目錄 `packageManager`：`pnpm@9.15.0`）。
-
-**一次裝好依賴並初始化資料庫：**
-
-```bash
-pnpm setup
-```
-
-等同 `pnpm install` 後執行 `pnpm setup:db`（複製 `apps/api/.env`、建 shared、Prisma generate、`db push`、種子）。
-
-**日常開發：**
-
-```bash
-pnpm dev
-```
-
-或分開：`pnpm dev:api`、`pnpm dev:web`。
-
-| 服務 | URL |
-| --- | --- |
-| 前端 | http://localhost:5173 |
-| API（範例） | http://localhost:3000/api/v1/state |
-
-工程 MVP 預設 **SQLite**（`apps/api/prisma/dev.db`），無 Docker 即可玩。若要 PostgreSQL：見下方「目錄與部署備註」。
-
----
-
-## 3. 架構與技術棧
-
-Monorepo 佈局：
-
-```
-apps/web          React + TypeScript + Vite（HTTP 拉權威狀態）
-apps/api          NestJS 模組化單體 + Prisma
-packages/shared   共用型別、農業目錄、結算純函數（不依賴 Prisma／Redis）
-```
-
-| 項 | MVP 實際 |
-| --- | --- |
-| 後端 | NestJS：`catalog` / `rules` / `simulation` / `inventory`（+ 市集模組隨 MK-BE-1 合入） |
-| 資料 | Prisma；權威狀態在 DB |
-| 前端 | React + Vite |
-| 時間 | `timeScale=60`；**懶結算**（GET 狀態、寫入前結算、可選定時器粗 tick） |
-| 認證 | **無登入** |
-| 快取／即時 | **不用** Redis、BullMQ、WebSocket |
-
-懶結算要點：保存 `lastSettledAt` 等游標；遊戲時間由 `startRealTime`／`startGameTime` 推算，不存「現在」。細則：[時間與結算](docs/architecture/time-and-settlement.md)。
-
-目標棧與分期見 [ADR 0001](docs/adr/0001-tech-stack.md)。
-
-### API 與遊戲迴路（摘要）
-
-權威契約以 [docs/api/v1.md](docs/api/v1.md) 為準；下列與現行／合入中的 MK-BE-1 一致。
-
-| 類別 | 方法 | 路徑 | 用途 |
-| --- | --- | --- | --- |
-| 時間 | GET | `/api/v1/time` | 顯示用遊戲時鐘（不結算） |
-| 狀態 | GET | `/api/v1/state` | 庫存 + 建築 + 進行中（先結算） |
-| 建築 | GET/POST | `/api/v1/buildings`、`/api/v1/buildings/:id/*` | 列表、放置、`start`／`stop`／`collect` |
-| 目錄 | GET | `/api/v1/items`、`/production-methods` 等 | 只讀目錄 |
-| 市集 | GET | `/api/v1/market` | 金幣、價目、持有量 |
-| 市集 | POST | `/api/v1/market/sell`、`/api/v1/market/buy` | NPC 固定價賣／買 |
-
-寫入（開工、停止、收取、買賣）前必先懶結算。`GET /time` 不推進結算游標。
-
----
-
-## 4. 截圖
-
-以下為 stack tip 實機擷圖（素材來源見 [docs/readme-screenshots/MANIFEST.md](docs/readme-screenshots/MANIFEST.md)）。
-
-### 主介面
-
-HUD、背包、產業鏈與建築卡：
-
-![主介面](docs/readme-screenshots/01-main-ui-hud-buildings.png)
-
-### 水井
-
-水井建築卡與汲水方式：
-
-![水井](docs/readme-screenshots/02-well-building-card.png)
-
-### 莊外商行與金幣
-
-HUD 金幣 10、商行「交易」展開買賣面板：
-
-![莊外商行與 HUD 金幣](docs/readme-screenshots/04-trading-post-market-panel-hud-gold.png)
-
-### 更多（耗盡引導）
-
-資源耗盡時 CTA（水井／留種／前往商行）：
-
-![耗盡 CTA](docs/readme-screenshots/03-depletion-ctas-well-seed-market.png)
-
-![前往商行高亮](docs/readme-screenshots/05-depletion-go-market-scroll-highlight.png)
-
----
-
-## 5. 已拍板決策、待定與路線圖
-
-### 已拍板（工程 MVP 農業）
-
-| 決策 | 內容 |
-| --- | --- |
-| D2 預放水井 | 種子世界預放田、磨坊、爐、水井（及商行建築實體） |
-| D6 停止不退料 | `POST .../stop` 不退還已扣輸入 |
-| 莊外商行 | `bdef_trading_post` 獨立建築；交易走 `/api/v1/market`，非生產 `start` |
-| 開局金幣 | `STARTING_GOLD = 10`（`item_gold`） |
-| 核心不變 | 無登入、懶結算、`timeScale=60`、離線 8h cap、無 PvP 市場／排行榜 |
-
-### 待定（產品）
-
-| 議題 | 說明 |
-| --- | --- |
-| D3／M-D15 | 建築上限 **5 座** vs **隱藏糧倉**（倉不佔上限） |
-| 品牌細節 | 「崗起／Ascent／崛起」關係已確定為同一產品；對外文案與 logo 仍可調 |
-| 市集平衡 | 價目表、可交易清單數值仍可能調整 |
-
-### 路線圖（簡述）
-
-| 方向 | 說明 |
-| --- | --- |
-| 近期 | 合入市集前後端與 UX（商行面板、耗盡 CTA、HUD 金幣） |
-| 工程 MVP 收尾 | 農業數值可玩化、驗證器穩定、文件與 API 同步 |
-| 之後 | 新產業切片（礦、化工等）、目標首發 50–100 物品；玩家互動（排行、JWT）仍按 [roadmap](docs/roadmap.md) 分期 |
-
-完整分期：[docs/roadmap.md](docs/roadmap.md)、驗收：[docs/mvp.md](docs/mvp.md)。
+工程 MVP 程式在 `apps/` 與 `packages/shared`。設計契約仍以 [docs/README.md](docs/README.md) 為準。
 
 ---
 
@@ -194,45 +16,136 @@ HUD 金幣 10、商行「交易」展開買賣面板：
 | 原則 | 含義 |
 | --- | --- |
 | 規則驅動生產 | 引擎只認識規則與類型，**永不修改**；`production_methods` 由規則生成 |
-| 資料驅動 | 物品、規則、方式帶 `released_in_version`、`is_active` |
-| 不跳級／DAG | 禁止循環與跳級；繼承深度上限 10 |
-| 懶結算 | 讀取與寫入走同一 `settle`；保存 `lastSettledAt` |
-| 伺服器權威 | 純函數可重播；客戶端只顯示 |
+| 資料驅動 | 物品、規則、方式、層級、解鎖都是資料；帶 `released_in_version`、`is_active` |
+| 不跳級／DAG | 層級與繼承禁止循環、禁止一次跳多級；繼承深度上限 10 |
+| 懶結算 | 讀取／操作、BullMQ 粗粒度 tick、上線／離線補算都走 `settle`；保存 `lastSettledAt` |
+| `timeScale=60` | 遊戲時間差 = 真實差 × 60；時間算出來、不存「現在」 |
+| 伺服器權威 | 純函數可重播、冪等；離線上限 8 現實小時；客戶端只顯示 |
+
+細則：[GDD v2.0](docs/gdd/production-system-v2.md)、[時間與結算](docs/architecture/time-and-settlement.md)。
 
 ---
 
-## 已定案技術棧（摘要）
+## 定位
 
-| 項 | MVP／單人期 |
-| --- | --- |
-| 語言 | TypeScript 全棧 |
-| 前端 | React + Vite |
-| 後端 | NestJS 模組化單體 |
-| 主庫 | PostgreSQL（目標）；本機預設 SQLite |
-| ORM | Prisma |
-| 時間 | 1:60；懶結算；離線 8 現實小時 |
+| 欄位 | 決策 | 狀態 |
+| --- | --- | --- |
+| 名稱 | 崗起 / Ascent（義譯：崛起，同一產品） | **確定** |
+| 類型 | 無限發展的模擬經營 | **確定** |
+| 核心 | 生產鏈深度 | **確定** |
+| 勝利條件 | 無 | **確定** |
+| 平台 | 網頁 + 手機 | **確定** |
+| 商業 | 免費 + 內購 | **確定** |
+| 團隊 | 1 人 | **確定** |
+| 在線 | ≤ 1000 人 | **確定** |
+| 工程 MVP | 農業切片 + 離線結算 + 存檔；無登入、無市場、無排行榜 | **確定** |
+| 離線上限 | 8 現實小時（`maxOfflineRealSec=28800` → 1,728,000 遊戲秒 = 20 遊戲日） | **確定** |
 
-否決：Fastify 當核心、Phaser 進核心、Redis 當主庫、每 tick 全量模擬、`timeScale≠60`。
+產品法源：[docs/system-definition.md](docs/system-definition.md)。[舊檔名](docs/system-definition-v1.md) 只轉址，非法源。
+
+---
+
+## 已定案技術棧
+
+目標架構**已定案**（見 [ADR 0001](docs/adr/0001-tech-stack.md)）。MVP／單人期用同一套 NestJS 單體，**先不啟用** Redis、BullMQ、Socket.IO。
+
+| 項 | 目標（確定） | MVP／單人期（分期） |
+| --- | --- | --- |
+| 語言 | TypeScript 全棧 | 同左 |
+| 前端 | React + TypeScript + Vite | HTTP 拉狀態 |
+| 地圖 | Phaser 3 **不**進入核心棧 | 同左 |
+| 後端 | Node.js + NestJS 模組化單體 | 同左；不開微服務 |
+| 主庫 | PostgreSQL + JSONB + GIN | 單一實例 |
+| 資料存取 | Prisma | 同左 |
+| 快取／佇列 | Redis + BullMQ（Redis 不是主庫） | **不用 Redis**；可選 NestJS 定時器 |
+| 即時 | NestJS Gateway + Socket.IO | **不用 WebSocket** |
+| 時間 | 1:60；懶結算；入帳 8 現實小時 | 同左 |
+| 認證 | 其後簡單 JWT、無第三方 | **無登入** |
+| 部署 | 本機 Docker Compose；雲端不鎖定 | 初期可單一服務（Railway／Render 僅建議） |
+
+否決：Fastify 當核心、Phaser 進核心、Redis 當主庫、每 tick 全量模擬、`1 真實秒 = 61 遊戲秒`。
+
+時間寫死：**1 真實秒 = 60 遊戲秒 = 1 遊戲分鐘**；遊戲 1 天 = 24 真實分鐘。
+
+```
+gameTime = startGameTime + (now - startRealTime) / 1000 × timeScale
+```
+
+存 `startRealTime`／`startGameTime`／`finishAt`／`lastUpdate`，**不存**當前遊戲時間。`GET /api/v1/time` 僅顯示。GDD 原稿：`timeScale=60`、`maxOfflineGameSec=86400`（日長，不入帳）、`tickIntervalRealMs=5000`。
+
+---
+
+## 開發原則
+
+- 現成 > 自寫、單體 > 微服務、一庫 > 拆分、手動 > 自動化、簡單 > 複雜。
+- 優先級：**生產鏈深度 > 數值平衡 > 視覺 > 玩家互動 > 擴展性 > 上線速度**。
+- 開發順序：生產鏈核心 → 數值平衡 → 離線結算 → 存檔 → 視覺 → 玩家互動。
+- 引擎只認識規則與類型，永不修改；資料驅動；不跳級；DAG 不循環。
+- 1 真實秒 = 60 遊戲秒；懶結算；伺服器權威；無加速。
+- 離線上限以系統定義為準（8 現實小時）。GDD 原稿 `maxOfflineGameSec=86400` 只當日長，不得入帳。
 
 ---
 
 ## 文件索引
 
-| 路徑 | 內容 |
-| --- | --- |
-| [docs/README.md](docs/README.md) | 閱讀順序與衝突表 |
-| [docs/system-definition.md](docs/system-definition.md) | 產品法源 |
-| [docs/mvp.md](docs/mvp.md) | 工程 MVP 範圍 |
-| [docs/api/v1.md](docs/api/v1.md) | HTTP API v1 |
-| [docs/gdd/mvp-agriculture-catalog.md](docs/gdd/mvp-agriculture-catalog.md) | 農業切片 ID |
-| [docs/architecture/overview.md](docs/architecture/overview.md) | 模組與 monorepo |
+完整閱讀順序與衝突表：[docs/README.md](docs/README.md)。
+
+| 路徑 | 內容 | 狀態 |
+| --- | --- | --- |
+| [docs/README.md](docs/README.md) | 文件索引、閱讀順序、衝突時聽誰的 | 索引 |
+| [docs/system-definition.md](docs/system-definition.md) | 系統定義 v1.0（產品法源） | **確定** |
+| [docs/system-definition-v1.md](docs/system-definition-v1.md) | 舊檔名轉址 | 轉址 |
+| [docs/adr/README.md](docs/adr/README.md) | ADR 編號約定（0001 技術棧／0002 產品／0003 規則閘門） | 索引 |
+| [docs/adr/0001-tech-stack.md](docs/adr/0001-tech-stack.md) | 技術棧定案與分期落地 | **確定**／**分期** |
+| [docs/adr/0002-product-constraints.md](docs/adr/0002-product-constraints.md) | 單人、1000 人、免費+內購 | **確定** |
+| [docs/adr/0003-production-rules.md](docs/adr/0003-production-rules.md) | 規則／驗證作為架構約束（編號 0002 已用於產品約束，不另建 `0002-production-rules.md`） | **確定** |
+| [docs/gdd/production-system-v2.md](docs/gdd/production-system-v2.md) | 《崗起》遊戲設計文件 v2.0 正式全文（節 1–17） | **確定** |
+| [docs/gdd/production-system.md](docs/gdd/production-system.md) | GDD 節次入口與核心規則速覽 | 入口 |
+| [docs/gdd/launch-scope.md](docs/gdd/launch-scope.md) | 目標首發範圍、統計、改版節奏 | **確定** |
+| [docs/production-system.md](docs/production-system.md) | 規則濃縮契約（不是第二套 GDD） | **確定** |
+| [docs/architecture.md](docs/architecture.md) | 模組邊界、懶結算、權威、冪等、離線上限 | **確定** |
+| [docs/architecture/overview.md](docs/architecture/overview.md) | 技術架構、NestJS 模組、monorepo 建議 | **確定** |
+| [docs/architecture/time-and-settlement.md](docs/architecture/time-and-settlement.md) | 1:60、懶結算、冪等、離線上限 | **確定** |
+| [docs/api/v1.md](docs/api/v1.md) | API v1 端點表 | **確定** |
+| [docs/game-design.md](docs/game-design.md) | 設計入口（不是第二套 GDD） | 入口 |
+| [docs/mvp.md](docs/mvp.md) | 工程 MVP 範圍與驗收 | **確定** |
+| [docs/gdd/mvp-agriculture-catalog.md](docs/gdd/mvp-agriculture-catalog.md) | 農業切片 ID、規則槽位、驗證對照 | **確定** |
+| [docs/roadmap.md](docs/roadmap.md) | 開發順序與分期 | **分期** |
+
+GDD 分冊：[0001](docs/gdd/0001-overview.md) · [0002](docs/gdd/0002-time-and-settlement.md) · [0003](docs/gdd/0003-tiers-and-types.md) · [0004](docs/gdd/0004-rules-and-methods.md) · [0005](docs/gdd/0005-schema-and-api.md) · [0006](docs/gdd/0006-engine.md) · [0007](docs/gdd/0007-scope-expansion.md)。
+
+架構：[overview](docs/architecture/overview.md) · [時間與結算](docs/architecture/time-and-settlement.md) · [模組邊界](docs/architecture/0001-module-boundaries.md) · [API v1](docs/api/v1.md)。
 
 ---
 
-## 目錄與部署備註
+## 目錄
 
-`packages/shared` 不得依賴 Prisma 或 Redis。權威寫入只在 `apps/api`。
+```
+apps/web          React + TypeScript + Vite
+apps/api          Node.js + NestJS（catalog / rules / simulation / inventory / PrismaModule）
+packages/shared   共用型別與結算純函數
+```
 
-`setup:db` 會從根目錄 `.env.example` 複製 `apps/api/.env`（若不存在）。Prisma 讀 **`apps/api/.env`**。
+## 本機啟動
 
-若要 PostgreSQL：`pnpm db:up`，將 `schema.prisma` 改 `postgresql`，`DATABASE_URL` 指向 Compose，再 `prisma migrate deploy` 與 `pnpm db:seed`（勿用 `db push` 覆蓋正式 migration）。
+```
+pnpm install
+pnpm setup:db
+pnpm dev
+```
+
+或分開啟動 API／前端：`pnpm dev:api`、`pnpm dev:web`。
+
+`setup:db` 會從根目錄 `.env.example` 複製出 `apps/api/.env`（若尚不存在）、產生 Prisma Client、`db push` 並種子。Prisma 讀取的是 **`apps/api/.env`**，不是根目錄 `.env`。CLI 設定（schema 路徑、migration 目錄、seed 指令）在 **`apps/api/prisma.config.ts`**，不再使用 `package.json#prisma`（Prisma 7 將移除此欄位）。目前鎖定 **Prisma 6.19.x**；升級至 Prisma 7 需另做 driver adapter 遷移。
+
+前端：http://localhost:5173 。API：http://localhost:3000/api/v1/state 。
+
+目標主庫仍是 PostgreSQL（ADR 0001）。`prisma/migrations/` 內 SQL 對應 **PostgreSQL**（`JSONB` 等）。工程 MVP 預設在 `apps/api/prisma/schema.prisma` 使用 **SQLite**（`DATABASE_URL="file:./dev.db"`，檔案落在 **`apps/api/prisma/dev.db`**），本機無 Docker 即可 `pnpm setup:db` 可玩。
+
+若要改用 Compose 裡的 Postgres：先 `pnpm db:up`，把 `schema.prisma` 的 `provider` 改為 `postgresql`，`apps/api/.env` 的 `DATABASE_URL` 改為 `postgresql://ascent:ascent@localhost:5432/ascent`，再執行 `pnpm --filter @ascent/api exec -- prisma migrate deploy` 與 `pnpm db:seed`（不要用 `db push` 覆蓋正式 migration）。
+
+`packages/shared` 不得依賴 Prisma、Socket.IO 或 Redis 客戶端。權威寫入只留在 `apps/api`。否決：Fastify 當核心、Phaser 進核心、Redis 當主庫、每 tick 全量模擬。
+
+---
+
+工程 MVP 已能：農業目錄、規則生成方式、懶結算、離線 8 現實小時 cap、自動存檔、數據畫面。市場／登入／排行榜／AI 訂單仍不在本切片。

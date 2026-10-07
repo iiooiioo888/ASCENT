@@ -8,9 +8,8 @@
     "start:dev": "nest start --watch",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
-    "prisma:seed": "tsx prisma/seed.ts",
-    "test": "vitest run && prisma generate && jest --config test/jest-e2e.json --runInBand",
-    "test:e2e": "prisma generate && jest --config test/jest-e2e.json --runInBand"
+    "prisma:seed": "prisma db seed",
+    "test": "vitest run"
   },
   "dependencies": {
     "@ascent/shared": "workspace:*",
@@ -18,27 +17,19 @@
     "@nestjs/core": "^11.0.11",
     "@nestjs/platform-express": "^11.0.11",
     "@nestjs/schedule": "^12.0.2",
-    "@prisma/client": "^6.5.0",
+    "@prisma/client": "^6.19.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.5",
     "@nestjs/schematics": "^11.0.2",
-    "@nestjs/testing": "^11.0.11",
     "@types/express": "^5.0.1",
-    "@types/jest": "^29.5.14",
     "@types/node": "^22.13.10",
-    "@types/supertest": "^6.0.2",
-    "jest": "^29.7.0",
-    "prisma": "^6.5.0",
-    "supertest": "^7.0.0",
-    "ts-jest": "^29.2.6",
+    "dotenv": "^16.6.1",
+    "prisma": "^6.19.3",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
-    "vitest": "^3.0.8"
+    "vitest": "^3.0.9"
   }
 }
