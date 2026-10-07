@@ -165,6 +165,11 @@ model PlayerRetailState {
   playerId String @id @map("player_id")
   player   Player @relation(fields: [playerId], references: [id])
   offers   Json   @default("[]")
+  shelfEnabled           Boolean   @default(false) @map("shelf_enabled")
+  shelfAskGold           Int?      @map("shelf_ask_gold")
+  shelfTodayRevenueGold  Int       @default(0) @map("shelf_today_revenue_gold")
+  shelfRevenueGameDay    Int?      @map("shelf_revenue_game_day")
+  shelfLastTickAt        DateTime? @map("shelf_last_tick_at")
 
   @@map("player_retail_state")
 }

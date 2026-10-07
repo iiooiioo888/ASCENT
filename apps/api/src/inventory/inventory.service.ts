@@ -36,6 +36,7 @@ import {
   throwIfStateConflict,
 } from "./building-state-update";
 import { SettlementMutex } from "./settlement-mutex";
+import { loadRetailShelfPublicState, settleRetailShelfUnlocked } from "../market/retail-shelf.settlement";
 import {
   type SettlementTransactionClient,
   withSettlementTransaction,
@@ -89,6 +90,7 @@ export class InventoryService {
 
   /** 僅在已持有 {@link runExclusive} 或內部結算路徑時呼叫。 */
   async settleAllUnlocked(): Promise<void> {
+    const now = new Date();
     await withSettlementTransaction(this.prisma, async (tx) => {
       const buildings = await tx.playerBuilding.findMany({
         where: { playerId: LOCAL_PLAYER_ID },
@@ -96,6 +98,7 @@ export class InventoryService {
       for (const b of buildings) {
         await this.settleBuildingUnlocked(tx, b.id);
       }
+      await settleRetailShelfUnlocked(tx, this.sim, now);
     });
   }
 
@@ -140,6 +143,9 @@ export class InventoryService {
     const buildingsOut = buildings.map((b) => withBuildingEnvironmentFields(b, currentGame));
     const fieldCount = countPlayerFields(buildings);
     const buildingCount = countBuildingsOccupyingSlots(buildings);
+    const shelf = await this.prisma.$transaction((tx) =>
+      loadRetailShelfPublicState(tx, this.sim, Date.now()),
+    );
     return {
       time,
       inventory,
@@ -153,6 +159,11 @@ export class InventoryService {
       fieldCap: FIELD_CAP,
       buildingCount,
       buildingSlotCap: PLAYER_BUILDING_SLOT_CAP,
+      retailShelf: {
+        enabled: shelf.enabled,
+        ask: shelf.ask,
+        todayRevenueGold: shelf.todayRevenueGold,
+      },
     };
   }
 
@@ -566,6 +577,7 @@ export class InventoryService {
   }
 
   async settleAll() {
+    const now = new Date();
     return this.withSettlementTx(async (tx) => {
       const buildings = await tx.playerBuilding.findMany({
         where: { playerId: LOCAL_PLAYER_ID },
@@ -573,6 +585,7 @@ export class InventoryService {
       for (const b of buildings) {
         await this.settleBuildingUnlocked(tx, b.id);
       }
+      await settleRetailShelfUnlocked(tx, this.sim, now);
     });
   }
 
