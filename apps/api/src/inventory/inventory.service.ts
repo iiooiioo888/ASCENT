@@ -2,7 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import {
   FIELD_BUILDING_DEF_ID,
   FIELD_CAP,
-  ITEM_GOLD_ID,
+  ITEM_SETTLEMENT_CURRENCY_ID,
+  SETTLEMENT_INSUFFICIENT_MESSAGE,
   LAND_ERROR_COPY,
   LOCAL_PLAYER_ID,
   PLAYER_BUILDING_SLOT_CAP,
@@ -284,12 +285,17 @@ export class InventoryService {
           throw new BadRequestException(LAND_ERROR_COPY[gate.reason]);
         }
         pricePaid = gate.priceGold;
-        await deductPlayerItem(tx, ITEM_GOLD_ID, gate.priceGold, LAND_ERROR_COPY.INSUFFICIENT_GOLD);
+        await deductPlayerItem(
+          tx,
+          ITEM_SETTLEMENT_CURRENCY_ID,
+          gate.priceGold,
+          LAND_ERROR_COPY.INSUFFICIENT_GOLD,
+        );
         created = await tx.playerBuilding.create({
           data: this.newPlayerBuildingData(FIELD_BUILDING_DEF_ID, game, now),
         });
         const goldRow = await tx.playerInventory.findUnique({
-          where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+          where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
         });
         goldAfter = Number(goldRow?.quantity ?? 0);
       });
@@ -452,10 +458,10 @@ export class InventoryService {
     const goldCost = wageGold + haulGold;
     if (goldCost > 0) {
       const goldRow = await tx.playerInventory.findUnique({
-        where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+        where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
       });
       const goldHave = goldRow ? Number(goldRow.quantity) : 0;
-      if (goldHave + 1e-9 < goldCost) throw new BadRequestException("金幣不足");
+      if (goldHave + 1e-9 < goldCost) throw new BadRequestException(SETTLEMENT_INSUFFICIENT_MESSAGE);
     }
     const job: BuildingQueueJob = {
       methodId: method.id,
@@ -486,10 +492,10 @@ export class InventoryService {
       });
     }
     if (wageGold > 0) {
-      await deductPlayerItem(tx, ITEM_GOLD_ID, wageGold);
+      await deductPlayerItem(tx, ITEM_SETTLEMENT_CURRENCY_ID, wageGold);
     }
     if (haulGold > 0) {
-      await deductPlayerItem(tx, ITEM_GOLD_ID, haulGold);
+      await deductPlayerItem(tx, ITEM_SETTLEMENT_CURRENCY_ID, haulGold);
     }
     await tx.player.update({
       where: { id: LOCAL_PLAYER_ID },

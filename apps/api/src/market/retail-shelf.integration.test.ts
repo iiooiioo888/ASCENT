@@ -1,4 +1,4 @@
-import { ITEM_GOLD_ID } from "@ascent/shared";
+import { ITEM_SETTLEMENT_CURRENCY_ID } from "@ascent/shared";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { InventoryService } from "../inventory/inventory.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -78,7 +78,7 @@ describe("AFK-BE-2 商行貨架", () => {
   it("tick 出貨加金、扣麵包、累加今日收入；busy 不變", async () => {
     await shelf.patchShelf({ enabled: true, ask: 5 });
     await setQty("item_bread", 10);
-    await setQty(ITEM_GOLD_ID, 0);
+    await setQty(ITEM_SETTLEMENT_CURRENCY_ID, 0);
     const busyBefore = (await prisma.player.findUnique({ where: { id: "player_local" } }))!.workforceBusy;
 
     const base = new Date("2020-01-01T00:00:00.000Z");
@@ -96,7 +96,7 @@ describe("AFK-BE-2 商行貨架", () => {
     expect(Number(bread?.quantity)).toBe(9);
 
     const gold = await prisma.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: "player_local", itemId: ITEM_GOLD_ID } },
+      where: { playerId_itemId: { playerId: "player_local", itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
     });
     expect(Number(gold?.quantity)).toBe(5);
 

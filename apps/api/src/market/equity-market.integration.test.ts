@@ -1,4 +1,4 @@
-import { EQUITY_CONFIG, ITEM_GOLD_ID } from "@ascent/shared";
+import { EQUITY_CONFIG, ITEM_SETTLEMENT_CURRENCY_ID } from "@ascent/shared";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { InventoryService } from "../inventory/inventory.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -39,9 +39,9 @@ describe("莊股（整合）", () => {
 
   async function setGold(quantity: number) {
     await prisma.playerInventory.upsert({
-      where: { playerId_itemId: { playerId: "player_local", itemId: ITEM_GOLD_ID } },
+      where: { playerId_itemId: { playerId: "player_local", itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
       update: { quantity },
-      create: { playerId: "player_local", itemId: ITEM_GOLD_ID, quantity },
+      create: { playerId: "player_local", itemId: ITEM_SETTLEMENT_CURRENCY_ID, quantity },
     });
   }
 

@@ -1,9 +1,15 @@
-/** TODO(product): 開局金幣、價目與可交易清單皆為佔位，產品定案後可調。 */
+/** TODO(product): 開局銅錠、價目與可交易清單皆為佔位，產品定案後可調。 */
 export const ITEM_GOLD_ID = "item_gold";
+export const ITEM_COPPER_INGOT_ID = "item_copper_ingot";
+/** Phase B（CURR-BARTER）：結算扣／加銅錠；價目整數＝銅錠數量（1 舊金錢＝1 銅錠）。 */
+export const ITEM_SETTLEMENT_CURRENCY_ID = ITEM_COPPER_INGOT_ID;
+export const SETTLEMENT_INSUFFICIENT_MESSAGE = "銅錠不足";
 export const ITEM_CURRENCY_TYPE_ID = "it_currency";
 
-/** 已拍板：開局 10（平衡可調常數）。 */
-export const STARTING_GOLD = 10;
+/** 已拍板：開局 10 銅錠（原金錢餘額 1:1 語意）。 */
+export const STARTING_COPPER_INGOT = 10;
+/** @deprecated 使用 {@link STARTING_COPPER_INGOT} */
+export const STARTING_GOLD = STARTING_COPPER_INGOT;
 
 export type MarketPriceBook = {
   sell: Record<string, number>;

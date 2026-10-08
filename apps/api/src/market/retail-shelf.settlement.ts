@@ -1,5 +1,5 @@
 import {
-  ITEM_GOLD_ID,
+  ITEM_SETTLEMENT_CURRENCY_ID,
   LOCAL_PLAYER_ID,
   RETAIL_SKU_ID,
   gameDayIndex,
@@ -137,7 +137,7 @@ export async function settleRetailShelfUnlocked(
     if (qty < 1) continue;
     const gold = tickAsk * qty;
     await deductPlayerItem(tx, RETAIL_SKU_ID, qty);
-    await creditPlayerItem(tx, ITEM_GOLD_ID, gold);
+    await creditPlayerItem(tx, ITEM_SETTLEMENT_CURRENCY_ID, gold);
     breadQty -= qty;
     todayRevenue += gold;
   }

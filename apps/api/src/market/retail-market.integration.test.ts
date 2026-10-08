@@ -1,4 +1,4 @@
-import { ITEM_GOLD_ID } from "@ascent/shared";
+import { ITEM_SETTLEMENT_CURRENCY_ID } from "@ascent/shared";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { InventoryService } from "../inventory/inventory.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -57,7 +57,7 @@ describe("零售市集（整合）", () => {
     const before = await retail.getRetail();
     const offer = before.offers[0];
     await setQty("item_bread", offer.qty + 2);
-    await setQty(ITEM_GOLD_ID, 0);
+    await setQty(ITEM_SETTLEMENT_CURRENCY_ID, 0);
     const busyBefore = (await prisma.player.findUnique({ where: { id: "player_local" } }))!.workforceBusy;
 
     const trade = await retail.acceptOffer(offer.offerId);
@@ -71,7 +71,7 @@ describe("零售市集（整合）", () => {
     expect(Number(bread?.quantity)).toBe(2);
 
     const gold = await prisma.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: "player_local", itemId: ITEM_GOLD_ID } },
+      where: { playerId_itemId: { playerId: "player_local", itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
     });
     expect(Number(gold?.quantity)).toBe(offer.bidGold * offer.qty);
 
@@ -117,7 +117,7 @@ describe("零售市集（整合）", () => {
 
   it("MK 固定價賣出仍走原端點", async () => {
     await setQty("item_bread", 1);
-    await setQty(ITEM_GOLD_ID, 0);
+    await setQty(ITEM_SETTLEMENT_CURRENCY_ID, 0);
     const mk = await market.sell("item_bread", 1);
     expect(mk.unitPrice).toBe(8);
     expect(mk.transportFee).toBe(1);

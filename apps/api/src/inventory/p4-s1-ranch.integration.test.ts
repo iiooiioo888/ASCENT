@@ -69,7 +69,7 @@ describe.sequential("P4-S1 飼料畜牧", () => {
       where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: "item_feed" } },
     });
     const goldBefore = await prisma.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: "item_gold" } },
+      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: "item_copper_ingot" } },
     });
 
     await inventory.start(ranch.id, "method_raise_livestock_default");
@@ -80,7 +80,7 @@ describe.sequential("P4-S1 飼料畜牧", () => {
       where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: "item_feed" } },
     });
     const goldAfter = await prisma.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: "item_gold" } },
+      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: "item_copper_ingot" } },
     });
     expect(Number(feedBefore?.quantity) - Number(feedAfter?.quantity)).toBe(1);
     expect(Number(goldBefore?.quantity) - Number(goldAfter?.quantity)).toBe(2);

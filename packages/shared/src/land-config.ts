@@ -1,5 +1,5 @@
 import { INDUSTRY_BUILDING_DEF_IDS } from "./industry-catalog";
-import { ITEM_GOLD_ID } from "./market-config";
+import { ITEM_SETTLEMENT_CURRENCY_ID } from "./market-config";
 
 /** 田建築定義 id（擴田目標）。 */
 export const FIELD_BUILDING_DEF_ID = "bdef_field";
@@ -23,7 +23,7 @@ export const FIELD_PURCHASE_PRICE_BY_CURRENT_COUNT: Record<number, number> = {
 };
 
 export const LAND_ERROR_COPY = {
-  INSUFFICIENT_GOLD: "金幣不足",
+  INSUFFICIENT_GOLD: "銅錠不足",
   FIELD_AT_CAP: "農田已達上限",
   BUILDING_SLOTS_FULL: "建築欄位已滿",
   FIELD_USE_PURCHASE_API: "請使用 POST /api/v1/buildings/purchase-field 擴田",
@@ -88,4 +88,4 @@ export function allowsAnotherInstanceOfDef(buildingDefId: string, existingCount:
   return existingCount < 1;
 }
 
-export { ITEM_GOLD_ID };
+export { ITEM_SETTLEMENT_CURRENCY_ID };

@@ -19,7 +19,7 @@ export const DEFAULT_AUTO_METHOD_BY_BUILDING_DEF_ID: Record<string, string> = {
 
 export const AFK_AUTO_PAUSE_REASON = {
   MATERIALS: "自動已暫停：物料不足",
-  GOLD: "自動已暫停：金幣不足（工資／運費）",
+  GOLD: "自動已暫停：銅錠不足（工資／運費）",
   WORKFORCE: "自動已暫停：人手不足",
 } as const;
 
@@ -32,7 +32,14 @@ export function defaultAutoMethodIdForBuilding(buildingDefId: string): string | 
 /** 將現有 start 閘錯誤對齊 AFK-D5 暫停文案；無法對齊時回傳 null。 */
 export function mapStartFailureToAutoPauseReason(message: string): AfkAutoPauseReason | null {
   if (message === "人手不足") return AFK_AUTO_PAUSE_REASON.WORKFORCE;
-  if (message === "金幣不足" || message.includes("金幣不足")) return AFK_AUTO_PAUSE_REASON.GOLD;
+  if (
+    message === "銅錠不足" ||
+    message.includes("銅錠不足") ||
+    message === "金幣不足" ||
+    message.includes("金幣不足")
+  ) {
+    return AFK_AUTO_PAUSE_REASON.GOLD;
+  }
   if (message.startsWith("資源不足")) return AFK_AUTO_PAUSE_REASON.MATERIALS;
   return null;
 }

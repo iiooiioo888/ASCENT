@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
-  ITEM_GOLD_ID,
+  ITEM_SETTLEMENT_CURRENCY_ID,
   LOCAL_PLAYER_ID,
   LAND_ERROR_COPY,
   RETAIL_SKU_ID,
@@ -73,7 +73,8 @@ describe.sequential("P4-S2 食品廠（蛋糕）", () => {
 
   it("放置食品廠 0 金且槽計數正確", async () => {
     const stateBefore = await inventory.state();
-    const goldBefore = stateBefore.inventory.find((r) => r.itemId === ITEM_GOLD_ID)?.quantity ?? 0;
+    const goldBefore =
+      stateBefore.inventory.find((r) => r.itemId === ITEM_SETTLEMENT_CURRENCY_ID)?.quantity ?? 0;
     const countBefore = stateBefore.buildingCount;
 
     const placed = await inventory.place("bdef_food_factory");
@@ -81,7 +82,8 @@ describe.sequential("P4-S2 食品廠（蛋糕）", () => {
     expect(placed.autoEnabled).toBe(false);
 
     const stateAfter = await inventory.state();
-    const goldAfter = stateAfter.inventory.find((r) => r.itemId === ITEM_GOLD_ID)?.quantity ?? 0;
+    const goldAfter =
+      stateAfter.inventory.find((r) => r.itemId === ITEM_SETTLEMENT_CURRENCY_ID)?.quantity ?? 0;
     expect(Number(goldAfter)).toBe(Number(goldBefore));
     expect(stateAfter.buildingCount).toBe(countBefore + 1);
     expect(stateAfter.buildingSlotCap).toBe(12);
@@ -98,7 +100,9 @@ describe.sequential("P4-S2 食品廠（蛋糕）", () => {
     });
 
     const goldBefore = await prisma.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+      where: {
+        playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID },
+      },
     });
 
     await inventory.start(factory.id, "method_bake_cake_default");
@@ -106,7 +110,9 @@ describe.sequential("P4-S2 食品廠（蛋糕）", () => {
     expect(running?.status).toBe("running");
 
     const goldAfterStart = await prisma.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+      where: {
+        playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID },
+      },
     });
     expect(Number(goldBefore?.quantity) - Number(goldAfterStart?.quantity)).toBe(5);
 
