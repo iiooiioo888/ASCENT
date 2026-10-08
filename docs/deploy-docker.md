@@ -83,8 +83,8 @@ docker compose -f docker-compose.prod.yml --env-file .env.production up --build 
 # 服務狀態（api / web 應為 healthy）
 docker compose -f docker-compose.prod.yml --env-file .env.production ps
 
-# API 健康（經 nginx 同域）
-curl -fsS "http://127.0.0.1:${HTTP_PORT:-8080}/api/v1/state" | head -c 200
+# API 健康（經 nginx 同域；與容器 healthcheck 相同，用不需 JWT 的 /time）
+curl -fsS "http://127.0.0.1:${HTTP_PORT:-8080}/api/v1/time" | head -c 200
 echo
 
 # 前端
@@ -133,6 +133,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.production down -v
 | --- | --- | --- |
 | 瀏覽器可開頁但 API 失敗 | `PUBLIC_WEB_ORIGIN` 與實際 URL 不符 | 改成完整來源（含 `http://` 與埠）後 `docker compose ... up -d` 重建 `api` |
 | `api` 一直 restarting | Postgres 未就緒或密碼錯誤 | `docker compose ... logs api postgres` |
+| `api` 顯示 unhealthy | 健康檢查打 `GET /api/v1/time`（公開、不結算）；勿改用 `/api/v1/state`（需 JWT，無 token 會 401） | 確認 `wget` 可連本機 API；查 `api` 日誌 |
 | 502 / 空白 API | `api` 尚未 healthy | 等待 seed／migration 完成或查 `api` 日誌 |
 | 想重置世界 | — | `down -v` 後再 `up --build`（會重新 migrate + seed） |
 
