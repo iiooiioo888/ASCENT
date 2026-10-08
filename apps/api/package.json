@@ -28,6 +28,7 @@
   "devDependencies": {
     "@nestjs/cli": "^11.0.5",
     "@nestjs/schematics": "^11.0.2",
+    "@swc/core": "^1.16.13",
     "@types/better-sqlite3": "^9.6.0",
     "@types/express": "^5.0.1",
     "@types/node": "^22.13.10",
@@ -36,6 +37,7 @@
     "prisma": "^7.10.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
+    "unplugin-swc": "^2.0.0",
     "vitest": "^3.0.9"
   }
 }
