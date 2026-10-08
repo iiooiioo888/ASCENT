@@ -1,11 +1,4 @@
 import { useState } from "react";
-import {
-  autoMethodSelectValue,
-  isBuildingAutoEnabled,
-  parseAutoMethodSelectValue,
-  showBuildingAutoMethodSelect,
-  showBuildingAutoToggle,
-} from "../building-auto";
 import { canStopBuilding, showProductionActionButtons } from "../building-actions";
 import { fmtIo, statusLabel } from "../format";
 import { BuildingJobProgress } from "./BuildingJobProgress";
@@ -13,21 +6,15 @@ import { canAffordInputs, fmtInputHaveNeed, inputAvailability, inventoryQtyMap }
 import type { BuildingActionErrorView } from "../building-action-error";
 import { BUILDING_ICON, METHOD_NAME } from "../meta";
 import { showGoMarketForStart, startOpsPrecheck } from "../ops-depth";
-import { GoMarketCta } from "./GoMarketCta";
-import { OPS_DEPTH_COPY } from "../ops-depth-copy";
 import type { Building, InvRow, Method, OpsCostsSnapshot, WorkforceSnapshot } from "../types";
-import {
-  AUTO_METHOD_DEFAULT_OPTION_LABEL,
-  autoMethodSelectAriaLabel,
-  methodPurposeHint,
-  methodSelectAriaLabel,
-  SILO_CARD_BODY,
-} from "../productCopy";
+import { methodPurposeHint, methodSelectAriaLabel, SILO_CARD_BODY } from "../productCopy";
 import { StopConfirmDialog } from "./StopConfirmDialog";
 import { fieldYieldPreviewLine } from "../environment-copy";
 import { isFieldFallow, scaledGrowOutputsPreview } from "../environment-ui";
 import { isFieldGrowRuleId } from "@ascent/shared";
 import { FieldFallowNotice } from "./FieldFallowNotice";
+import { BuildingCardRecipeRow } from "./BuildingCardRecipeRow";
+import { BuildingCardSecondaryDetails } from "./BuildingCardSecondaryDetails";
 
 type Props = {
   building: Building;
@@ -109,7 +96,6 @@ export function BuildingCard({
       ? startOpsPrecheck(b.buildingDefId, goldBalance, workforce, opsCosts)
       : null;
   const opsOk = ops ? ops.laborOk && ops.goldOk : true;
-  const showOpsPreview = b.status === "idle" && !!selected && !!opsCosts;
   const showMarketCta =
     onGoMarket &&
     showGoMarketForStart(ops, affordSelected, b.status === "idle", !!selected);
@@ -121,11 +107,6 @@ export function BuildingCard({
   const purposeHint = methodPurposeHint(displayMethod?.id);
   const inFallow = isFieldFallow(b.buildingDefId, b.fallowUntil);
   const showActions = showProductionActionButtons(b);
-  const showAuto = showBuildingAutoToggle(b) && onAutoToggle != null;
-  const showAutoMethod =
-    showBuildingAutoMethodSelect(b, options.length) && onAutoMethodChange != null;
-  const autoOn = isBuildingAutoEnabled(b);
-  const autoMethodSelectId = `auto-method-select-${b.id}`;
   const yieldMult =
     environmentYieldMult != null && selected && isFieldGrowRuleId(selected.ruleId)
       ? environmentYieldMult
@@ -147,63 +128,6 @@ export function BuildingCard({
       id={scrollAnchorId}
       className={`plot ${b.status}${pending ? " pending" : ""}${autoPending ? " auto-pending" : ""}${highlight ? " scroll-highlight" : ""}`}
     >
-      {showAuto || showAutoMethod ? (
-        <div className="plot-auto-bar">
-          {showAuto ? (
-            <button
-              type="button"
-              className={`auto-toggle${autoOn ? " on" : ""}`}
-              role="switch"
-              aria-checked={autoOn}
-              aria-label={`${b.buildingDef.name}自動生產`}
-              disabled={autoPending}
-              onClick={() => onAutoToggle(!autoOn)}
-            >
-              <span className="auto-toggle-track" aria-hidden="true">
-                <span className="auto-toggle-thumb" />
-              </span>
-              <span className="auto-toggle-label">自動</span>
-            </button>
-          ) : null}
-          {showAutoMethod ? (
-            <div className="auto-method-field">
-              <label className="auto-method-label" htmlFor={autoMethodSelectId}>
-                掛機配方
-              </label>
-              <select
-                id={autoMethodSelectId}
-                className="auto-method-select"
-                aria-label={autoMethodSelectAriaLabel(b.buildingDef.name)}
-                value={autoMethodSelectValue(b.autoMethodId)}
-                disabled={autoMethodPending || autoPending}
-                onChange={(e) => onAutoMethodChange(parseAutoMethodSelectValue(e.target.value))}
-              >
-                <option value="">{AUTO_METHOD_DEFAULT_OPTION_LABEL}</option>
-                {options.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {METHOD_NAME[m.id] ?? m.code}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : null}
-          {b.autoPauseReason ? (
-            <p className="auto-pause-reason" data-testid="auto-pause-reason">
-              {b.autoPauseReason}
-            </p>
-          ) : null}
-          {autoMethodActionError ? (
-            <p className="plot-action-error plot-auto-error" role="alert" title={autoMethodActionError.hint}>
-              {autoMethodActionError.message}
-            </p>
-          ) : null}
-          {autoActionError ? (
-            <p className="plot-action-error plot-auto-error" role="alert" title={autoActionError.hint}>
-              {autoActionError.message}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
       <fieldset className="plot-body" disabled={pending}>
         <div className="plot-head">
           <div style={{ display: "flex", gap: "0.7rem", alignItems: "center" }}>
@@ -257,50 +181,47 @@ export function BuildingCard({
             <div className="recipe">
               {displayMethod ? (
                 <>
-                  <div className="recipe-io">
-                    <span>消耗 </span>
-                    {anyShort ? (
-                      <span className="recipe-shortages">
-                        {inputRows.map((row) => (
-                          <span key={row.item_id} className={row.short ? "shortage" : ""}>
-                            {fmtInputHaveNeed(row)}
-                          </span>
-                        ))}
-                      </span>
-                    ) : (
-                      <span>{fmtIo(displayMethod.inputs)}</span>
-                    )}
-                  </div>
-                  <div>產出 {fmtIo(previewOutputs ?? displayMethod.outputs)}</div>
+                  <BuildingCardRecipeRow
+                    inputs={
+                      anyShort && b.status === "idle" ? (
+                        <span className="recipe-shortages">
+                          {inputRows.map((row) => (
+                            <span key={row.item_id} className={row.short ? "shortage" : ""}>
+                              {fmtInputHaveNeed(row)}
+                            </span>
+                          ))}
+                        </span>
+                      ) : (
+                        fmtIo(displayMethod.inputs)
+                      )
+                    }
+                    outputs={fmtIo(previewOutputs ?? displayMethod.outputs)}
+                  />
                   {yieldMult != null && yieldMult !== 1 ? (
                     <p className="env-yield-preview" data-testid="env-yield-preview">
                       {fieldYieldPreviewLine(yieldMult)}
                     </p>
                   ) : null}
-                  {purposeHint ? <p className="purpose-hint">{purposeHint}</p> : null}
-                  {showOpsPreview && ops ? (
-                    <div className="ops-cost-preview" data-testid="ops-cost-preview">
-                      {ops.wage > 0 ? (
-                        <span className={ops.goldOk ? "" : "shortage"}>
-                          {OPS_DEPTH_COPY.wage} 🪙{ops.wage}
-                        </span>
-                      ) : null}
-                      {ops.haul > 0 ? (
-                        <span className={ops.goldOk ? "" : "shortage"}>
-                          {OPS_DEPTH_COPY.haul} 🪙{ops.haul}
-                        </span>
-                      ) : null}
-                      {ops.labor > 0 ? (
-                        <span className={ops.laborOk ? "" : "shortage"}>
-                          {OPS_DEPTH_COPY.labor} {ops.labor}
-                        </span>
-                      ) : null}
-                      {showMarketCta ? <GoMarketCta onClick={onGoMarket} /> : null}
-                    </div>
-                  ) : null}
                 </>
               ) : null}
             </div>
+            <BuildingCardSecondaryDetails
+              building={b}
+              options={options}
+              workforce={workforce}
+              opsCosts={opsCosts}
+              opsIdle={ops}
+              opsActive={stopPaidOps}
+              showMarketCta={!!showMarketCta}
+              onGoMarket={onGoMarket}
+              autoPending={autoPending}
+              autoActionError={autoActionError}
+              onAutoToggle={onAutoToggle}
+              autoMethodPending={autoMethodPending}
+              autoMethodActionError={autoMethodActionError}
+              onAutoMethodChange={onAutoMethodChange}
+              purposeHint={purposeHint}
+            />
           </>
         ) : (
           <div className="recipe">{SILO_CARD_BODY}</div>

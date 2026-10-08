@@ -172,3 +172,20 @@ export function timeScaleHudChip(timeScale: number): string {
 
 /** Secondary game-clock label prefix (P3-1). */
 export const GAME_TIME_CHIP_PREFIX = "遊戲時";
+
+/** FE-RICH-1：建築卡可摺次要資訊區標題。 */
+export const BUILDING_CARD_DETAILS_SUMMARY = "次要資訊";
+
+/** FE-RICH-1：建築卡內工位佔用摘要（全服快照）。 */
+export function buildingCardWorkforceLine(workforce: {
+  busy: number;
+  hired: number;
+  maxHired: number;
+}): string {
+  return `工位佔用：忙碌 ${workforce.busy}／已聘 ${workforce.hired}（上限 ${workforce.maxHired}）`;
+}
+
+/** FE-RICH-1：自動生產開關狀態（次要區文字）。 */
+export function buildingCardAutoStateLine(autoEnabled: boolean): string {
+  return autoEnabled ? "自動生產：已開啟" : "自動生產：已關閉";
+}
