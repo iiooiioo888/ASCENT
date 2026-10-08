@@ -62,6 +62,11 @@ export class RulesService {
         name: "飼料畜牧支線",
         steps: ["rule_mix_feed", "rule_raise_livestock"],
       },
+      {
+        id: "loop_food_factory_cake",
+        name: "食品廠蛋糕支線",
+        steps: ["rule_mill_flour", "rule_raise_livestock", "rule_bake_cake"],
+      },
     ];
   }
 
