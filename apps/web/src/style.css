@@ -1274,10 +1274,74 @@ dialog.offline-summary-dialog::backdrop {
   text-align: right;
 }
 .recipe {
-  margin: 0.35rem 0 0.7rem;
+  margin: 0.35rem 0 0.45rem;
   font-size: 0.8rem;
   color: #d4c4a0;
-  min-height: 2.2em;
+  min-height: 1.6em;
+}
+.recipe-row {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.45rem;
+  line-height: 1.45;
+}
+.recipe-row-arrow {
+  color: #e8c860;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.recipe-row-in,
+.recipe-row-out {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.building-card-details {
+  margin: 0.35rem 0 0.65rem;
+  font-size: 0.78rem;
+  color: #d4c4a0;
+  border-radius: var(--radius);
+  border: 2px dashed rgba(232, 200, 96, 0.28);
+  background: rgba(0, 0, 0, 0.12);
+}
+.building-card-details-summary {
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #ebe0cc;
+  list-style: none;
+}
+.building-card-details-summary::-webkit-details-marker {
+  display: none;
+}
+.building-card-details-summary::before {
+  content: "▸ ";
+  color: #e8c860;
+}
+.building-card-details[open] .building-card-details-summary::before {
+  content: "▾ ";
+}
+.building-card-details-body {
+  padding: 0 0.5rem 0.45rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.building-card-meta-line {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #c8b890;
+  letter-spacing: 0.04em;
+}
+.building-card-auto-bar {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.building-card-auto-state {
+  flex: 1 1 100%;
 }
 .recipe-shortages {
   display: inline-flex;

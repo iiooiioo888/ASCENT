@@ -623,3 +623,76 @@ describe("BuildingCard environment fallow", () => {
     expect(screen.getByTestId("env-yield-preview")).toHaveTextContent("115%");
   });
 });
+
+describe("BuildingCard FE-RICH-1 density", () => {
+  it("shows status badge and compact recipe row on idle field", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoFieldIdle}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        inventory={baseInventory}
+      />,
+    );
+    expect(screen.getByText("閒置")).toHaveClass("badge", "idle");
+    const row = screen.getByTestId("building-recipe-row");
+    expect(row).toHaveTextContent("→");
+    expect(row.textContent).toMatch(/小麥|種子|水/);
+  });
+
+  it("shows running badge and active recipe while mill is busy", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoMillRunning}
+        options={[mixFeedDefault, growWheatDefault]}
+        selectedId={mixFeedDefault.id}
+        selected={mixFeedDefault}
+        inventory={baseInventory}
+      />,
+    );
+    expect(screen.getByText("生產中")).toHaveClass("badge", "running");
+    expect(screen.getByTestId("building-recipe-row")).toHaveTextContent("→");
+    expect(screen.getByRole("progressbar")).toBeInTheDocument();
+  });
+
+  it("keeps collect CTA enabled styling target when ready", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={{ ...demoMillRunning, status: "ready", queue: [] }}
+        options={[mixFeedDefault]}
+        selectedId={mixFeedDefault.id}
+        selected={mixFeedDefault}
+        inventory={baseInventory}
+      />,
+    );
+    expect(screen.getByText("待收取")).toHaveClass("badge", "ready");
+    const collect = screen.getByRole("button", { name: "收取" });
+    expect(collect).not.toBeDisabled();
+    expect(collect).toHaveClass("collect");
+  });
+
+  it("folds workforce and ops preview into secondary details", async () => {
+    const user = userEvent.setup();
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoFieldIdle}
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        inventory={baseInventory}
+        goldBalance={10}
+        workforce={{ hired: 1, busy: 1, free: 0, maxHired: 4 }}
+        opsCosts={defaultOpsCosts}
+      />,
+    );
+    const details = screen.getByTestId("building-card-details");
+    expect(details).not.toHaveAttribute("open");
+    await user.click(screen.getByText("次要資訊"));
+    expect(details).toHaveAttribute("open");
+    expect(screen.getByTestId("building-workforce-line")).toHaveTextContent("工位佔用：忙碌 1／已聘 1");
+    expect(screen.getByTestId("ops-cost-preview")).toHaveTextContent("人手 1");
+  });
+});
