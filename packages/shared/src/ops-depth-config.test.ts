@@ -12,7 +12,7 @@ describe("ops-depth-config", () => {
   it("缺省為 LOCKED 常數", () => {
     const depth = opsDepthFromDb(null);
     expect(depth.workforce.startingHired).toBe(1);
-    expect(depth.workforce.maxHired).toBe(4);
+    expect(depth.workforce.maxHired).toBe(8);
     expect(depth.workforce.hireCostGold).toBe(8);
     expect(depth.workforce.laborCostPerStart).toBe(1);
     expect(wageGoldForBuilding("bdef_field", depth)).toBe(1);

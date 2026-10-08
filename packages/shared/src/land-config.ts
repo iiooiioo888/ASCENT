@@ -11,9 +11,9 @@ export const FIELD_CAP = 2;
 
 /**
  * P-D3／LD-D4：佔槽建築上限（**不含**倉）。
- * 開局 5 座非倉建築＋擴田 1 座 → 6。
+ * P4-S1：上限 12（開局 5＋擴田與新建築）。
  */
-export const PLAYER_BUILDING_SLOT_CAP = 6;
+export const PLAYER_BUILDING_SLOT_CAP = 12;
 
 /** LD-D2：第 n 塊「加購」田金幣（n 為當前已有田數，1→第二塊田）。 */
 export const FIELD_PURCHASE_PRICE_BY_CURRENT_COUNT: Record<number, number> = {

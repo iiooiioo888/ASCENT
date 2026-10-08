@@ -10,28 +10,16 @@ import {
   TIME_SCALE,
   TICK_INTERVAL_REAL_MS,
   GAME_DAY_GAME_SEC,
-  buildingDefs,
   seedPlacedBuildingDefIds,
   enabledCommodityListings,
-  generateMethods,
   initialPriceHistory,
-  itemProperties,
-  itemTypes,
-  items,
-  rules,
   startingInventory,
-  validateCatalog,
 } from "@ascent/shared";
+import { syncCatalog } from "./sync-catalog";
 
 const prisma = new PrismaClient({ adapter: createPrismaAdapter() });
 
 async function main() {
-  const methods = generateMethods(rules);
-  const errors = validateCatalog({ items, rules, methods });
-  if (errors.length) {
-    throw new Error(`種子驗證失敗: ${JSON.stringify(errors)}`);
-  }
-
   const now = new Date();
 
   await prisma.playerBuilding.deleteMany();
@@ -72,111 +60,7 @@ async function main() {
     },
   });
 
-  for (const p of itemProperties) {
-    await prisma.itemProperty.upsert({
-      where: { id: p.id },
-      create: {
-        id: p.id,
-        code: p.code,
-        name: p.name,
-        valueKind: p.value_kind,
-        isActive: p.is_active,
-        releasedInVersion: p.released_in_version,
-      },
-      update: {
-        code: p.code,
-        name: p.name,
-        valueKind: p.value_kind,
-        isActive: p.is_active,
-        releasedInVersion: p.released_in_version,
-      },
-    });
-  }
-
-  for (const t of itemTypes) {
-    await prisma.itemType.create({
-      data: {
-        id: t.id,
-        code: t.code,
-        name: t.name,
-        isActive: t.is_active,
-        releasedInVersion: t.released_in_version,
-        metadata: {},
-      },
-    });
-  }
-
-  for (const item of items) {
-    await prisma.item.create({
-      data: {
-        id: item.id,
-        code: item.code,
-        typeId: item.type_id,
-        layer: item.layer,
-        derivedTier: item.derived_tier,
-        isActive: item.is_active,
-        releasedInVersion: item.released_in_version,
-        properties: {},
-      },
-    });
-  }
-
-  for (const rule of rules) {
-    await prisma.productionRule.create({
-      data: {
-        id: rule.id,
-        code: rule.code,
-        parentRuleId: rule.parent_rule_id,
-        inputs: rule.inputs,
-        outputs: rule.outputs,
-        durationGameSec: rule.duration_game_sec,
-        formulas: rule.formulas,
-        compositions: rule.compositions,
-        overrides: rule.overrides,
-        optimizations: rule.optimizations ?? [],
-        isActive: rule.is_active,
-        releasedInVersion: rule.released_in_version,
-      },
-    });
-  }
-
-  for (const method of methods) {
-    await prisma.productionMethod.create({
-      data: {
-        id: method.id,
-        code: method.code,
-        ruleId: method.rule_id,
-        optimization: method.optimization,
-        inputs: method.inputs,
-        outputs: method.outputs,
-        durationGameSec: method.duration_game_sec,
-        isActive: method.is_active,
-        releasedInVersion: method.released_in_version,
-      },
-    });
-  }
-
-  for (const b of buildingDefs) {
-    await prisma.buildingDef.create({
-      data: {
-        id: b.id,
-        code: b.code,
-        name: b.name,
-        systemCode: b.system_code,
-        allowedRuleIds: b.allowed_rule_ids,
-        isActive: b.is_active,
-        releasedInVersion: b.released_in_version,
-      },
-    });
-    await prisma.buildingLevel.create({
-      data: {
-        buildingDefId: b.id,
-        level: 1,
-        queueLimit: b.queue_limit,
-        modifiers: {},
-      },
-    });
-  }
+  await syncCatalog(prisma);
 
   await prisma.player.create({
     data: {
@@ -238,9 +122,7 @@ async function main() {
     });
   }
 
-  console.log(
-    `種子完成：${items.length} 物品、${itemProperties.length} 屬性定義、${rules.length} 規則、${methods.length} 方式`,
-  );
+  console.log("[seed] 種子完成");
 }
 
 main()

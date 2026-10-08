@@ -97,22 +97,25 @@ describe("擴田（LAND-BE-1 整合）", () => {
   it("佔槽建築達 cap 時拒買（與倉無關）", async () => {
     await setGold(50);
     const now = new Date();
-    await prisma.playerBuilding.create({
-      data: {
-        id: `pb_${LOCAL_PLAYER_ID}_bdef_mill_extra`,
-        playerId: LOCAL_PLAYER_ID,
-        buildingDefId: "bdef_mill",
-        lastSettledAt: now,
-        lastSettledGame: 0,
-        lastUpdate: now,
-        lastUpdateGame: 0,
-        queue: [],
-        inputs: {},
-        outputs: {},
-        bufferedOutputs: {},
-        status: "idle",
-      },
-    });
+    const seedSlotted = 5;
+    for (let i = 0; i < PLAYER_BUILDING_SLOT_CAP - seedSlotted; i++) {
+      await prisma.playerBuilding.create({
+        data: {
+          id: `pb_${LOCAL_PLAYER_ID}_slot_fill_${i}`,
+          playerId: LOCAL_PLAYER_ID,
+          buildingDefId: "bdef_mill",
+          lastSettledAt: now,
+          lastSettledGame: 0,
+          lastUpdate: now,
+          lastUpdateGame: 0,
+          queue: [],
+          inputs: {},
+          outputs: {},
+          bufferedOutputs: {},
+          status: "idle",
+        },
+      });
+    }
     await expect(inventory.purchaseField()).rejects.toMatchObject({
       response: { message: "建築欄位已滿", statusCode: 400 },
     });

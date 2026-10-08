@@ -57,7 +57,10 @@ export class InventoryController {
   }
 
   @Patch("buildings/:id/auto")
-  setAuto(@Param("id") id: string, @Body() body: { autoEnabled: boolean }) {
-    return this.inventory.setAutoEnabled(id, body.autoEnabled);
+  setAuto(
+    @Param("id") id: string,
+    @Body() body: { autoEnabled?: boolean; autoMethodId?: string | null },
+  ) {
+    return this.inventory.patchBuildingAuto(id, body);
   }
 }

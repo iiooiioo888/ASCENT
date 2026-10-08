@@ -123,10 +123,10 @@ describe("規則生成與驗證", () => {
     );
   });
 
-  it("農業切片由規則生成 5–10 種方式", () => {
+  it("農業切片由規則生成 5–16 種方式", () => {
     const methods = generateMethods(rules);
     expect(methods.length).toBeGreaterThanOrEqual(5);
-    expect(methods.length).toBeLessThanOrEqual(10);
+    expect(methods.length).toBeLessThanOrEqual(16);
     expect(methods.every((m) => m.rule_id)).toBe(true);
     const errors = validateCatalog({ items, rules, methods });
     expect(errors).toEqual([]);

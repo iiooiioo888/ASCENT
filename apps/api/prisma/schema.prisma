@@ -75,7 +75,8 @@ model ProductionMethod {
   durationGameSec   Int             @map("duration_game_sec")
   isActive          Boolean         @default(true) @map("is_active")
   releasedInVersion String          @map("released_in_version")
-  buildings         PlayerBuilding[]
+  buildings           PlayerBuilding[]
+  autoMethodBuildings PlayerBuilding[] @relation("BuildingAutoMethod")
 
   @@map("production_methods")
 }
@@ -230,6 +231,8 @@ model PlayerBuilding {
   fallowUntilGame  BigInt?  @map("fallow_until_game")
   autoEnabled      Boolean  @default(false) @map("auto_enabled")
   autoPauseReason  String?  @map("auto_pause_reason")
+  autoMethodId     String?  @map("auto_method_id")
+  autoMethod       ProductionMethod? @relation("BuildingAutoMethod", fields: [autoMethodId], references: [id])
 
   @@map("player_buildings")
 }

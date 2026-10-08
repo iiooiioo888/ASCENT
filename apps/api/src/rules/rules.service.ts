@@ -37,6 +37,11 @@ export class RulesService {
         name: "農業麵包閉環",
         steps: ["rule_grow_wheat", "rule_mill_flour", "rule_make_dough", "rule_bake_bread"],
       },
+      {
+        id: "loop_feed_livestock",
+        name: "飼料畜牧支線",
+        steps: ["rule_mix_feed", "rule_raise_livestock"],
+      },
     ];
   }
 
