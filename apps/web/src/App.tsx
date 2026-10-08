@@ -65,7 +65,8 @@ import {
   resolveHudGold,
 } from "./market-feedback";
 import { buildingAutoMethodPendingKey, buildingAutoPendingKey } from "./building-auto";
-import { sortBuildingDefs } from "./buildingSort";
+import { sortBuildingDefs, sortBuildings } from "./buildingSort";
+import { fieldPlotTitle } from "./field-plot";
 import { nextPollFailureCount, shouldShowConnectionLost } from "./connectionPoll";
 import {
   MARKET_POLL_INTERVAL_MS,
@@ -415,6 +416,11 @@ export default function App() {
   const industryInventory = useMemo(() => {
     if (!state) return [];
     return sortInventoryRows(state.inventory).filter((row) => industryOfItem(row.itemId) === industry);
+  }, [state, industry]);
+
+  const industryBuildings = useMemo(() => {
+    if (!state) return [];
+    return sortBuildings(state.buildings).filter((b) => inIndustry(b, industry));
   }, [state, industry]);
 
   const hudGold = useMemo(
@@ -901,7 +907,7 @@ export default function App() {
       />
 
       <section className="settlement">
-        {state.buildings.filter((b) => inIndustry(b, industry)).map((b) => {
+        {industryBuildings.map((b) => {
           const allowed = b.buildingDef.allowedRuleIds ?? [];
           const options = allowed.flatMap((rid) => methodsByRule.get(rid) ?? []);
           const selectedId = picked[b.id] ?? options[0]?.id;
@@ -980,6 +986,8 @@ export default function App() {
               scrollAnchorId={buildingScrollAnchorId(b.id)}
               highlight={highlightDefId === b.buildingDefId}
               building={b}
+              plotTitle={fieldPlotTitle(state.buildings, b.id)}
+              environment={state.environment}
               options={options}
               inventory={state.inventory}
               selectedId={selectedId}
