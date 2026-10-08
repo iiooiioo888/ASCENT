@@ -209,6 +209,7 @@ HUD 金幣 10、商行「交易」展開買賣面板：
 | 不跳級／DAG | 禁止循環與跳級；繼承深度上限 10 |
 | 懶結算 | 讀取與寫入走同一 `settle`；保存 `lastSettledAt` |
 | 伺服器權威 | 純函數可重播；客戶端只顯示 |
+| 規劃北星 | 核心玩法＝空間效率×時間規劃＝利潤；見 [docs/gdd/core-loop-planning.md](docs/gdd/core-loop-planning.md) |
 
 ---
 
