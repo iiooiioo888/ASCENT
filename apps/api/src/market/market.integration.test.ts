@@ -114,6 +114,21 @@ describe("市集（整合）", () => {
     });
   });
 
+  it("CURR-RES：賣銅礦入帳金錢（item_gold），非金錠", async () => {
+    await setQty("item_copper_ore", 3);
+    await setQty(ITEM_GOLD_ID, 0);
+    const res = await market.sell("item_copper_ore", 2);
+    expect(res.goldDelta).toBe(4);
+    const gold = await prisma.playerInventory.findUnique({
+      where: { playerId_itemId: { playerId: "player_local", itemId: ITEM_GOLD_ID } },
+    });
+    expect(Number(gold?.quantity)).toBe(4);
+    const ingot = await prisma.playerInventory.findUnique({
+      where: { playerId_itemId: { playerId: "player_local", itemId: "item_gold_ingot" } },
+    });
+    expect(ingot).toBeNull();
+  });
+
   it("禁止賣金幣", async () => {
     await setQty(ITEM_GOLD_ID, 5);
     await expect(market.sell(ITEM_GOLD_ID, 1)).rejects.toMatchObject({
