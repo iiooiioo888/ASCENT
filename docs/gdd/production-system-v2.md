@@ -1,8 +1,8 @@
-# 《崗起》遊戲設計文件 v2.0（生產系統）
+# 《帝國掘起》遊戲設計文件 v2.0（生產系統）
 
 | 項 | 值 |
 | --- | --- |
-| 專案 | 崗起 / Ascent（義譯：崛起，同一產品） |
+| 專案 | 帝國掘起 |
 | 版本 | **v2.0 確定** |
 | 狀態 | **確定**。設計契約，可作為實作依據。**本檔為正式全文**（`docs/gdd/production-system-v2.md`） |
 | 日期 | 2026-10-06 |
@@ -11,7 +11,7 @@
 | 節次入口 | [production-system.md](production-system.md)（舊錨點，禁止再貼全文） |
 | 濃縮契約 | [../production-system.md](../production-system.md)（不是第二套全文） |
 
-產品範圍、優先級、離線入帳上限聽 [系統定義 v1.0](../system-definition.md)（[system-definition-v1.md](../system-definition-v1.md) 僅轉址）。技術棧聽 [ADR 0001](../adr/0001-tech-stack.md)。規則作為架構約束見 [ADR 0003](../adr/0003-production-rules.md)。農業切片槽位見 [mvp-agriculture-catalog.md](mvp-agriculture-catalog.md)。本檔即《崗起》遊戲設計文件 v2.0 的正式落地（節 1–17，不刪減規則）。與 ADR 一致：時間系統用**懶結算**（`timeScale=60`），不是每遊戲秒 tick 建築。
+產品範圍、優先級、離線入帳上限聽 [系統定義 v1.0](../system-definition.md)（[system-definition-v1.md](../system-definition-v1.md) 僅轉址）。技術棧聽 [ADR 0001](../adr/0001-tech-stack.md)。規則作為架構約束見 [ADR 0003](../adr/0003-production-rules.md)。農業切片槽位見 [mvp-agriculture-catalog.md](mvp-agriculture-catalog.md)。本檔即《帝國掘起》遊戲設計文件 v2.0 的正式落地（節 1–17，不刪減規則）。與 ADR 一致：時間系統用**懶結算**（`timeScale=60`），不是每遊戲秒 tick 建築。
 
 **實作對齊（不改本檔規則）：** 開工時以 **Prisma 對應 PostgreSQL**；結算用 **`lastSettledAt` + 懶結算**。GDD 的 SQL 是設計約定，不是遷移腳本。可變 `properties`／公式／隊列用 JSONB + GIN。細則見 [架構總覽](../architecture/overview.md) 與 [時間與結算](../architecture/time-and-settlement.md)。
 
@@ -60,7 +60,7 @@
 
 | 欄位 | 值 |
 | --- | --- |
-| 名稱 | 崗起 / Ascent（義譯：崛起，同一產品） |
+| 名稱 | 帝國掘起 |
 | 類型 | 無限發展的模擬經營／生產鏈 |
 | 平台 | **網頁**（手機為同一網頁體驗的目標載體，見系統定義） |
 | 核心 | 規則驅動生產（產品核心：生產鏈深度） |

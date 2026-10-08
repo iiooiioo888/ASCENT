@@ -4,6 +4,15 @@ export const DEFAULT_AUTO_METHOD_BY_BUILDING_DEF_ID: Record<string, string> = {
   bdef_mill: "method_mill_flour_default",
   bdef_oven: "method_bake_bread_default",
   bdef_well: "method_draw_water_default",
+  bdef_mine: "method_mine_iron_default",
+  bdef_quarry: "method_quarry_stone_default",
+  bdef_forest: "method_fell_timber_default",
+  bdef_smelter: "method_smelt_iron_default",
+  bdef_kiln: "method_fire_brick_default",
+  bdef_chem_works: "method_extract_salt_default",
+  bdef_workshop: "method_forge_tools_default",
+  bdef_machine_shop: "method_assemble_machine_default",
+  bdef_boiler: "method_raise_steam_default",
 };
 
 export const AFK_AUTO_PAUSE_REASON = {

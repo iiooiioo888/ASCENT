@@ -7,6 +7,7 @@ import {
   allowsAnotherInstanceOfDef,
   buildingCountsTowardSlotCap,
   canPurchaseField,
+  isPlacementBlockedBySlotCap,
   countBuildingsOccupyingSlots,
   countPlayerFields,
   fieldPurchasePriceGold,
@@ -25,6 +26,23 @@ describe("land-config", () => {
       { buildingDefId: FIELD_BUILDING_DEF_ID },
     ];
     expect(countPlayerFields(buildings)).toBe(2);
+  });
+
+  it("產業擴充不佔農業槽，槽滿後仍可放置", () => {
+    expect(buildingCountsTowardSlotCap("bdef_mine")).toBe(false);
+    expect(buildingCountsTowardSlotCap("bdef_machine_shop")).toBe(false);
+    const buildings = [
+      { buildingDefId: FIELD_BUILDING_DEF_ID },
+      { buildingDefId: "bdef_mill" },
+      { buildingDefId: "bdef_mine" },
+      { buildingDefId: "bdef_smelter" },
+    ];
+    expect(countBuildingsOccupyingSlots(buildings)).toBe(2);
+    const atCap = Array.from({ length: PLAYER_BUILDING_SLOT_CAP }, () => ({
+      buildingDefId: "bdef_mill",
+    }));
+    expect(isPlacementBlockedBySlotCap("bdef_mill", atCap)).toBe(true);
+    expect(isPlacementBlockedBySlotCap("bdef_kiln", atCap)).toBe(false);
   });
 
   it("倉不佔槽", () => {

@@ -5,6 +5,8 @@ export * from "./settlement";
 export * from "./method-generator";
 export * from "./validator";
 export * from "./agriculture-catalog";
+export * from "./industry-catalog";
+export * from "./playable-catalog";
 export * from "./market-config";
 export * from "./commodities-config";
 export * from "./equity-config";

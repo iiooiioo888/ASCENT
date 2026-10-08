@@ -1,3 +1,4 @@
+import { INDUSTRY_BUILDING_DEF_IDS } from "./industry-catalog";
 import { ITEM_GOLD_ID } from "./market-config";
 
 /** 田建築定義 id（擴田目標）。 */
@@ -10,8 +11,9 @@ export const SILO_BUILDING_DEF_ID = "bdef_silo";
 export const FIELD_CAP = 2;
 
 /**
- * P-D3／LD-D4：佔槽建築上限（**不含**倉）。
- * 開局 5 座非倉建築＋擴田 1 座 → 6。
+ * P-D3／LD-D4：佔槽建築上限（**不含**倉，亦**不含**產業擴充建築）。
+ * 開局 5 座非倉農業建築＋擴田 1 座 → 6。
+ * 礦坑、採石場、林地、冶煉爐、窯、化工廠、工坊、機械廠、鍋爐各限 1 座，不佔此槽。
  */
 export const PLAYER_BUILDING_SLOT_CAP = 6;
 
@@ -29,8 +31,21 @@ export const LAND_ERROR_COPY = {
   SILO_PLACEMENT_FORBIDDEN: "倉庫已隱藏，無法放置",
 } as const;
 
+const INDUSTRY_SLOT_EXEMPT = new Set<string>(INDUSTRY_BUILDING_DEF_IDS);
+
 export function buildingCountsTowardSlotCap(buildingDefId: string): boolean {
-  return buildingDefId !== SILO_BUILDING_DEF_ID;
+  if (buildingDefId === SILO_BUILDING_DEF_ID) return false;
+  if (INDUSTRY_SLOT_EXEMPT.has(buildingDefId)) return false;
+  return true;
+}
+
+/** 只有會佔農業槽的建築才受上限擋住；產業擴充在槽滿後仍可各放 1 座。 */
+export function isPlacementBlockedBySlotCap(
+  buildingDefId: string,
+  existing: { buildingDefId: string }[],
+): boolean {
+  if (!buildingCountsTowardSlotCap(buildingDefId)) return false;
+  return countBuildingsOccupyingSlots(existing) >= PLAYER_BUILDING_SLOT_CAP;
 }
 
 /** 佔用建築槽的實例數（排除倉）。 */

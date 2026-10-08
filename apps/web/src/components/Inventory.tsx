@@ -12,12 +12,15 @@ function isLowStock(itemId: string, qty: number): boolean {
 type Props = {
   inventory: InvRow[];
   highlightItemIds?: Set<string>;
+  title?: string;
+  emptyText?: string;
 };
 
-export function Inventory({ inventory, highlightItemIds }: Props) {
+export function Inventory({ inventory, highlightItemIds, title = "背包", emptyText }: Props) {
   return (
-    <section className="pack">
-      <h2>背包</h2>
+    <section className="pack" data-testid="industry-pack">
+      <h2>{title}</h2>
+      {inventory.length === 0 && emptyText ? <p className="pack-empty">{emptyText}</p> : null}
       <div className="items">
         {inventory.map((row) => {
           const qty = Number(row.quantity);

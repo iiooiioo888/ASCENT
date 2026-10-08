@@ -1,6 +1,6 @@
 # 生產系統 GDD v2.0
 
-本目錄是《崗起》遊戲設計文件 **v2.0 的落地**（生產系統；義譯「崛起」為同一產品）。
+本目錄是《帝國掘起》遊戲設計文件 **v2.0 的落地**（生產系統）。
 
 | 檔 | 角色 |
 | --- | --- |
@@ -9,6 +9,7 @@
 | [0001](0001-overview.md)～[0007](0007-scope-expansion.md) | 與全文同義拆讀 |
 | [launch-scope.md](launch-scope.md) | 目標首發範圍、統計、改版節奏（不另寫規則） |
 | [mvp-agriculture-catalog.md](mvp-agriculture-catalog.md) | 工程 MVP 農業切片 ID／驗證對照（非整數值） |
+| [industry-expansion-catalog.md](industry-expansion-catalog.md) | 可玩產業擴充（不改農業切片槽位） |
 | [../production-system.md](../production-system.md) | 規則濃縮契約，不是第二套 GDD |
 
 禁止把節次入口再寫成一份規則正文。衝突時：

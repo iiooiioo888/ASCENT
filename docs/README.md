@@ -1,4 +1,4 @@
-# 《崗起》文件索引
+# 《帝國掘起》文件索引
 
 | 項 | 值 |
 | --- | --- |
@@ -13,7 +13,7 @@
 
 | 術語 | 含義 |
 | --- | --- |
-| 崗起 / Ascent | 專案與文件主稱（法源：[system-definition.md](system-definition.md)）。義譯「崛起」為同一產品，禁止拆成兩款遊戲 |
+| 帝國掘起 | 遊戲正式名稱（法源：[system-definition.md](system-definition.md)） |
 | 規則驅動生產 | 引擎只認識規則與類型，永不修改；方式由規則生成 |
 | 懶結算 | 不對每座建築每遊戲秒跑迴圈；真實差 × 60 一次補算 |
 | `timeScale=60` | **1 真實秒 = 60 遊戲秒 = 1 遊戲分鐘**（禁止寫成 61）；遊戲 1 天 = 24 真實分鐘 |
@@ -53,7 +53,7 @@ gameTime = startGameTime + (now - startRealTime) / 1000 × timeScale
 | [adr/0002-product-constraints.md](adr/0002-product-constraints.md) | 單人、1000 人、免費+內購 | **確定** |
 | [adr/0003-production-rules.md](adr/0003-production-rules.md) | 規則／驗證作為架構約束（不重複貼 GDD；編號 0002 已用於產品約束） | **確定** |
 
-[system-definition-v1.md](system-definition-v1.md) 只轉址，非法源。[gdd/production-system.md](gdd/production-system.md) 是節次入口與核心規則速覽，**不是**第二套全文。GDD **正式全文**在 [gdd/production-system-v2.md](gdd/production-system-v2.md)（《崗起》遊戲設計文件 v2.0，節 1–17，含 SQL／JSON）；分冊 0001–0007 與全文同義拆讀。
+[system-definition-v1.md](system-definition-v1.md) 只轉址，非法源。[gdd/production-system.md](gdd/production-system.md) 是節次入口與核心規則速覽，**不是**第二套全文。GDD **正式全文**在 [gdd/production-system-v2.md](gdd/production-system-v2.md)（《帝國掘起》遊戲設計文件 v2.0，節 1–17，含 SQL／JSON）；分冊 0001–0007 與全文同義拆讀。
 
 ---
 
@@ -75,6 +75,7 @@ gameTime = startGameTime + (now - startRealTime) / 1000 × timeScale
 | API v1 端點表 | [api/v1.md](api/v1.md) | **確定** |
 | 工程 MVP 驗收 | [mvp.md](mvp.md) | **確定** |
 | 農業切片目錄 | [gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md) | **確定**（槽位／ID，非整數值） |
+| 產業擴充目錄 | [gdd/industry-expansion-catalog.md](gdd/industry-expansion-catalog.md) | 可玩擴充；不取代農業切片，也未填滿 50–100 |
 | 開發分期 | [roadmap.md](roadmap.md) | **分期** |
 | 目標首發範圍 | [gdd/launch-scope.md](gdd/launch-scope.md) | **確定**（不是工程 MVP） |
 | AI 訂單 | [gdd/ai-orders.md](gdd/ai-orders.md) | 不在 MVP；只定義 |
@@ -107,7 +108,7 @@ gameTime = startGameTime + (now - startRealTime) / 1000 × timeScale
 5. [gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md) — MVP 物品／建築／規則 ID 與驗證對照。
 6. [production-system.md](production-system.md) — 規則濃縮契約（T／P、公式、繼承、驗證）。
 7. [gdd/production-system.md](gdd/production-system.md) — GDD 節次入口與核心規則速覽。
-8. [gdd/production-system-v2.md](gdd/production-system-v2.md) — 《崗起》遊戲設計文件 v2.0 **正式全文**（節 1–17）。
+8. [gdd/production-system-v2.md](gdd/production-system-v2.md) — 《帝國掘起》遊戲設計文件 v2.0 **正式全文**（節 1–17）。
 9. [gdd/0002-time-and-settlement.md](gdd/0002-time-and-settlement.md) — 1:60、懶結算、離線 **8 現實小時**。
 10. [gdd/0003-tiers-and-types.md](gdd/0003-tiers-and-types.md) → [0007](gdd/0007-scope-expansion.md) · [launch-scope.md](gdd/launch-scope.md)
 11. [architecture.md](architecture.md) · [overview](architecture/overview.md) · [time-and-settlement](architecture/time-and-settlement.md)
@@ -125,7 +126,7 @@ gameTime = startGameTime + (now - startRealTime) / 1000 × timeScale
 
 | 主題 | 法源 | 不得另寫 |
 | --- | --- | --- |
-| 產品名稱 | 崗起 / Ascent（義譯：崛起，同一產品） | 把崗起與崛起寫成兩款遊戲；刪掉義譯而不加註同一產品 |
+| 產品名稱 | 帝國掘起 | 另立崗起、Ascent 或崛起為遊戲名 |
 | 技術棧 | ADR 0001 定案表 | Fastify 當核心；從 0001 刪 Redis／Socket.IO；Phaser 進核心；Redis 當主庫 |
 | Redis／WS | 目標保留；MVP 可關 | 「永不使用」或「MVP 必須上」 |
 | 離線上限 | **8 現實小時** = `28800` 現實秒 = `1728000` 遊戲秒（[system-definition.md](system-definition.md) §5） | 舊稿 `86400` 當入帳上限；原文「28800 遊戲秒」 |

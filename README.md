@@ -1,4 +1,4 @@
-# 崗起 / Ascent
+# 帝國掘起
 
 | 項 | 值 |
 | --- | --- |
@@ -7,9 +7,9 @@
 
 ## 現況（給 GitHub 訪客）
 
-本倉庫已可本機跑通：**種 → 磨 → 麵 → 烤** 主線、**水井汲水**與**田留種**解卡、**莊外商行**（`bdef_trading_post`）以 NPC 固定價買賣補給與換金；開局金幣 `STARTING_GOLD = 10`。核心仍為**懶結算**、`timeScale=60`、離線上限 8 現實小時、伺服器權威。無勝利條件、無玩家對玩家市場。
+本倉庫已可本機跑通：**種 → 磨 → 麵 → 烤** 主線、**水井汲水**與**田留種**解卡、**莊外商行**（`bdef_trading_post`）以 NPC 固定價買賣補給與換金；開局金幣 `STARTING_GOLD = 10`。另可放置**礦業、化工、工業、能源、林木**建築（不佔農業 6 槽）。核心仍為**懶結算**、`timeScale=60`、離線上限 8 現實小時、伺服器權威。無勝利條件、無玩家對玩家市場。
 
-《**崗起**》（Ascent）與 Ascent 是**同一產品**（中文義譯「崛起」）。無限發展模擬經營，產品核心是**生產鏈深度**；引擎核心是**規則驅動生產**（方式由規則生成，引擎不改規則）。設計契約見 [docs/README.md](docs/README.md)。
+《**帝國掘起**》是本遊戲的正式名稱。無限發展模擬經營，產品核心是**生產鏈深度**；引擎核心是**規則驅動生產**（方式由規則生成，引擎不改規則）。設計契約見 [docs/README.md](docs/README.md)。
 
 ---
 
@@ -28,7 +28,21 @@
 | 麵 | 爐 `bdef_oven` | `method_make_dough_default` | 麵粉 + 水 → 麵團 |
 | 烤 | 爐 `bdef_oven` | `method_bake_bread_default` | 麵團 → 麵包 |
 
-磨坊亦可 `method_mix_feed_default`（秸稈 + 小麥 → 飼料）。完整物品 id 見 [docs/gdd/mvp-agriculture-catalog.md](docs/gdd/mvp-agriculture-catalog.md)。
+磨坊亦可 `method_mix_feed_default`（秸稈 + 小麥 → 飼料）。飼料可再送化工廠製肥料。完整農業物品 id 見 [docs/gdd/mvp-agriculture-catalog.md](docs/gdd/mvp-agriculture-catalog.md)。產業擴充見 [docs/gdd/industry-expansion-catalog.md](docs/gdd/industry-expansion-catalog.md)。
+
+### 產業擴充（主介面每個產業一張選項卡；放置後才開工，開局不預放）
+
+一次只打開一個產業。農業選項卡含田、磨坊、爐、水井、倉與商行。
+
+| 選項卡 | 建築 | 主線 |
+| --- | --- | --- |
+| 礦業 | 礦坑、採石場、冶煉爐 | 鐵礦／煤 → 鐵錠 → 焦炭 → 鋼 |
+| 林木 | 林地 | 原木；木板在工坊鋸成 |
+| 化工 | 窯、化工廠 | 石灰＋鹽 → 鹼；飼料＋鹼 → 肥料 |
+| 工業 | 工坊、機械廠 | 釘／工具／齒輪／木板 → 機械 |
+| 能源 | 鍋爐 | 焦炭 → 蒸汽；蒸汽機在機械廠組裝 |
+
+秸稈或原木可燒木炭，木炭可代替煤煉鐵。商行可賣出鋼、機械、蒸汽機等，也可買入煤與鐵礦。既有資料庫需重新種子後才看得到新目錄。
 
 ### 資源循環（水井 + 留種）
 
@@ -131,7 +145,7 @@ packages/shared   共用型別、農業目錄、結算純函數（不依賴 Pris
 
 ### 主介面
 
-HUD、背包、產業鏈與建築卡：
+HUD、背包，以及每個產業一張選項卡（農業、礦業、林木、化工、工業、能源）下的產業鏈與建築卡：
 
 ![主介面](docs/readme-screenshots/01-main-ui-hud-buildings.png)
 
@@ -167,6 +181,7 @@ HUD 金幣 10、商行「交易」展開買賣面板：
 | D6 停止不退料 | `POST .../stop` 不退還已扣輸入 |
 | 莊外商行 | `bdef_trading_post` 獨立建築；交易走 `/api/v1/market`，非生產 `start` |
 | 開局金幣 | `STARTING_GOLD = 10`（`item_gold`） |
+| 遊戲名稱 | 《帝國掘起》 |
 | 核心不變 | 無登入、懶結算、`timeScale=60`、離線 8h cap、無 PvP 市場／排行榜 |
 
 ### 待定（產品）
@@ -174,7 +189,7 @@ HUD 金幣 10、商行「交易」展開買賣面板：
 | 議題 | 說明 |
 | --- | --- |
 | D3／M-D15 | 建築上限 **5 座** vs **隱藏糧倉**（倉不佔上限） |
-| 品牌細節 | 「崗起／Ascent／崛起」關係已確定為同一產品；對外文案與 logo 仍可調 |
+| 對外 logo | 視覺標誌尚未定稿 |
 | 市集平衡 | 價目表、可交易清單數值仍可能調整 |
 
 ### 路線圖（簡述）
@@ -183,7 +198,7 @@ HUD 金幣 10、商行「交易」展開買賣面板：
 | --- | --- |
 | 近期 | 合入市集前後端與 UX（商行面板、耗盡 CTA、HUD 金幣） |
 | 工程 MVP 收尾 | 農業數值可玩化、驗證器穩定、文件與 API 同步 |
-| 之後 | 新產業切片（礦、化工等）、目標首發 50–100 物品；玩家互動（排行、JWT）仍按 [roadmap](docs/roadmap.md) 分期 |
+| 之後 | 目標首發補到 50–100 物品（本擴充尚未填滿）；玩家互動（排行、JWT）仍按 [roadmap](docs/roadmap.md) 分期 |
 
 完整分期：[docs/roadmap.md](docs/roadmap.md)、驗收：[docs/mvp.md](docs/mvp.md)。
 
@@ -225,6 +240,7 @@ HUD 金幣 10、商行「交易」展開買賣面板：
 | [docs/mvp.md](docs/mvp.md) | 工程 MVP 範圍 |
 | [docs/api/v1.md](docs/api/v1.md) | HTTP API v1 |
 | [docs/gdd/mvp-agriculture-catalog.md](docs/gdd/mvp-agriculture-catalog.md) | 農業切片 ID |
+| [docs/gdd/industry-expansion-catalog.md](docs/gdd/industry-expansion-catalog.md) | 礦、化、工、能源、林木擴充 |
 | [docs/architecture/overview.md](docs/architecture/overview.md) | 模組與 monorepo |
 
 ---

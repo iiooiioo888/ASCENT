@@ -937,6 +937,47 @@ dialog.offline-summary-dialog::backdrop {
   50% { transform: scale(1.04); }
 }
 
+.industry-board {
+  padding: 0 1.2rem 2.4rem;
+}
+.industry-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+}
+.industry-tabs button {
+  min-height: 44px;
+  padding: 0.35rem 0.9rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--panel-edge);
+  background: var(--panel);
+  color: var(--cream);
+  cursor: pointer;
+  font-weight: 700;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.25);
+}
+.industry-tabs button.active {
+  background: var(--gold);
+  border-color: var(--gold-shadow);
+  color: var(--ink);
+}
+.industry-board .pack {
+  margin: 0 0 0.75rem;
+}
+.pack-empty {
+  margin: 0;
+  color: #efe2c4;
+  font-size: 0.85rem;
+}
+.industry-board .chain {
+  margin: 0 0 0.75rem;
+}
+.industry-board .settlement {
+  padding: 0.4rem 0 0;
+}
+
 .chain {
   margin: 0 1.2rem 0.75rem;
   font-size: 0.82rem;
@@ -966,6 +1007,14 @@ dialog.offline-summary-dialog::backdrop {
 .chain-branch-label {
   opacity: 0.65;
   font-size: 0.72rem;
+}
+.chain-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
 }
 .chain-arrow { opacity: 0.7; font-style: normal; }
 .chain-node {

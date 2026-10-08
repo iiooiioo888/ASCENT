@@ -18,6 +18,7 @@ import {
 } from "./components/MarketPanel";
 import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
 import { LoadingScreen } from "./components/LoadingScreen";
+import { INDUSTRY_TABS, inIndustry, industryOfBuildingDef, industryOfItem, type IndustryId } from "./industries";
 import { maybeWorkforceHud } from "./components/WorkforceHud";
 import { maybeEnvironmentHud } from "./components/EnvironmentHud";
 import type { BuildingActionErrorView } from "./building-action-error";
@@ -93,8 +94,10 @@ import {
   GAME_TIME_CHIP_PREFIX,
   OFFLINE_PROGRESS_BANNER,
   OFFLINE_PROGRESS_HUD_CHIP,
+  INDUSTRY_PACK_EMPTY,
   SLICE_FLOW_BANNER,
   SLICE_GOAL_BANNER,
+  industryPackTitle,
   timeScaleHudChip,
 } from "./productCopy";
 import {
@@ -132,6 +135,9 @@ export default function App() {
   const [picked, setPicked] = useState<Record<string, string>>({});
   const [highlightDefId, setHighlightDefId] = useState<string | null>(null);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [industry, setIndustry] = useState<IndustryId>("agriculture");
+  const industryRef = useRef<IndustryId>("agriculture");
+  const pendingRevealRef = useRef<{ anchor: string | null; marketPanel: boolean } | null>(null);
   const pendingKeysRef = useRef(new Set<string>());
   const [pendingKeys, setPendingKeys] = useState<Set<string>>(() => new Set());
   const stateRef = useRef<GameState | null>(null);
@@ -359,6 +365,37 @@ export default function App() {
     document.getElementById(anchorId)?.focus({ preventScroll: true });
   }, []);
 
+  const selectIndustry = useCallback((next: IndustryId) => {
+    industryRef.current = next;
+    setIndustry(next);
+  }, []);
+
+  useEffect(() => {
+    industryRef.current = industry;
+    const pending = pendingRevealRef.current;
+    if (!pending) return;
+    pendingRevealRef.current = null;
+    if (pending.anchor) scrollToAnchor(pending.anchor);
+    if (pending.marketPanel) {
+      requestAnimationFrame(() => scrollToAnchor(MARKET_PANEL_ANCHOR_ID));
+    }
+  }, [industry, scrollToAnchor]);
+
+  const revealBuilding = useCallback(
+    (buildingDefId: string, anchor: string | null, marketPanel = false) => {
+      const next = industryOfBuildingDef(buildingDefId);
+      flashHighlight(buildingDefId);
+      if (next === industryRef.current) {
+        if (anchor) scrollToAnchor(anchor);
+        if (marketPanel) requestAnimationFrame(() => scrollToAnchor(MARKET_PANEL_ANCHOR_ID));
+        return;
+      }
+      pendingRevealRef.current = { anchor, marketPanel };
+      selectIndustry(next);
+    },
+    [flashHighlight, scrollToAnchor, selectIndustry],
+  );
+
   const methodsByRule = useMemo(() => {
     const m = new Map<string, Method[]>();
     for (const method of state?.methods ?? []) {
@@ -374,10 +411,10 @@ export default function App() {
     return isResourceDepleted(state.buildings, state.inventory, methodsByRule);
   }, [state, methodsByRule]);
 
-  const sortedInventory = useMemo(() => {
+  const industryInventory = useMemo(() => {
     if (!state) return [];
-    return sortInventoryRows(state.inventory);
-  }, [state]);
+    return sortInventoryRows(state.inventory).filter((row) => industryOfItem(row.itemId) === industry);
+  }, [state, industry]);
 
   const hudGold = useMemo(
     () => (state ? resolveHudGold(marketSnapshot?.gold, state.inventory) : 0),
@@ -399,22 +436,22 @@ export default function App() {
     if (!state) return;
     const anchor = resolveWellScrollAnchorId(state.buildings);
     if (!anchor) return;
-    flashHighlight(WELL_BUILDING_DEF_ID);
-    scrollToAnchor(anchor);
-  }, [flashHighlight, scrollToAnchor, state]);
+    revealBuilding(WELL_BUILDING_DEF_ID, anchor);
+  }, [revealBuilding, state]);
 
   const goToSaveSeed = useCallback(() => {
     if (!state) return;
-    flashHighlight(FIELD_BUILDING_DEF_ID);
     const field = findFieldBuilding(state.buildings);
     if (field) {
       const saveSeedId = pickSaveSeedMethodId(field, methodsByRule);
       if (saveSeedId) {
         setPicked((prev) => ({ ...prev, [field.id]: saveSeedId }));
       }
-      scrollToAnchor(buildingScrollAnchorId(field.id));
+      revealBuilding(FIELD_BUILDING_DEF_ID, buildingScrollAnchorId(field.id));
+      return;
     }
-  }, [flashHighlight, methodsByRule, scrollToAnchor, state]);
+    revealBuilding(FIELD_BUILDING_DEF_ID, null);
+  }, [methodsByRule, revealBuilding, state]);
 
   const goToMarket = useCallback(
     (opts?: { preferBuyTab?: boolean }) => {
@@ -425,12 +462,10 @@ export default function App() {
       if (opts?.preferBuyTab) {
         setMarketTabFocusRequest({ tab: "buy", seq: Date.now() });
       }
-      flashHighlight(TRADING_POST_BUILDING_DEF_ID);
       const buildingAnchor = resolveTradingPostScrollAnchorId(state.buildings);
-      if (buildingAnchor) scrollToAnchor(buildingAnchor);
-      requestAnimationFrame(() => scrollToAnchor(MARKET_PANEL_ANCHOR_ID));
+      revealBuilding(TRADING_POST_BUILDING_DEF_ID, buildingAnchor ?? null, true);
     },
-    [flashHighlight, scrollToAnchor, state],
+    [revealBuilding, state],
   );
 
   const showMarketSuccess = useCallback((message: string, tradedItemId: string) => {
@@ -838,12 +873,36 @@ export default function App() {
         marketCtaProminent={marketCtaProminent}
       />
 
-      <Inventory inventory={sortedInventory} highlightItemIds={highlightItems} />
+      <div className="industry-board">
+        <div className="industry-tabs" role="tablist" aria-label="產業">
+          {INDUSTRY_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              id={`industry-tab-${tab.id}`}
+              aria-selected={industry === tab.id}
+              aria-controls="industry-panel"
+              className={industry === tab.id ? "active" : ""}
+              data-testid={`industry-tab-${tab.id}`}
+              onClick={() => selectIndustry(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-      <IndustryChain buildings={state.buildings} />
+        <div id="industry-panel" role="tabpanel" aria-labelledby={`industry-tab-${industry}`}>
+      <IndustryChain buildings={state.buildings} industry={industry} />
+      <Inventory
+        title={industryPackTitle(INDUSTRY_TABS.find((tab) => tab.id === industry)?.label ?? "產業")}
+        inventory={industryInventory}
+        highlightItemIds={highlightItems}
+        emptyText={INDUSTRY_PACK_EMPTY}
+      />
 
       <section className="settlement">
-        {state.buildings.map((b) => {
+        {state.buildings.filter((b) => inIndustry(b, industry)).map((b) => {
           const allowed = b.buildingDef.allowedRuleIds ?? [];
           const options = allowed.flatMap((rid) => methodsByRule.get(rid) ?? []);
           const selectedId = picked[b.id] ?? options[0]?.id;
@@ -953,7 +1012,7 @@ export default function App() {
           );
         })}
 
-        {unplaced.map((d) => {
+        {unplaced.filter((d) => inIndustry(d, industry)).map((d) => {
           const actionKey = `place:${d.id}`;
           const pending = pendingKeys.has(actionKey);
           return (
@@ -980,6 +1039,8 @@ export default function App() {
           );
         })}
       </section>
+        </div>
+      </div>
     </div>
   );
 }

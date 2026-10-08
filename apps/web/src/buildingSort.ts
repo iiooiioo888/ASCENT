@@ -11,6 +11,15 @@ export const BUILDING_DEF_DISPLAY_ORDER: readonly string[] = [
   "bdef_well",
   "bdef_silo",
   "bdef_trading_post",
+  "bdef_mine",
+  "bdef_quarry",
+  "bdef_forest",
+  "bdef_smelter",
+  "bdef_kiln",
+  "bdef_chem_works",
+  "bdef_workshop",
+  "bdef_machine_shop",
+  "bdef_boiler",
 ];
 
 const DEF_ORDER = new Map(BUILDING_DEF_DISPLAY_ORDER.map((id, index) => [id, index]));

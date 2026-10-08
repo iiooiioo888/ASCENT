@@ -1,4 +1,4 @@
-# 《崗起 / Ascent》遊戲設計總覽
+# 《帝國掘起》遊戲設計總覽
 
 | 項 | 值 |
 | --- | --- |
@@ -7,7 +7,7 @@
 
 生產規則全文：[gdd/production-system-v2.md](gdd/production-system-v2.md)（v2.0 節 1–17）；濃縮：[production-system.md](production-system.md)；分冊見 [gdd/README.md](gdd/README.md)。產品、優先級、MVP、分階段技術在 [系統定義 v1.0](system-definition.md)。
 
-目前工作區只有文件，沒有程式。玩家做：**建造 + 管理 + 競爭 + 探索**（競爭非 MVP）。
+工程 MVP 程式在倉庫 `apps/` 與 `packages/shared`；本檔仍只當設計入口。玩家做：**建造 + 管理 + 競爭 + 探索**（競爭非 MVP）。
 
 ## 核心精神
 
@@ -25,6 +25,7 @@
 | 層 | 系統 | 物品 | 備註 |
 | --- | --- | --- | --- |
 | 工程 MVP | 農業 | 5–10（切片鎖定 8） | [mvp.md](mvp.md)、[目錄](gdd/mvp-agriculture-catalog.md) |
+| 可玩擴充 | 礦、化、工、能源、林木 | 農業切片之外另 30 項 | [產業擴充目錄](gdd/industry-expansion-catalog.md) |
 | 目標首發 | ≥5（農、礦、化工、通用、能源；物流可選） | 50–100 | GDD 0005 + 系統定義 §2 |
 | 長期 | 資料擴充 | 不設引擎頂 | [roadmap.md](roadmap.md) |
 

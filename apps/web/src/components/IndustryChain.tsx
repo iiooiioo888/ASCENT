@@ -1,5 +1,6 @@
 import { BUILDING_ICON } from "../meta";
-import { INDUSTRY_CHAIN_ARIA_LABEL } from "../productCopy";
+import { INDUSTRY_CHAIN_ARIA_BY_ID } from "../productCopy";
+import type { IndustryId } from "../industries";
 import type { Building } from "../types";
 
 type ChainBuildingNode = {
@@ -31,6 +32,44 @@ const FEED_BRANCH: ChainItemNode = {
   icon: "🧺",
 };
 
+const ENGINE_BRANCH: ChainItemNode = {
+  kind: "item",
+  itemId: "item_engine",
+  label: "蒸汽機",
+  icon: "🚂",
+};
+
+const BRANCHES: Partial<Record<IndustryId, { label: string; node: ChainItemNode }>> = {
+  agriculture: { label: "磨坊支線", node: FEED_BRANCH },
+  industry: { label: "機械廠支線", node: ENGINE_BRANCH },
+};
+
+const LINES: Record<Exclude<IndustryId, "agriculture">, ChainNode[]> = {
+  mining: [
+    { kind: "building", buildingDefId: "bdef_mine", label: "礦坑" },
+    { kind: "building", buildingDefId: "bdef_smelter", label: "冶煉爐" },
+    { kind: "item", itemId: "item_steel", label: "鋼", icon: "⚙️" },
+  ],
+  timber: [
+    { kind: "building", buildingDefId: "bdef_forest", label: "林地" },
+    { kind: "item", itemId: "item_log", label: "原木", icon: "🪵" },
+  ],
+  chemical: [
+    { kind: "building", buildingDefId: "bdef_kiln", label: "窯" },
+    { kind: "building", buildingDefId: "bdef_chem_works", label: "化工廠" },
+    { kind: "item", itemId: "item_fertilizer", label: "肥料", icon: "🌱" },
+  ],
+  industry: [
+    { kind: "building", buildingDefId: "bdef_workshop", label: "工坊" },
+    { kind: "building", buildingDefId: "bdef_machine_shop", label: "機械廠" },
+    { kind: "item", itemId: "item_machine", label: "機械", icon: "🏭" },
+  ],
+  energy: [
+    { kind: "building", buildingDefId: "bdef_boiler", label: "鍋爐" },
+    { kind: "item", itemId: "item_steam", label: "蒸汽", icon: "💨" },
+  ],
+};
+
 function statusForBuilding(buildings: Building[], buildingDefId: string): string {
   const match = buildings.find((b) => b.buildingDefId === buildingDefId);
   if (!match) return "missing";
@@ -44,11 +83,14 @@ function nodeClass(status: string): string {
   return "chain-node idle";
 }
 
+function nodeKey(node: ChainNode): string {
+  return node.kind === "building" ? node.buildingDefId : node.itemId;
+}
+
 function renderNode(node: ChainNode, buildings: Building[]) {
   if (node.kind === "item") {
-    const feedQtyHint = node.itemId === "item_feed" ? "chain-node item" : "chain-node item";
     return (
-      <span key={node.itemId} className={feedQtyHint} title={node.label}>
+      <span key={node.itemId} className="chain-node item" title={node.label}>
         <span aria-hidden>{node.icon}</span> {node.label}
       </span>
     );
@@ -67,26 +109,39 @@ function renderNode(node: ChainNode, buildings: Building[]) {
   );
 }
 
+function renderLine(nodes: ChainNode[], buildings: Building[]) {
+  return nodes.map((node, index) => (
+    <span key={nodeKey(node)} className="chain-segment">
+      {index > 0 ? (
+        <i className="chain-arrow" aria-hidden>
+          →
+        </i>
+      ) : null}
+      {renderNode(node, buildings)}
+    </span>
+  ));
+}
+
 type Props = {
   buildings: Building[];
+  industry?: IndustryId;
 };
 
-export function IndustryChain({ buildings }: Props) {
+export function IndustryChain({ buildings, industry = "agriculture" }: Props) {
+  const line = industry === "agriculture" ? MAIN_LINE : LINES[industry];
+  const branch = BRANCHES[industry];
   return (
-    <div className="chain" aria-label={INDUSTRY_CHAIN_ARIA_LABEL}>
-      <div className="chain-main">
-        {MAIN_LINE.map((node, index) => (
-          <span key={node.kind === "building" ? node.buildingDefId : node.itemId} className="chain-segment">
-            {index > 0 ? <i className="chain-arrow" aria-hidden>→</i> : null}
-            {renderNode(node, buildings)}
-          </span>
-        ))}
-      </div>
-      <div className="chain-branch" aria-hidden>
-        <span className="chain-branch-label">磨坊支線</span>
-        <i className="chain-arrow">↘</i>
-        {renderNode(FEED_BRANCH, buildings)}
-      </div>
+    <div className="chain" aria-label={INDUSTRY_CHAIN_ARIA_BY_ID[industry]}>
+      <div className="chain-main">{renderLine(line, buildings)}</div>
+      {branch ? (
+        <div className="chain-branch">
+          <span className="chain-branch-label">{branch.label}</span>
+          <i className="chain-arrow" aria-hidden>
+            ↘
+          </i>
+          {renderNode(branch.node, buildings)}
+        </div>
+      ) : null}
     </div>
   );
 }

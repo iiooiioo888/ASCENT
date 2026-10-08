@@ -3,7 +3,7 @@ import { BRAND_DISPLAY_NAME, DOCUMENT_TITLE, GAME_TIME_CHIP_PREFIX, timeScaleHud
 
 describe("productCopy P3-1 time chips", () => {
   it("DOCUMENT_TITLE follows BRAND_DISPLAY_NAME", () => {
-    expect(DOCUMENT_TITLE).toBe(`${BRAND_DISPLAY_NAME} · 農莊`);
+    expect(DOCUMENT_TITLE).toBe(`${BRAND_DISPLAY_NAME} · 農礦工商`);
   });
 
   it("explains 1:60 scale in plain language", () => {

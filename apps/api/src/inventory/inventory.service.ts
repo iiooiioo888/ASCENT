@@ -10,6 +10,7 @@ import {
   SILO_BUILDING_DEF_ID,
   canPurchaseField,
   countBuildingsOccupyingSlots,
+  isPlacementBlockedBySlotCap,
   countPlayerFields,
   iosToRecord,
   isFieldGrowRuleId,
@@ -291,7 +292,7 @@ export class InventoryService {
     buildingDefId: string,
     existing: { buildingDefId: string }[],
   ): void {
-    if (countBuildingsOccupyingSlots(existing) >= PLAYER_BUILDING_SLOT_CAP) {
+    if (isPlacementBlockedBySlotCap(buildingDefId, existing)) {
       throw new BadRequestException(LAND_ERROR_COPY.BUILDING_SLOTS_FULL);
     }
     const sameDef = existing.filter((b) => b.buildingDefId === buildingDefId).length;

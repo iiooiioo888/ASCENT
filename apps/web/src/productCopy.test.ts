@@ -20,14 +20,14 @@ import {
 
 describe("productCopy", () => {
   it("exposes feed and bread purpose hints for U13 (written Traditional Chinese)", () => {
-    expect(methodPurposeHint("method_mix_feed_default")).toBe("飼料：目前沒有下游用途，可先略過。");
-    expect(itemPurposeHint("item_feed")).toBe("目前沒有下游用途。");
+    expect(methodPurposeHint("method_mix_feed_default")).toBe("飼料可送進化工廠，與鹼製成肥料。");
+    expect(itemPurposeHint("item_feed")).toBe("可與鹼在化工廠製成肥料。");
     expect(itemPurposeHint("item_bread")).toMatch(/麵包/);
     expect(itemPurposeHint("item_bread")).not.toMatch(/係|冇/);
   });
 
-  it("brand constant is non-empty for HUD / loading", () => {
-    expect(BRAND_DISPLAY_NAME.length).toBeGreaterThan(0);
+  it("brand constant is the official game name for HUD / loading", () => {
+    expect(BRAND_DISPLAY_NAME).toBe("帝國掘起");
   });
 
   it("U10 connection copy and seed hint detection", () => {

@@ -28,7 +28,7 @@
 | 主題 | 聽誰 |
 | --- | --- |
 | 技術棧、NestJS 模組、否決 Fastify／Phaser 進核心／Redis 當主庫／每 tick 全量模擬 | ADR 0001 |
-| 產品名稱、優先級、MVP vs 目標首發 | ADR 0002 + [系統定義](../system-definition.md)（崗起 / Ascent；義譯崛起） |
+| 產品名稱、優先級、MVP vs 目標首發 | ADR 0002 + [系統定義](../system-definition.md)（帝國掘起） |
 | T／P、公式、繼承、驗證碼、方式由規則生成 | ADR 0003 閘門；細則 [GDD v2.0](../gdd/production-system-v2.md) |
 | 入帳離線上限 8 現實小時 | 系統定義 §5；ADR 0001 **不另定**第二套數字 |
 

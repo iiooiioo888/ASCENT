@@ -1,4 +1,4 @@
-# 《崗起》技術架構總覽
+# 《帝國掘起》技術架構總覽
 
 | 項 | 值 |
 | --- | --- |
@@ -10,7 +10,7 @@
 | 模組展開 | [0001-module-boundaries.md](0001-module-boundaries.md) |
 | 本階段 | 只寫文件，不建模組骨架、不安裝依賴、不建 monorepo |
 
-本檔對齊《崗起》技術定案與 GDD，**不改** ADR 定案表，**不改** GDD 規則。GDD 的 SQL 與本檔並存時：規則語意聽 GDD；**實作時以 Prisma 對應 PostgreSQL，結算用 `lastSettledAt` + 懶結算**。`simulation` 不碰 HTTP。引擎純計算物件（`GameClock`、`Config`、`Settlement`、`FormulaEngine`、`RuleEngine`、`MethodGenerator`、`LoopGenerator`、`Validator`）與系統（`Inventory`、`Production`、`Building`）對應 NestJS 模組邊界，見第 3–4 節。
+本檔對齊《帝國掘起》技術定案與 GDD，**不改** ADR 定案表，**不改** GDD 規則。GDD 的 SQL 與本檔並存時：規則語意聽 GDD；**實作時以 Prisma 對應 PostgreSQL，結算用 `lastSettledAt` + 懶結算**。`simulation` 不碰 HTTP。引擎純計算物件（`GameClock`、`Config`、`Settlement`、`FormulaEngine`、`RuleEngine`、`MethodGenerator`、`LoopGenerator`、`Validator`）與系統（`Inventory`、`Production`、`Building`）對應 NestJS 模組邊界，見第 3–4 節。
 
 GDD `core/` 是純計算物件名。NestJS 模組是部署與 DI 邊界。**禁止再建模組叫 `core`。**
 

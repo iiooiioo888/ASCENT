@@ -1,6 +1,6 @@
 # Docker 正式環境部署（Ubuntu VPS）
 
-本文件說明如何在 Ubuntu 22.04+ VPS 上用 **Docker Compose** 部署 ASCENT monorepo：`postgres` + NestJS `api` + 以 **nginx** 提供靜態前端並反向代理 `/api`。
+本文件說明如何在 Ubuntu 22.04+ VPS 上用 **Docker Compose** 部署《帝國掘起》 monorepo：`postgres` + NestJS `api` + 以 **nginx** 提供靜態前端並反向代理 `/api`。
 
 本機工程預設仍可用 SQLite（`pnpm setup:db`）；**Compose 正式棧固定使用 PostgreSQL**（與 `apps/api/prisma/migrations` 一致）。
 

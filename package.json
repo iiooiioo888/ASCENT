@@ -2,7 +2,7 @@
   "name": "ascent",
   "private": true,
   "version": "0.1.0",
-  "description": "崗起 / Ascent — 規則驅動生產的無限發展模擬經營",
+  "description": "帝國掘起 — 規則驅動生產的無限發展模擬經營",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "build": "pnpm -r build",

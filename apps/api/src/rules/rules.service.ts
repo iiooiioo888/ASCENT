@@ -37,6 +37,26 @@ export class RulesService {
         name: "農業麵包閉環",
         steps: ["rule_grow_wheat", "rule_mill_flour", "rule_make_dough", "rule_bake_bread"],
       },
+      {
+        id: "loop_mining_steel",
+        name: "礦業煉鋼",
+        steps: ["rule_mine_iron", "rule_mine_coal", "rule_smelt_iron", "rule_make_coke", "rule_make_steel"],
+      },
+      {
+        id: "loop_chemical_fertilizer",
+        name: "化工肥料",
+        steps: ["rule_extract_salt", "rule_burn_lime", "rule_make_alkali", "rule_mix_fertilizer"],
+      },
+      {
+        id: "loop_industry_machine",
+        name: "工業機械",
+        steps: ["rule_forge_gears", "rule_draw_wire", "rule_forge_tools", "rule_assemble_machine"],
+      },
+      {
+        id: "loop_energy_engine",
+        name: "能源蒸汽機",
+        steps: ["rule_mine_coal", "rule_make_coke", "rule_raise_steam", "rule_build_engine"],
+      },
     ];
   }
 
