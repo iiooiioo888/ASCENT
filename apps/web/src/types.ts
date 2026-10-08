@@ -27,6 +27,8 @@ export type Building = {
   autoEnabled?: boolean;
   /** AFK-BE-1：自動暫停原因（中文，API 原文） */
   autoPauseReason?: string | null;
+  /** P4-S1：自動開工使用的配方；null 表示使用建築預設 */
+  autoMethodId?: string | null;
 };
 
 export type WorkforceSnapshot = {
