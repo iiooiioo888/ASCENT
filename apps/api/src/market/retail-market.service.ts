@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
+import { currentPlayerId } from "../auth/player-context";
 import { randomUUID } from "node:crypto";
 import {
   ITEM_SETTLEMENT_CURRENCY_ID,
-  LOCAL_PLAYER_ID,
   RETAIL_OPS_HINT,
   RETAIL_SKU_ID,
   isRetailOfferExpired,
@@ -98,7 +98,7 @@ export class RetailMarketService {
       const busyBefore = await this.getWorkforceBusy();
 
       const result = await this.prisma.$transaction(async (tx) => {
-        const row = await tx.playerRetailState.findUnique({ where: { playerId: LOCAL_PLAYER_ID } });
+        const row = await tx.playerRetailState.findUnique({ where: { playerId: currentPlayerId() } });
         const current = parseStoredOffers(row?.offers);
         const live = current.find((o) => o.offerId === offerId);
         if (!live || isRetailOfferExpired(live.expiresAt, nowMs)) {
@@ -116,8 +116,8 @@ export class RetailMarketService {
           .sort((a, b) => a.slot - b.slot);
 
         await tx.playerRetailState.upsert({
-          where: { playerId: LOCAL_PLAYER_ID },
-          create: { playerId: LOCAL_PLAYER_ID, offers: nextOffers as unknown as Prisma.InputJsonValue },
+          where: { playerId: currentPlayerId() },
+          create: { playerId: currentPlayerId(), offers: nextOffers as unknown as Prisma.InputJsonValue },
           update: { offers: nextOffers as unknown as Prisma.InputJsonValue },
         });
 
@@ -148,19 +148,19 @@ export class RetailMarketService {
 
   private async getBreadQty(): Promise<number> {
     const row = await this.prisma.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: RETAIL_SKU_ID } },
+      where: { playerId_itemId: { playerId: currentPlayerId(), itemId: RETAIL_SKU_ID } },
     });
     return row ? Number(row.quantity) : 0;
   }
 
   private async getWorkforceBusy(): Promise<number> {
-    const player = await this.prisma.player.findUnique({ where: { id: LOCAL_PLAYER_ID } });
+    const player = await this.prisma.player.findUnique({ where: { id: currentPlayerId() } });
     return player?.workforceBusy ?? 0;
   }
 
   private async syncOffers(config: RetailConfig, nowMs: number): Promise<StoredRetailOffer[]> {
     const anchor = resolveRetailBidAnchor(this.sim.marketPriceBook, config);
-    const row = await this.prisma.playerRetailState.findUnique({ where: { playerId: LOCAL_PLAYER_ID } });
+    const row = await this.prisma.playerRetailState.findUnique({ where: { playerId: currentPlayerId() } });
     let bySlot = new Map<number, StoredRetailOffer>();
     for (const o of parseStoredOffers(row?.offers)) {
       if (o.slot >= config.slotCount) continue;
@@ -183,8 +183,8 @@ export class RetailMarketService {
 
     if (changed) {
       await this.prisma.playerRetailState.upsert({
-        where: { playerId: LOCAL_PLAYER_ID },
-        create: { playerId: LOCAL_PLAYER_ID, offers: next as unknown as Prisma.InputJsonValue },
+        where: { playerId: currentPlayerId() },
+        create: { playerId: currentPlayerId(), offers: next as unknown as Prisma.InputJsonValue },
         update: { offers: next as unknown as Prisma.InputJsonValue },
       });
     }

@@ -6,9 +6,9 @@
 | 工程驗收 | [mvp.md](../mvp.md) |
 | 規則法源 | [production-system-v2.md](production-system-v2.md) §15 |
 | 產品法源 | [系統定義 v1.0](../system-definition.md) |
-| 本階段 | 只寫文件；不建碼、不寫 Prisma 種子檔 |
+| 本階段 | 只鎖農業切片 ID。程式與種子已在倉庫 |
 
-本檔把 MVP「農業 5–10 物品／3–5 建築／5–10 方式」落到**可驗證的 ID 槽位**。產率、工時倍數、隊列長度仍留給開工後的數值表；此處只鎖結構。禁止把本檔擴成礦業／化工，也禁止把 [launch-scope.md](launch-scope.md) 的 69 物品縮進來。
+本檔把 MVP「農業 5–10 物品／3–5 建築／5–10 方式」落到**可驗證的 ID 槽位**。產率、工時倍數、隊列長度仍留給開工後的數值表；此處只鎖結構。禁止把本檔擴成礦業／化工，也禁止把 [launch-scope.md](launch-scope.md) 的 69 物品縮進來。牧場、蛋、奶、食品廠、蛋糕不寫進本表，目錄補洞見 [next.md](../next.md) 序 3。礦、化、工、能源、林木見 [industry-expansion-catalog.md](industry-expansion-catalog.md)。
 
 衝突時：入帳 cap 聽系統定義 §5；規則語意聽 GDD 全文；驗收聽 mvp.md。
 
@@ -19,13 +19,13 @@
 | 槽 | 本切片數量 | MVP 閉區間 |
 | --- | --- | --- |
 | 物品 | **8** | 5–10 |
-| 建築定義 | **5**（含水井；**TODO(product) 待確認 D3** 是否接受 5 座） | 3–5 |
+| 建築定義 | **5**（含水井。佔槽上限另見 P-D3＝**12**，倉不佔槽；本列仍只鎖這 5 個定義） | 3–5 |
 | 規則 | **7**（含汲水／留種） | ≤ 方式數 |
 | 方式（由規則生成） | **8**（預估；實作時 5–10） | 5–10，每筆有 `rule_id` |
 | 系統 | 僅 `agriculture` | 不得啟用礦／化／通用／能源大包 |
 | T2 同位素 | 全部 `is_active=false` | V-ACTIVE |
 
-`released_in_version` 一律 `"mvp"`。非本切片代碼不得 `is_active=true`。開局庫存仍給足種子與水；**資源循環（RL-BE-1）**另加水井汲水與田留種以解軟卡死，數值為 **TODO(product) 待確認** 佔位（見 §5 新規則）。
+本表物品與規則的 `released_in_version` 一律 `"mvp"`。可玩擴充用 `industry-1`，不寫進本表。開局庫存仍給足種子與水；**資源循環（RL-BE-1）**另加水井汲水與田留種以解軟卡死，數值為 **TODO(product) 待確認** 佔位（見 §5 新規則）。
 
 ---
 
@@ -83,7 +83,7 @@ dough → bread
 | `bdef_silo` | `silo` | 倉 | `agriculture` | 不生產亦可；若生產則只收／存。MVP 可當純展示倉，**不計入必須開工的 3 座**，但佔 4 定義之一 |
 | `bdef_mill` | `mill` | 磨坊 | `agriculture` | 磨粉、拌飼料 |
 | `bdef_oven` | `oven` | 爐 | `agriculture` | 和麵、烘烤 |
-| `bdef_well` | `well` | 水井 | `agriculture` | 僅 `rule_draw_water`；**TODO(product) 待確認** 開局是否預放 1 座（實作預設預放） |
+| `bdef_well` | `well` | 水井 | `agriculture` | 僅 `rule_draw_water`；**已拍板 D2**：開局預放 1 座 |
 
 `can_upgrade` / `can_specialize` 目標欄可留預設，**MVP 不驗收**。`queue_limit` 建議常數 **1**。佔地／相鄰／耐久不做。
 
@@ -164,7 +164,7 @@ dough → bread
 
 ## 7. 與結算、存檔
 
-權威仍是 PostgreSQL：`player_buildings.last_settled_at`、`player_inventory`。進頁／開工／收取走同一懶結算入口。離線上限 **8 現實小時**。無登入、無市場、無 WS、無 AI 訂單。
+權威仍是 PostgreSQL：`player_buildings.last_settled_at`、`player_inventory`。進頁／開工／收取走同一懶結算入口。離線上限 **8 現實小時**。無登入、無玩家對玩家市場、無 WS、無 AI 訂單。NPC 商行不屬於本切片。
 
 本檔不改時間公式：
 
@@ -177,4 +177,4 @@ cappedRealDeltaSec = min(rawRealDeltaSec, 28800)
 
 ## 8. 下一步
 
-本檔已完成「農業切片命名、規則資料槽位、驗證器對照」。其後仍是文件齊一後才開工：生產鏈核心 → 數值平衡（把占位工時換成可玩數字）→ 離線結算 → 存檔 → 視覺 → 玩家互動。
+本檔鎖的是工程 MVP 農業切片（8 物品）。其後的牧場、食品廠與其他產業不寫進本表。任務見 [next.md](../next.md)。

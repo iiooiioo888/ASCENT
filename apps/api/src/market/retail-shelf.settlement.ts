@@ -1,6 +1,5 @@
 import {
   ITEM_SETTLEMENT_CURRENCY_ID,
-  LOCAL_PLAYER_ID,
   RETAIL_SKU_ID,
   gameDayIndex,
   resolveShelfAskGold,
@@ -8,6 +7,7 @@ import {
   shelfTicksElapsed,
   type RetailShelfPublicState,
 } from "@ascent/shared";
+import { currentPlayerId } from "../auth/player-context";
 import type { SimulationService } from "../simulation/simulation.service";
 import type { SettlementTransactionClient } from "../inventory/settlement-db-lock";
 import { creditPlayerItem, deductPlayerItem } from "../inventory/player-inventory-tx";
@@ -63,11 +63,11 @@ export async function settleRetailShelfUnlocked(
   );
   const gameDay = gameDayIndex(displayGameTime, sim.config.gameDayGameSec);
 
-  let row = await tx.playerRetailState.findUnique({ where: { playerId: LOCAL_PLAYER_ID } });
+  let row = await tx.playerRetailState.findUnique({ where: { playerId: currentPlayerId() } });
   if (!row) {
     row = await tx.playerRetailState.create({
       data: {
-        playerId: LOCAL_PLAYER_ID,
+        playerId: currentPlayerId(),
         shelfLastTickAt: now,
         shelfRevenueGameDay: gameDay,
       },
@@ -86,7 +86,7 @@ export async function settleRetailShelfUnlocked(
 
   if (!row.shelfLastTickAt) {
     await tx.playerRetailState.update({
-      where: { playerId: LOCAL_PLAYER_ID },
+      where: { playerId: currentPlayerId() },
       data: {
         shelfLastTickAt: now,
         shelfRevenueGameDay: revenueGameDay,
@@ -110,7 +110,7 @@ export async function settleRetailShelfUnlocked(
       todayRevenue !== row.shelfTodayRevenueGold
     ) {
       await tx.playerRetailState.update({
-        where: { playerId: LOCAL_PLAYER_ID },
+        where: { playerId: currentPlayerId() },
         data: {
           shelfRevenueGameDay: revenueGameDay,
           shelfTodayRevenueGold: todayRevenue,
@@ -121,7 +121,7 @@ export async function settleRetailShelfUnlocked(
   }
 
   let breadRow = await tx.playerInventory.findUnique({
-    where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: RETAIL_SKU_ID } },
+    where: { playerId_itemId: { playerId: currentPlayerId(), itemId: RETAIL_SKU_ID } },
   });
   let breadQty = breadRow ? Number(breadRow.quantity) : 0;
 
@@ -144,7 +144,7 @@ export async function settleRetailShelfUnlocked(
 
   const nextLastTick = new Date(lastTickMs + tickCount * sim.config.tickIntervalRealMs);
   await tx.playerRetailState.update({
-    where: { playerId: LOCAL_PLAYER_ID },
+    where: { playerId: currentPlayerId() },
     data: {
       shelfLastTickAt: nextLastTick,
       shelfRevenueGameDay: revenueGameDay,
@@ -166,7 +166,7 @@ export async function loadRetailShelfPublicState(
           { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
           nowMs,
         );
-  const row = await tx.playerRetailState.findUnique({ where: { playerId: LOCAL_PLAYER_ID } });
+  const row = await tx.playerRetailState.findUnique({ where: { playerId: currentPlayerId() } });
   if (!row) {
     const ask = resolveShelfAskGold(null, true, sim.marketPriceBook, sim.retailConfig);
     return { enabled: false, followMarket: true, ask, todayRevenueGold: 0, skuId: RETAIL_SKU_ID };

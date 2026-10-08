@@ -3,15 +3,15 @@
 | 項 | 值 |
 | --- | --- |
 | 版本 | 2026-10-06 |
-| 狀態 | **確定**（架構契約；不建模組骨架） |
+| 狀態 | **確定**（架構契約） |
 | 法源 | [ADR 0001](adr/0001-tech-stack.md) |
 | 規則 | [GDD v2.0 正式全文](gdd/production-system-v2.md)；分冊 [gdd/README.md](gdd/README.md) |
 | 展開 | [overview.md](architecture/overview.md)、[time-and-settlement.md](architecture/time-and-settlement.md)、[0001-module-boundaries.md](architecture/0001-module-boundaries.md) |
-| 本階段 | 只寫文件，不建模組骨架 |
+| 本階段 | 契約已落地。程式在 `apps/web`、`apps/api`、`packages/shared`；任務見 [next.md](next.md) |
 
 GDD `core/` 是純計算物件名。NestJS 模組是部署與 DI 邊界。**禁止再建模組叫 `core`。**
 
-之後開工建議（現在不要建立）：`apps/web`、`apps/api`、`packages/shared`。`packages/shared` 不得依賴 Prisma、Socket.IO 或 Redis 客戶端。權威寫入只留在 `apps/api`。
+`packages/shared` 不得依賴 Prisma、Socket.IO 或 Redis 客戶端。權威寫入只留在 `apps/api`。
 
 ---
 

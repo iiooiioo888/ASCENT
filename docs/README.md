@@ -2,7 +2,7 @@
 
 | 項 | 值 |
 | --- | --- |
-| 版本 | 2026-10-06 |
+| 版本 | 2026-10-08 |
 | 狀態 | 本目錄仍是設計契約。工程 MVP 程式已在倉庫根目錄 `apps/`、`packages/shared`。 |
 
 本檔是索引，不列入下方閱讀順序。
@@ -52,6 +52,7 @@ gameTime = startGameTime + (now - startRealTime) / 1000 × timeScale
 | [adr/0001-tech-stack.md](adr/0001-tech-stack.md) | 技術棧定案與分期落地 | **確定**／**分期** |
 | [adr/0002-product-constraints.md](adr/0002-product-constraints.md) | 單人、1000 人、免費+內購 | **確定** |
 | [adr/0003-production-rules.md](adr/0003-production-rules.md) | 規則／驗證作為架構約束（不重複貼 GDD；編號 0002 已用於產品約束） | **確定** |
+| [next.md](next.md) | 現況與接下來要做的事（唯一任務入口） | 任務 |
 
 [system-definition-v1.md](system-definition-v1.md) 只轉址，非法源。[gdd/production-system.md](gdd/production-system.md) 是節次入口與核心規則速覽，**不是**第二套全文。GDD **正式全文**在 [gdd/production-system-v2.md](gdd/production-system-v2.md)（《帝國掘起》遊戲設計文件 v2.0，節 1–17，含 SQL／JSON）；分冊 0001–0007 與全文同義拆讀。
 
@@ -77,6 +78,7 @@ gameTime = startGameTime + (now - startRealTime) / 1000 × timeScale
 | 農業切片目錄 | [gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md) | **確定**（槽位／ID，非整數值） |
 | 產業擴充目錄 | [gdd/industry-expansion-catalog.md](gdd/industry-expansion-catalog.md) | 可玩擴充；不取代農業切片，也未填滿 50–100 |
 | 開發分期 | [roadmap.md](roadmap.md) | **分期** |
+| 現況與下一步 | [next.md](next.md) | 任務入口；不是第二套規則 |
 | 目標首發範圍 | [gdd/launch-scope.md](gdd/launch-scope.md) | **確定**（不是工程 MVP） |
 | AI 訂單 | [gdd/ai-orders.md](gdd/ai-orders.md) | 不在 MVP；只定義 |
 
@@ -115,6 +117,7 @@ gameTime = startGameTime + (now - startRealTime) / 1000 × timeScale
 12. [api/v1.md](api/v1.md) — `/api/v1` 端點表。
 13. [adr/0003-production-rules.md](adr/0003-production-rules.md) — 規則／驗證作為架構約束。
 14. [roadmap.md](roadmap.md)
+15. [next.md](next.md) — 現況與接下來要做的事。
 
 [system-definition-v1.md](system-definition-v1.md) 只轉址，不要當正文讀。[gdd/production-system.md](gdd/production-system.md) 是節次入口與核心規則速覽，不要當第二套全文讀。
 
@@ -150,6 +153,8 @@ docs/
   production-system.md              ← 規則濃縮契約
   mvp.md
   gdd/mvp-agriculture-catalog.md
+  gdd/industry-expansion-catalog.md
+  next.md                           ← 現況與下一步（唯一任務入口）
   roadmap.md
   game-design.md                    ← 設計入口
   architecture.md                   ← 架構契約正文
@@ -173,4 +178,4 @@ docs/
 
 ## 下一步
 
-農業切片目錄見 [gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md)。工程 MVP 骨架已開工（Schema／後端核心／前端數據畫面）。市場、排行榜、登入、WebSocket、AI 訂單仍不在工程 MVP。
+任務只看 [next.md](next.md)。內容切片做到視覺為止。登入（F1）已開工；其餘五項的順序與完成樣子只寫在該檔「未來開發任務」。

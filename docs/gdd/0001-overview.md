@@ -8,7 +8,7 @@
 | --- | --- |
 | 濃縮契約 | [../production-system.md](../production-system.md) |
 | GDD v2.0 節 1–17 | 設計契約，可作為實作依據。**正式全文：** [production-system-v2.md](production-system-v2.md) |
-| 應用程式 / monorepo / 依賴 | **尚未建立**，本階段禁止新增 |
+| 應用程式 / monorepo / 依賴 | 已在倉庫根 `apps/`、`packages/shared`。本分冊仍不改技術棧。下一步見 [next.md](../next.md) |
 | 技術棧 | ADR 0001 已鎖定，本 GDD 不改框架 |
 | Phaser | 不進入核心棧 |
 | Redis | 不是主庫 |

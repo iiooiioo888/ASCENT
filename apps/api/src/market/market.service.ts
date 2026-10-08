@@ -2,12 +2,12 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import {
   ITEM_GOLD_ID,
   ITEM_SETTLEMENT_CURRENCY_ID,
-  LOCAL_PLAYER_ID,
   SETTLEMENT_INSUFFICIENT_MESSAGE,
   parseTradeQuantity,
   resolveMarketUnitPrice,
   resolveSellGoldAfterTransport,
 } from "@ascent/shared";
+import { currentPlayerId } from "../auth/player-context";
 import { PrismaService } from "../prisma/prisma.service";
 import { SimulationService } from "../simulation/simulation.service";
 import { InventoryService } from "../inventory/inventory.service";
@@ -25,7 +25,7 @@ export class MarketService {
     await this.inventory.runExclusive(() => this.inventory.settleAllUnlocked());
     const book = this.sim.marketPriceBook;
     const rows = await this.prisma.playerInventory.findMany({
-      where: { playerId: LOCAL_PLAYER_ID },
+      where: { playerId: currentPlayerId() },
     });
     const qtyByItem = new Map(rows.map((r) => [r.itemId, Number(r.quantity)]));
     const tradableIds = [

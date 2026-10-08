@@ -5,14 +5,15 @@
 | 法源 | [ADR 0001](../adr/0001-tech-stack.md) |
 | 索引 | [overview.md](overview.md)、[architecture.md](../architecture.md) |
 | 時間常數 | [GDD 0002](../gdd/0002-time-and-settlement.md)；離線 8 現實小時見 [系統定義 §5](../system-definition.md) |
-| 本階段 | 只寫文件，不建模組骨架 |
+| 本階段 | 模組已在 `apps/api`。任務見 [next.md](../next.md) |
 
-GDD `core/` 是純計算物件名。NestJS 模組是部署與 DI 邊界。**禁止再建模組叫 `core`。** 之後開工：純計算與共用型別放 `packages/shared`，由 `simulation` / `rules` 引用。
+GDD `core/` 是純計算物件名。NestJS 模組是部署與 DI 邊界。**禁止再建模組叫 `core`。** 純計算與共用型別放 `packages/shared`，由 `simulation` / `rules` 引用。
 
 ## NestJS 模組（部署邊界）
 
 | 模組 | 職責 | HTTP | DB 寫入 | WS | 呼叫結算 | MVP |
 | --- | --- | --- | --- | --- | --- | --- |
+| `auth` | 帳號與 JWT；把玩家身分放進請求 | 註冊／登入／me | 帳號、`lastSeenAt` | 否 | 否 | F1 要 |
 | `catalog` | 物品、類型、屬性 | 讀 | 否 | 否 | 否 | 要 |
 | `rules` | 規則、公式、生成方式、驗證 | 只讀 GET + `POST /validate` | 不寫庫存 | 否 | 否 | 要 |
 | `simulation` | 時鐘、Config、懶結算純函數 | **否** | **否** | **否** | 自己就是純計算 | 要 |

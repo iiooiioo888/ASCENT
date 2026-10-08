@@ -70,7 +70,7 @@ export class SettlementCronService implements OnModuleInit, OnModuleDestroy {
       if (ms !== this.scheduledMs) {
         await this.syncSchedule();
       }
-      await this.inventory.settleAll();
+      await this.inventory.settleEveryPlayer();
     } catch (err) {
       this.logger.warn(`背景結算略過：${err instanceof Error ? err.message : String(err)}`);
     }

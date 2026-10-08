@@ -40,5 +40,6 @@
 2. [生產系統 GDD v2.0 正式全文](gdd/production-system-v2.md)
 3. [ADR 0001 技術棧](adr/0001-tech-stack.md)（含分期落地）
 4. [GDD 0001 概述](gdd/0001-overview.md)
+5. [現況與下一步](next.md)
 
 核心循環之後的資源出口（**不在 MVP**，現階段只定義）：[AI 訂單](gdd/ai-orders.md)。

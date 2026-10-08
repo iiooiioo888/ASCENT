@@ -11,7 +11,7 @@
 | 欄位級正文 | [gdd/README.md](gdd/README.md)（0001–0007） |
 | GDD 正式全文 | [gdd/production-system-v2.md](gdd/production-system-v2.md)（節 1–17）；[節次入口](gdd/production-system.md) 不是第二套全文 |
 | 工程切片 | [mvp.md](mvp.md) |
-| 本階段 | 只寫文件；不建碼、不安裝依賴、不寫 Prisma／API 程式 |
+| 本階段 | 規則濃縮契約。程式已在倉庫；任務見 [next.md](next.md) |
 
 本檔是基礎文件套件的**正式生產設計**：規則驅動、物質層 T／產物層 P、公式、繼承、驗證、方式由規則自動生成。精簡但不另開第二套規則。Schema／SQL／API 以 [GDD 0005](gdd/0005-schema-and-api.md) 與 [api/v1.md](api/v1.md) 為準。時間步驟以 [GDD 0002](gdd/0002-time-and-settlement.md) 為準。
 
@@ -258,8 +258,6 @@ gameDeltaSec       = cappedRealDeltaSec × 60
 | 本檔未列的欄位、SQL、API | [GDD 0005](gdd/0005-schema-and-api.md)、[api/v1.md](api/v1.md) |
 | 工程 MVP 驗收 | [mvp.md](mvp.md) |
 
-下一步仍是**文件層面完善**。本階段只有設計文件。農業切片槽位：[gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md)。不是開工寫程式。
+規則契約維持本檔。程式已在倉庫。任務見 [next.md](next.md)。
 
-**實作順序**（文件齊一之後才開工；本次不實作）：
-
-1. 生產鏈核心 → 2. 數值平衡 → 3. 離線結算 → 4. 存檔 → 5. 視覺 → 6. 玩家互動
+**產品順序：** 生產鏈核心（已）→ 數值平衡 → 離線結算（已）→ 存檔（已）→ 視覺 → 玩家互動。

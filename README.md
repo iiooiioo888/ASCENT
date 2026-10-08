@@ -3,11 +3,11 @@
 | 項 | 值 |
 | --- | --- |
 | 版本 | 工程 MVP 0.1.0（2026-10-07） |
-| 狀態 | **農業切片可玩**：生產鏈、資源循環、莊外商行 NPC 買賣；NestJS + Prisma + React；無登入、無 Redis、無 WebSocket |
+| 狀態 | **農業切片可玩**：生產鏈、資源循環、莊外商行 NPC 買賣；NestJS + Prisma + React；簡單 JWT 登入；無 Redis、無 WebSocket |
 
 ## 現況（給 GitHub 訪客）
 
-本倉庫已可本機跑通：**種 → 磨 → 麵 → 烤** 主線、**水井汲水**與**田留種**解卡、**莊外商行**（`bdef_trading_post`）以 NPC 固定價買賣補給與換金；開局金幣 `STARTING_GOLD = 10`。另可放置**礦業、化工、工業、能源、林木**建築（不佔農業 6 槽）。核心仍為**懶結算**、`timeScale=60`、離線上限 8 現實小時、伺服器權威。無勝利條件、無玩家對玩家市場。
+本倉庫已可本機跑通：**種 → 磨 → 麵 → 烤** 主線、**水井汲水**與**田留種**解卡、**莊外商行**（`bdef_trading_post`）以 NPC 固定價買賣補給；開局銅錠 `STARTING_COPPER_INGOT = 10`。佔槽上限 **12**，倉不佔槽，田上限 **2**。另可放置**礦業、化工、工業、能源、林木**建築（不佔這 12 槽）。核心仍為**懶結算**、`timeScale=60`、離線上限 8 現實小時、伺服器權威。無勝利條件、無玩家對玩家市場。
 
 《**帝國掘起**》是本遊戲的正式名稱。無限發展模擬經營，產品核心是**生產鏈深度**；引擎核心是**規則驅動生產**（方式由規則生成，引擎不改規則）。設計契約見 [docs/README.md](docs/README.md)。
 
@@ -17,7 +17,7 @@
 
 ### 你在做什麼
 
-在農業切片裡，用數座建築與庫存，把原料一路加工成麵包，並用副產與商行維持資源與金幣循環。沒有通關目標，只有鏈條變深、產線變順。
+在農業切片裡，用數座建築與庫存，把原料一路加工成麵包，並用副產與商行維持資源與銅錠循環。沒有通關目標，只有鏈條變深、產線變順。
 
 ### 主線生產鏈（種 → 磨 → 麵 → 烤）
 
@@ -56,8 +56,8 @@
 ### 莊外商行（NPC 固定價）
 
 - 獨立建築 **`bdef_trading_post`**（莊外商行），開局預放 1 座；**不能**對商行 `start` 生產，買賣只走 HTTP 市集 API。
-- 貨幣為庫存 **`item_gold`**；開局 **`STARTING_GOLD = 10`**。
-- 賣出農產換金、買入種子／水等補給；價目為伺服器固定表（非玩家掛單市場）。
+- 結算貨幣為庫存 **`item_copper_ingot`**；開局 **`STARTING_COPPER_INGOT = 10`**。
+- 賣出農產換銅錠、買入種子／水等補給；價目為伺服器固定表（非玩家掛單市場）。
 
 ### 操作迴路（玩家）
 
@@ -115,7 +115,7 @@ packages/shared   共用型別、農業目錄、結算純函數（不依賴 Pris
 | 資料 | Prisma；權威狀態在 DB |
 | 前端 | React + Vite |
 | 時間 | `timeScale=60`；**懶結算**（GET 狀態、寫入前結算、可選定時器粗 tick） |
-| 認證 | **無登入** |
+| 認證 | 簡單 JWT（無第三方）。見 [docs/api/v1.md](docs/api/v1.md) 認證節 |
 | 快取／即時 | **不用** Redis、BullMQ、WebSocket |
 
 懶結算要點：保存 `lastSettledAt` 等游標；遊戲時間由 `startRealTime`／`startGameTime` 推算，不存「現在」。細則：[時間與結算](docs/architecture/time-and-settlement.md)。
@@ -180,25 +180,21 @@ HUD 金幣 10、商行「交易」展開買賣面板：
 | D2 預放水井 | 種子世界預放田、磨坊、爐、水井（及商行建築實體） |
 | D6 停止不退料 | `POST .../stop` 不退還已扣輸入 |
 | 莊外商行 | `bdef_trading_post` 獨立建築；交易走 `/api/v1/market`，非生產 `start` |
-| 開局金幣 | `STARTING_GOLD = 10`（`item_gold`） |
+| 開局銅錠 | `STARTING_COPPER_INGOT = 10`（`item_copper_ingot`；`STARTING_GOLD` 只是別名） |
 | 遊戲名稱 | 《帝國掘起》 |
-| 核心不變 | 無登入、懶結算、`timeScale=60`、離線 8h cap、無 PvP 市場／排行榜 |
+| 核心不變 | 懶結算、`timeScale=60`、離線 8h cap、無 PvP 市場／排行榜。登入是簡單 JWT，不改時間比例 |
 
 ### 待定（產品）
 
 | 議題 | 說明 |
 | --- | --- |
-| D3／M-D15 | 建築上限 **5 座** vs **隱藏糧倉**（倉不佔上限） |
+| 對外文案與價目 | 汲水、留種、商行與產業價目仍可能是佔位；見 [next.md](docs/next.md) 序 2 |
 | 對外 logo | 視覺標誌尚未定稿 |
 | 市集平衡 | 價目表、可交易清單數值仍可能調整 |
 
 ### 路線圖（簡述）
 
-| 方向 | 說明 |
-| --- | --- |
-| 近期 | 合入市集前後端與 UX（商行面板、耗盡 CTA、HUD 金幣） |
-| 工程 MVP 收尾 | 農業數值可玩化、驗證器穩定、文件與 API 同步 |
-| 之後 | 目標首發補到 50–100 物品（本擴充尚未填滿）；玩家互動（排行、JWT）仍按 [roadmap](docs/roadmap.md) 分期 |
+任務順序見 [docs/next.md](docs/next.md)：文件對齊 → 數值可玩化 → 目錄補洞 → 顯示名單一來源 → 目標首發補到 50–100 物品 → 視覺。其後才是該檔 F1→F6：登入、玩家對玩家市場、排行榜、AI 訂單、Redis、WebSocket。
 
 完整分期：[docs/roadmap.md](docs/roadmap.md)、驗收：[docs/mvp.md](docs/mvp.md)。
 
@@ -241,6 +237,7 @@ HUD 金幣 10、商行「交易」展開買賣面板：
 | [docs/api/v1.md](docs/api/v1.md) | HTTP API v1 |
 | [docs/gdd/mvp-agriculture-catalog.md](docs/gdd/mvp-agriculture-catalog.md) | 農業切片 ID |
 | [docs/gdd/industry-expansion-catalog.md](docs/gdd/industry-expansion-catalog.md) | 礦、化、工、能源、林木擴充 |
+| [docs/next.md](docs/next.md) | 現況與下一步 |
 | [docs/architecture/overview.md](docs/architecture/overview.md) | 模組與 monorepo |
 
 ---

@@ -1,9 +1,9 @@
 import {
   ITEM_GOLD_ID,
   ITEM_SETTLEMENT_CURRENCY_ID,
-  LOCAL_PLAYER_ID,
   SETTLEMENT_INSUFFICIENT_MESSAGE,
 } from "@ascent/shared";
+import { currentPlayerId } from "../auth/player-context";
 import { BadRequestException, ConflictException } from "@nestjs/common";
 import { Prisma } from "../../generated/prisma/client";
 import { SETTLEMENT_CONFLICT_MESSAGE } from "./building-state-update";
@@ -18,7 +18,7 @@ export async function deductPlayerItem(
 ) {
   const updated = await tx.playerInventory.updateMany({
     where: {
-      playerId: LOCAL_PLAYER_ID,
+      playerId: currentPlayerId(),
       itemId,
       quantity: { gte: qty },
     },
@@ -27,7 +27,7 @@ export async function deductPlayerItem(
   if (updated.count === 1) return;
 
   const row = await tx.playerInventory.findUnique({
-    where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
+    where: { playerId_itemId: { playerId: currentPlayerId(), itemId } },
   });
   const have = row ? Number(row.quantity) : 0;
   if (have + EPS < qty) {
@@ -41,8 +41,8 @@ export async function deductPlayerItem(
 
 export async function creditPlayerItem(tx: Prisma.TransactionClient, itemId: string, qty: number) {
   await tx.playerInventory.upsert({
-    where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
+    where: { playerId_itemId: { playerId: currentPlayerId(), itemId } },
     update: { quantity: { increment: qty } },
-    create: { playerId: LOCAL_PLAYER_ID, itemId, quantity: qty },
+    create: { playerId: currentPlayerId(), itemId, quantity: qty },
   });
 }

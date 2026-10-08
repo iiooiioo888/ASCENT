@@ -16,6 +16,7 @@
       }
     ]
   },
+  "setupFiles": ["<rootDir>/test/e2e-auth-optional.ts"],
   "moduleNameMapper": {
     "^@nestjs/schedule$": "<rootDir>/test/__mocks__/nestjs-schedule.ts"
   },

@@ -15,7 +15,7 @@
 
 **實作對齊（不改本檔規則）：** 開工時以 **Prisma 對應 PostgreSQL**；結算用 **`lastSettledAt` + 懶結算**。GDD 的 SQL 是設計約定，不是遷移腳本。可變 `properties`／公式／隊列用 JSONB + GIN。細則見 [架構總覽](../architecture/overview.md) 與 [時間與結算](../architecture/time-and-settlement.md)。
 
-本階段只寫文件：不建碼、不安裝依賴、不建 monorepo。
+程式已在倉庫。本檔仍是規則全文，不隨任務改寫。任務見 [next.md](../next.md)。
 
 ---
 
@@ -1014,7 +1014,7 @@ GDD 原稿 `Config`（必須保留，86400 **不入帳**）：
 
 改框架或改時間比例必須另開 ADR。細則：[roadmap.md](../roadmap.md)。
 
-下一步仍是**文件層面完善**。程式待文件齊一後再開。
+本節是目標首發的擴展節奏，不是「尚未建碼」。程式現況與任務見 [next.md](../next.md)。
 
 ---
 
@@ -1060,7 +1060,7 @@ L1／L2 不得修改規則語意。禁止為新版本手寫孤兒方式。引入
 | 濃縮契約 | [../production-system.md](../production-system.md) |
 | GDD v2.0 節 1–17 | 設計契約，可作為實作依據。**正式全文即本檔**（`production-system-v2.md`） |
 | 節次入口 | [production-system.md](production-system.md) 節次入口與核心規則速覽，不是第二套全文 |
-| 應用程式 / monorepo / 依賴 | **尚未建立**，本階段禁止新增 |
+| 應用程式 / monorepo / 依賴 | 已在倉庫根 `apps/`、`packages/shared`。本 GDD 仍不改技術棧。下一步見 [next.md](../next.md) |
 | 技術棧 | ADR 0001 已鎖定，本 GDD 不改框架 |
 | Phaser | 不進入核心棧 |
 | Redis | 不是主庫 |

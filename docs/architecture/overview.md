@@ -3,12 +3,12 @@
 | 項 | 值 |
 | --- | --- |
 | 版本 | 2026-10-06 |
-| 狀態 | **確定**（技術架構總覽；不建模組骨架） |
+| 狀態 | **確定**（技術架構總覽） |
 | 法源 | [ADR 0001](../adr/0001-tech-stack.md) |
 | 規則 | [GDD v2.0 正式全文](../gdd/production-system-v2.md)；分冊 [gdd/README.md](../gdd/README.md) |
 | 結算契約 | [time-and-settlement.md](time-and-settlement.md) |
 | 模組展開 | [0001-module-boundaries.md](0001-module-boundaries.md) |
-| 本階段 | 只寫文件，不建模組骨架、不安裝依賴、不建 monorepo |
+| 本階段 | 契約已落地。任務見 [next.md](../next.md) |
 
 本檔對齊《帝國掘起》技術定案與 GDD，**不改** ADR 定案表，**不改** GDD 規則。GDD 的 SQL 與本檔並存時：規則語意聽 GDD；**實作時以 Prisma 對應 PostgreSQL，結算用 `lastSettledAt` + 懶結算**。`simulation` 不碰 HTTP。引擎純計算物件（`GameClock`、`Config`、`Settlement`、`FormulaEngine`、`RuleEngine`、`MethodGenerator`、`LoopGenerator`、`Validator`）與系統（`Inventory`、`Production`、`Building`）對應 NestJS 模組邊界，見第 3–4 節。
 
@@ -37,7 +37,7 @@ MVP／單人期用同一 NestJS 單體，**先不啟用** Redis、BullMQ、Socke
 
 ---
 
-## 2. 之後才建的目錄建議（現在不要建立）
+## 2. 目錄（已存在）
 
 ```
 apps/web          React + TypeScript + Vite
@@ -56,6 +56,7 @@ packages/shared   共用型別與結算純函數
 
 | 模組 | 職責 | HTTP | DB 寫 | WS | 結算 |
 | --- | --- | --- | --- | --- | --- |
+| `auth` | 帳號、JWT、請求上的玩家身分 | 註冊／登入／me | 只寫帳號與 `lastSeenAt` | 否 | 否；進頁仍走 `inventory` |
 | `catalog` | 物品、類型、屬性 | 讀 | 否 | 否 | 否 |
 | `rules` | 公式、生成、驗證 | GET + validate | 不寫庫存 | 否 | 否 |
 | `simulation` | Config、時鐘、懶結算純函數 | 否 | 否 | 否 | 本身 |
@@ -75,7 +76,7 @@ flowchart LR
 
 依賴方向（誰呼叫誰）：`inventory` 與 `jobs` 呼叫 `simulation`；`simulation` 使用 `rules` 的公式與 `catalog` 的靜態定義；`realtime` 不呼叫結算公式。HTTP 控制器不進入 `simulation`。`simulation` **不碰 HTTP**。
 
-MVP：`catalog`／`rules`／`simulation`／`inventory` 要有；`realtime` 與 `jobs` 可不掛載。
+MVP：`catalog`／`rules`／`simulation`／`inventory` 要有；`auth` 隨 F1 掛上，不改結算公式。`realtime` 與 `jobs` 可不掛載。
 
 ---
 

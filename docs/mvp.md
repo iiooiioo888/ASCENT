@@ -14,7 +14,7 @@
 
 ## 一句話
 
-做出「農業切片能生產、離線最多補 8 現實小時、能自動存檔」的可玩閉環。沒有登入、沒有市場、沒有排行榜、沒有 WebSocket。
+做出「農業切片能生產、離線最多補 8 現實小時、能自動存檔」的可玩閉環。沒有登入、沒有玩家對玩家市場、沒有排行榜、沒有 WebSocket。NPC 商行是其後增量，見 [系統定義 §8.1](system-definition.md) 與 [next.md](next.md)。
 
 ---
 
@@ -50,7 +50,7 @@
 | 加速 | 永遠不做（產品決策，不限 MVP） |
 | AI 訂單 | 核心循環之後的資源出口，見 [gdd/ai-orders.md](gdd/ai-orders.md)。不進 MVP：不生成、不接受、不過期 |
 
-AI 訂單的完整設計在 [gdd/ai-orders.md](gdd/ai-orders.md)。它是核心循環之後的資源出口，不進本檔「範圍（必做）」。`is_active` 保持關閉。工程 MVP 仍是：農業、5–10 物品、離線結算、存檔；無登入、無市場、無排行榜。
+AI 訂單的完整設計在 [gdd/ai-orders.md](gdd/ai-orders.md)。它是核心循環之後的資源出口，不進本檔「範圍（必做）」。`is_active` 保持關閉。工程 MVP 仍是：農業、5–10 物品、離線結算、存檔；無登入、無玩家對玩家市場、無排行榜。
 
 ---
 
@@ -165,7 +165,7 @@ MVP 結算時機（無 Redis／BullMQ）：
 - [x] 離線（或把 `lastSettledAt` 撥早）再進頁，補算不超過 8 現實小時（`maxOfflineRealSec=28800`，遊戲秒上限 `1728000`）。
 - [x] 同一結算區間重放不雙計（`settleWindow` 冪等；API 以 `SettlementMutex` 序列化結算／收取，並以 `lastSettledAt` 樂觀寫入；`ready` 狀態不重複入帳產出）。
 - [x] 重開應用／重進頁後庫存與建築狀態仍在（Prisma 持久化）。
-- [x] 無登入頁、無市場、無排行榜。
+- [x] 無登入頁、無玩家對玩家市場、無排行榜。NPC 商行不在此勾選，見系統定義 §8.1。
 - [x] 無 Redis、無 WebSocket 仍能完成上述閉環。
 - [x] 無加速。
 
@@ -173,8 +173,6 @@ MVP 結算時機（無 Redis／BullMQ）：
 
 ## 下一步
 
-工程 MVP 骨架已落地（見根 [README.md](../README.md) 本機啟動）。農業切片目錄見 [gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md)。市場、排行榜、登入、WebSocket **仍不在**工程 MVP。
-
-**建議後續：** 數值平衡與 UX 打磨 → 切 Postgres 正式 migration 部署 → 認證與多存檔 → 目標首發系統擴充。
+工程 MVP 驗收已勾完。其後的任務見 [next.md](next.md)。玩家對玩家市場、排行榜、登入、WebSocket **仍不在**當前切片。NPC 商行是農業資源循環，不是玩家市場。
 
 與 [系統定義 §9](system-definition.md) 同義的產品順序：生產鏈核心（已）→ 數值平衡 → 離線結算（已）→ 存檔（已）→ 視覺 → 玩家互動。

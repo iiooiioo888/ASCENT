@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { LOCAL_PLAYER_ID, resolveShelfAskGold } from "@ascent/shared";
+import { resolveShelfAskGold } from "@ascent/shared";
+import { currentPlayerId } from "../auth/player-context";
 import { PrismaService } from "../prisma/prisma.service";
 import { SimulationService } from "../simulation/simulation.service";
 import { InventoryService } from "../inventory/inventory.service";
@@ -48,9 +49,9 @@ export class RetailShelfService {
       await this.inventory.settleAllUnlocked();
       const now = new Date();
       await this.prisma.$transaction(async (tx) => {
-        const existing = await tx.playerRetailState.findUnique({ where: { playerId: LOCAL_PLAYER_ID } });
+        const existing = await tx.playerRetailState.findUnique({ where: { playerId: currentPlayerId() } });
         const createData = {
-          playerId: LOCAL_PLAYER_ID,
+          playerId: currentPlayerId(),
           shelfEnabled: nextEnabled === true,
           shelfFollowMarket: nextFollowMarket ?? (nextAsk === undefined ? true : false),
           shelfAskGold: nextAsk ?? null,
@@ -76,7 +77,7 @@ export class RetailShelfService {
           data.shelfLastTickAt = now;
         }
         await tx.playerRetailState.update({
-          where: { playerId: LOCAL_PLAYER_ID },
+          where: { playerId: currentPlayerId() },
           data,
         });
       });

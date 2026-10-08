@@ -3,7 +3,6 @@ import {
   COMMODITIES_CONFIG,
   ITEM_SETTLEMENT_CURRENCY_ID,
   SETTLEMENT_INSUFFICIENT_MESSAGE,
-  LOCAL_PLAYER_ID,
   appendPriceHistory,
   computeCommodityFee,
   computeCommodityUnitPrice,
@@ -16,6 +15,7 @@ import {
   type CommodityListingConfig,
   type PriceHistoryPoint,
 } from "@ascent/shared";
+import { currentPlayerId } from "../auth/player-context";
 import { Prisma } from "../../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { InventoryService } from "../inventory/inventory.service";
@@ -191,7 +191,7 @@ export class CommodityMarketService {
   private async getItemBalance(itemId: string, tx?: Prisma.TransactionClient) {
     const client = tx ?? this.prisma;
     const row = await client.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
+      where: { playerId_itemId: { playerId: currentPlayerId(), itemId } },
     });
     return row ? Number(row.quantity) : 0;
   }
@@ -204,7 +204,7 @@ export class CommodityMarketService {
   ) {
     const updated = await tx.playerInventory.updateMany({
       where: {
-        playerId: LOCAL_PLAYER_ID,
+        playerId: currentPlayerId(),
         itemId,
         quantity: { gte: qty },
       },
@@ -213,7 +213,7 @@ export class CommodityMarketService {
     if (updated.count === 1) return;
 
     const row = await tx.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
+      where: { playerId_itemId: { playerId: currentPlayerId(), itemId } },
     });
     const have = row ? Number(row.quantity) : 0;
     if (have + EPS < qty) {
@@ -227,9 +227,9 @@ export class CommodityMarketService {
 
   private async creditItem(tx: Prisma.TransactionClient, itemId: string, qty: number) {
     await tx.playerInventory.upsert({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
+      where: { playerId_itemId: { playerId: currentPlayerId(), itemId } },
       update: { quantity: { increment: qty } },
-      create: { playerId: LOCAL_PLAYER_ID, itemId, quantity: qty },
+      create: { playerId: currentPlayerId(), itemId, quantity: qty },
     });
   }
 }

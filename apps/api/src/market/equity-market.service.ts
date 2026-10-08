@@ -3,7 +3,6 @@ import {
   EQUITY_CONFIG,
   ITEM_SETTLEMENT_CURRENCY_ID,
   SETTLEMENT_INSUFFICIENT_MESSAGE,
-  LOCAL_PLAYER_ID,
   PriceHistoryPoint,
   appendPriceHistoryRing,
   clampEquityPrice,
@@ -12,6 +11,7 @@ import {
   isKnownEquityId,
   parseTradeQuantity,
 } from "@ascent/shared";
+import { currentPlayerId } from "../auth/player-context";
 import { Prisma } from "../../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { InventoryService } from "../inventory/inventory.service";
@@ -49,7 +49,7 @@ export class EquityMarketService {
     const tickers = await this.loadTickers();
     const holdings = await this.loadHoldings();
     const goldRow = await this.prisma.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
+      where: { playerId_itemId: { playerId: currentPlayerId(), itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
     });
     return {
       gold: goldRow ? Number(goldRow.quantity) : 0,
@@ -90,7 +90,7 @@ export class EquityMarketService {
       if (!ticker) throw new BadRequestException(`不可交易：${equityId}`);
 
       const holding = await tx.playerEquityHolding.findUnique({
-        where: { playerId_equityId: { playerId: LOCAL_PLAYER_ID, equityId } },
+        where: { playerId_equityId: { playerId: currentPlayerId(), equityId } },
       });
       const currentShares = holding?.shares ?? 0;
       const unitPrice = ticker.currentPrice;
@@ -128,7 +128,7 @@ export class EquityMarketService {
       });
 
       const updatedHolding = await tx.playerEquityHolding.findUnique({
-        where: { playerId_equityId: { playerId: LOCAL_PLAYER_ID, equityId } },
+        where: { playerId_equityId: { playerId: currentPlayerId(), equityId } },
       });
 
       return {
@@ -170,7 +170,7 @@ export class EquityMarketService {
 
   private async loadHoldings(): Promise<Record<string, number>> {
     const rows = await this.prisma.playerEquityHolding.findMany({
-      where: { playerId: LOCAL_PLAYER_ID },
+      where: { playerId: currentPlayerId() },
     });
     const holdings: Record<string, number> = {};
     for (const l of EQUITY_CONFIG.listings) holdings[l.id] = 0;
@@ -180,16 +180,16 @@ export class EquityMarketService {
 
   private async upsertShares(tx: Prisma.TransactionClient, equityId: string, shares: number) {
     await tx.playerEquityHolding.upsert({
-      where: { playerId_equityId: { playerId: LOCAL_PLAYER_ID, equityId } },
+      where: { playerId_equityId: { playerId: currentPlayerId(), equityId } },
       update: { shares },
-      create: { playerId: LOCAL_PLAYER_ID, equityId, shares },
+      create: { playerId: currentPlayerId(), equityId, shares },
     });
   }
 
   private async deductGold(tx: Prisma.TransactionClient, qty: number) {
     const updated = await tx.playerInventory.updateMany({
       where: {
-        playerId: LOCAL_PLAYER_ID,
+        playerId: currentPlayerId(),
         itemId: ITEM_SETTLEMENT_CURRENCY_ID,
         quantity: { gte: qty },
       },
@@ -198,7 +198,7 @@ export class EquityMarketService {
     if (updated.count === 1) return;
 
     const row = await tx.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
+      where: { playerId_itemId: { playerId: currentPlayerId(), itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
     });
     const have = row ? Number(row.quantity) : 0;
     if (have + EPS < qty) throw new BadRequestException(SETTLEMENT_INSUFFICIENT_MESSAGE);
@@ -207,9 +207,9 @@ export class EquityMarketService {
 
   private async creditGold(tx: Prisma.TransactionClient, qty: number) {
     await tx.playerInventory.upsert({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
+      where: { playerId_itemId: { playerId: currentPlayerId(), itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
       update: { quantity: { increment: qty } },
-      create: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID, quantity: qty },
+      create: { playerId: currentPlayerId(), itemId: ITEM_SETTLEMENT_CURRENCY_ID, quantity: qty },
     });
   }
 }

@@ -10,11 +10,10 @@ import {
   TIME_SCALE,
   TICK_INTERVAL_REAL_MS,
   GAME_DAY_GAME_SEC,
-  seedPlacedBuildingDefIds,
   enabledCommodityListings,
   initialPriceHistory,
-  startingInventory,
 } from "@ascent/shared";
+import { provisionNewPlayer } from "../src/auth/provision-player";
 import { syncCatalog } from "./sync-catalog";
 
 const prisma = new PrismaClient({ adapter: createPrismaAdapter() });
@@ -26,6 +25,7 @@ async function main() {
   await prisma.playerInventory.deleteMany();
   await prisma.playerEquityHolding.deleteMany();
   await prisma.playerRetailState.deleteMany();
+  await prisma.account.deleteMany();
   await prisma.player.deleteMany();
   await prisma.buildingLevel.deleteMany();
   await prisma.productionMethod.deleteMany();
@@ -62,23 +62,7 @@ async function main() {
 
   await syncCatalog(prisma);
 
-  await prisma.player.create({
-    data: {
-      id: LOCAL_PLAYER_ID,
-      createdAt: now,
-      lastSeenAt: now,
-    },
-  });
-
-  for (const [itemId, qty] of Object.entries(startingInventory)) {
-    await prisma.playerInventory.create({
-      data: {
-        playerId: LOCAL_PLAYER_ID,
-        itemId,
-        quantity: qty,
-      },
-    });
-  }
+  await provisionNewPlayer(prisma, LOCAL_PLAYER_ID, now);
 
   const seedNowMs = now.getTime();
   for (const listing of enabledCommodityListings()) {
@@ -99,25 +83,6 @@ async function main() {
         netBuyVolume: 0,
         currentPrice: listing.basePrice,
         priceHistory: history,
-      },
-    });
-  }
-
-  for (const defId of seedPlacedBuildingDefIds) {
-    await prisma.playerBuilding.create({
-      data: {
-        id: `pb_${LOCAL_PLAYER_ID}_${defId}`,
-        playerId: LOCAL_PLAYER_ID,
-        buildingDefId: defId,
-        lastSettledAt: now,
-        lastSettledGame: 0,
-        lastUpdate: now,
-        lastUpdateGame: 0,
-        queue: [],
-        inputs: {},
-        outputs: {},
-        bufferedOutputs: {},
-        status: "idle",
       },
     });
   }

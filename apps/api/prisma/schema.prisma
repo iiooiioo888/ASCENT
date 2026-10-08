@@ -154,12 +154,24 @@ model Player {
   lastSeenAt     DateTime @map("last_seen_at")
   workforceHired Int      @default(1) @map("workforce_hired")
   workforceBusy  Int      @default(0) @map("workforce_busy")
+  account        Account?
   inventory      PlayerInventory[]
   buildings      PlayerBuilding[]
   equityHoldings PlayerEquityHolding[]
   retailState    PlayerRetailState?
 
   @@map("players")
+}
+
+model Account {
+  id           String   @id
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  playerId     String   @unique @map("player_id")
+  player       Player   @relation(fields: [playerId], references: [id])
+  createdAt    DateTime @map("created_at")
+
+  @@map("accounts")
 }
 
 model PlayerRetailState {

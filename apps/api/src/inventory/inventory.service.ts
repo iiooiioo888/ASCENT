@@ -5,7 +5,6 @@ import {
   ITEM_SETTLEMENT_CURRENCY_ID,
   SETTLEMENT_INSUFFICIENT_MESSAGE,
   LAND_ERROR_COPY,
-  LOCAL_PLAYER_ID,
   PLAYER_BUILDING_SLOT_CAP,
   allowsAnotherInstanceOfDef,
   SILO_BUILDING_DEF_ID,
@@ -31,6 +30,7 @@ import {
   type ItemIo,
 } from "@ascent/shared";
 import { Prisma } from "../../generated/prisma/client";
+import { currentPlayerId, runWithPlayer } from "../auth/player-context";
 import { PrismaService } from "../prisma/prisma.service";
 import { SimulationService } from "../simulation/simulation.service";
 import { isMethodAllowedForBuilding } from "./building-method-access";
@@ -104,7 +104,7 @@ export class InventoryService {
   /** AFK-SMART D1：先結算全建築，再按麵包鏈優先序批次嘗試自動開工。 */
   private async settleAllBuildingsAndAfkAutoStartUnlocked(tx: SettlementTransactionClient): Promise<void> {
     const buildings = await tx.playerBuilding.findMany({
-      where: { playerId: LOCAL_PLAYER_ID },
+      where: { playerId: currentPlayerId() },
     });
     const order = sortBuildingsForAfkAutoStart(buildings);
     for (const b of order) {
@@ -139,9 +139,9 @@ export class InventoryService {
   async state() {
     await this.settleAll();
     const [inventory, buildings, methods, defs, time] = await Promise.all([
-      this.prisma.playerInventory.findMany({ where: { playerId: LOCAL_PLAYER_ID }, include: { item: true } }),
+      this.prisma.playerInventory.findMany({ where: { playerId: currentPlayerId() }, include: { item: true } }),
       this.prisma.playerBuilding.findMany({
-        where: { playerId: LOCAL_PLAYER_ID },
+        where: { playerId: currentPlayerId() },
         include: { buildingDef: true, method: true },
       }),
       this.prisma.productionMethod.findMany({ where: { isActive: true } }),
@@ -182,7 +182,7 @@ export class InventoryService {
   }
 
   async workforceSnapshot() {
-    const player = await this.prisma.player.findUniqueOrThrow({ where: { id: LOCAL_PLAYER_ID } });
+    const player = await this.prisma.player.findUniqueOrThrow({ where: { id: currentPlayerId() } });
     const { maxHired } = this.sim.opsDepth.workforce;
     const hired = player.workforceHired;
     const busy = player.workforceBusy;
@@ -197,7 +197,7 @@ export class InventoryService {
   async inventory() {
     await this.settleAll();
     return this.prisma.playerInventory.findMany({
-      where: { playerId: LOCAL_PLAYER_ID },
+      where: { playerId: currentPlayerId() },
       include: { item: true },
     });
   }
@@ -205,7 +205,7 @@ export class InventoryService {
   async buildings() {
     await this.settleAll();
     return this.prisma.playerBuilding.findMany({
-      where: { playerId: LOCAL_PLAYER_ID },
+      where: { playerId: currentPlayerId() },
       include: { buildingDef: true, method: true },
     });
   }
@@ -242,7 +242,7 @@ export class InventoryService {
       let created: Awaited<ReturnType<typeof this.prisma.playerBuilding.create>>;
       await this.prisma.$transaction(async (tx) => {
         const existing = await tx.playerBuilding.findMany({
-          where: { playerId: LOCAL_PLAYER_ID },
+          where: { playerId: currentPlayerId() },
           select: { buildingDefId: true },
         });
         this.assertPlacementAllowed(def.id, existing);
@@ -275,7 +275,7 @@ export class InventoryService {
 
       await this.prisma.$transaction(async (tx) => {
         const buildings = await tx.playerBuilding.findMany({
-          where: { playerId: LOCAL_PLAYER_ID },
+          where: { playerId: currentPlayerId() },
           select: { buildingDefId: true },
         });
         const fieldCount = countPlayerFields(buildings);
@@ -295,7 +295,7 @@ export class InventoryService {
           data: this.newPlayerBuildingData(FIELD_BUILDING_DEF_ID, game, now),
         });
         const goldRow = await tx.playerInventory.findUnique({
-          where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
+          where: { playerId_itemId: { playerId: currentPlayerId(), itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
         });
         goldAfter = Number(goldRow?.quantity ?? 0);
       });
@@ -323,8 +323,8 @@ export class InventoryService {
 
   private newPlayerBuildingData(buildingDefId: string, game: number, now: Date) {
     return {
-      id: `pb_${LOCAL_PLAYER_ID}_${buildingDefId}_${now.getTime()}`,
-      playerId: LOCAL_PLAYER_ID,
+      id: `pb_${currentPlayerId()}_${buildingDefId}_${now.getTime()}`,
+      playerId: currentPlayerId(),
       buildingDefId,
       lastSettledAt: now,
       lastSettledGame: toGameInt(game),
@@ -445,12 +445,12 @@ export class InventoryService {
     const laborCost = depth.workforce.laborCostPerStart;
     const wageGold = wageGoldForBuilding(building.buildingDefId, depth);
     const haulGold = haulGoldForBuilding(building.buildingDefId, depth);
-    const player = await tx.player.findUniqueOrThrow({ where: { id: LOCAL_PLAYER_ID } });
+    const player = await tx.player.findUniqueOrThrow({ where: { id: currentPlayerId() } });
     const free = player.workforceHired - player.workforceBusy;
     if (free < laborCost) throw new BadRequestException("人手不足");
     for (const [itemId, qty] of Object.entries(inputs)) {
       const row = await tx.playerInventory.findUnique({
-        where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
+        where: { playerId_itemId: { playerId: currentPlayerId(), itemId } },
       });
       const have = row ? Number(row.quantity) : 0;
       if (have + 1e-9 < qty) throw new BadRequestException(insufficientMaterialMessage(itemId));
@@ -458,7 +458,7 @@ export class InventoryService {
     const goldCost = wageGold + haulGold;
     if (goldCost > 0) {
       const goldRow = await tx.playerInventory.findUnique({
-        where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
+        where: { playerId_itemId: { playerId: currentPlayerId(), itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
       });
       const goldHave = goldRow ? Number(goldRow.quantity) : 0;
       if (goldHave + 1e-9 < goldCost) throw new BadRequestException(SETTLEMENT_INSUFFICIENT_MESSAGE);
@@ -487,7 +487,7 @@ export class InventoryService {
     throwIfStateConflict(started.count);
     for (const [itemId, qty] of Object.entries(inputs)) {
       await tx.playerInventory.update({
-        where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
+        where: { playerId_itemId: { playerId: currentPlayerId(), itemId } },
         data: { quantity: { decrement: qty } },
       });
     }
@@ -498,7 +498,7 @@ export class InventoryService {
       await deductPlayerItem(tx, ITEM_SETTLEMENT_CURRENCY_ID, haulGold);
     }
     await tx.player.update({
-      where: { id: LOCAL_PLAYER_ID },
+      where: { id: currentPlayerId() },
       data: { workforceBusy: { increment: laborCost } },
     });
   }
@@ -562,11 +562,11 @@ export class InventoryService {
       });
       throwIfStateConflict(stopped.count);
       if (releaseWorkforce) {
-        const player = await tx.player.findUniqueOrThrow({ where: { id: LOCAL_PLAYER_ID } });
+        const player = await tx.player.findUniqueOrThrow({ where: { id: currentPlayerId() } });
         const nextBusy = Math.max(0, player.workforceBusy - laborCost);
         if (nextBusy !== player.workforceBusy) {
           await tx.player.update({
-            where: { id: LOCAL_PLAYER_ID },
+            where: { id: currentPlayerId() },
             data: { workforceBusy: nextBusy },
           });
         }
@@ -620,11 +620,11 @@ export class InventoryService {
       });
       throwIfStateConflict(claimed.count);
       const laborCost = this.sim.opsDepth.workforce.laborCostPerStart;
-      const player = await tx.player.findUniqueOrThrow({ where: { id: LOCAL_PLAYER_ID } });
+      const player = await tx.player.findUniqueOrThrow({ where: { id: currentPlayerId() } });
       const nextBusy = Math.max(0, player.workforceBusy - laborCost);
       if (nextBusy !== player.workforceBusy) {
         await tx.player.update({
-          where: { id: LOCAL_PLAYER_ID },
+          where: { id: currentPlayerId() },
           data: { workforceBusy: nextBusy },
         });
       }
@@ -643,6 +643,14 @@ export class InventoryService {
       await this.settleAllBuildingsAndAfkAutoStartUnlocked(tx);
       await settleRetailShelfUnlocked(tx, this.sim, now);
     });
+  }
+
+  /** 背景 tick 沒有請求身分，逐個玩家套上上下文再走同一個 settleAll。 */
+  async settleEveryPlayer() {
+    const players = await this.prisma.player.findMany({ select: { id: true } });
+    for (const player of players) {
+      await runWithPlayer(player.id, () => this.settleAll());
+    }
   }
 
   async settleBuilding(id: string) {
@@ -712,9 +720,9 @@ export class InventoryService {
   private async add(tx: SettlementTransactionClient, gain: Record<string, number>) {
     for (const [itemId, qty] of Object.entries(gain)) {
       await tx.playerInventory.upsert({
-        where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
+        where: { playerId_itemId: { playerId: currentPlayerId(), itemId } },
         update: { quantity: { increment: qty } },
-        create: { playerId: LOCAL_PLAYER_ID, itemId, quantity: qty },
+        create: { playerId: currentPlayerId(), itemId, quantity: qty },
       });
     }
   }

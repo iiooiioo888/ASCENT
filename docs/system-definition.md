@@ -5,7 +5,7 @@
 | 版本 | v1.0 |
 | 狀態 | **確定**（產品與範圍法源） |
 | 日期 | 2026-10-06 |
-| 本階段 | 只寫文件；不建碼、不安裝依賴、不建 monorepo |
+| 本階段 | 產品法源。程式已在 `apps/`、`packages/shared`。現況與任務見 [next.md](next.md) |
 | 路徑 | **本檔為 v1.0 正式法源。** [system-definition-v1.md](system-definition-v1.md) 僅轉址至此，避免雙正文漂移。 |
 
 本檔鎖定產品決定，**不得刪減下列決策**。技術棧**目標**聽 [ADR 0001](adr/0001-tech-stack.md)（不改定案表）；生產規則聽 [GDD v2.0 正式全文](gdd/production-system-v2.md)、[節次入口](gdd/production-system.md) 與分冊 0001–0007；工程切片聽 [mvp.md](mvp.md)；產品約束摘要見 [ADR 0002](adr/0002-product-constraints.md)。
@@ -210,7 +210,16 @@ GDD 原稿 `maxOfflineGameSec=86400` 保留為日長：1 遊戲日 = 24 現實�
 | 存檔 | 自動存檔 |
 | 明確不做 | 無登入、無市場、無排行榜、無 AI 訂單、無 WebSocket |
 
-可執行規格：[mvp.md](mvp.md)。
+可執行規格：[mvp.md](mvp.md)。上表是工程 MVP 閉區間，不因後來的可玩增量改寫。
+
+### 8.1 已可玩增量（不改上表）
+
+| 項 | 程式現況 |
+| --- | --- |
+| 結算貨幣 | 庫存 `item_copper_ingot`；開局 **10** 銅錠（`STARTING_COPPER_INGOT`）。`STARTING_GOLD` 只是別名 |
+| 佔槽 | 上限 **12**；倉隱藏且不佔槽；田上限 **2** |
+| 產業擴充 | 礦、化、工、能源、林木建築不佔這 12 槽，每種最多 1 座 |
+| 商行 | NPC 固定價。不是第 18 項所禁的玩家市場 |
 
 ---
 
@@ -306,8 +315,8 @@ React + TS + Vite ──HTTP──► NestJS 單體
 
 ## 13. 下一步
 
-本階段**只有設計文件**，尚未建碼、未裝依賴。農業切片目錄見 [gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md)。驗收見 [mvp.md](mvp.md)。
+程式已在倉庫根 `apps/`、`packages/shared`。結算用庫存 **`item_copper_ingot`**，開局 **10** 銅錠。佔槽上限 **12**，倉不佔槽，田上限 **2**。農業切片仍鎖 8 物品，見 [gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md)。驗收見 [mvp.md](mvp.md)。
 
-**下一步建議：** MVP Schema → 後端核心 → 前端。
+任務只維護在 [next.md](next.md)。內容順序仍是：數值可玩化 → 目錄補洞 → 顯示名單一來源 → 目標首發補到 50–100 物品 → 視覺。登入已開工；玩家對玩家市場、排行榜、AI 訂單、Redis、WebSocket 的順序與完成樣子只寫在該檔「未來開發任務」。
 
-與第 9 節同義（本次不實作）：生產鏈核心 → 數值平衡 → 離線結算 → 存檔 → 視覺 → 玩家互動。
+與第 9 節同義：生產鏈核心（已）→ 數值平衡 → 離線結算（已）→ 存檔（已）→ 視覺 → 玩家互動。

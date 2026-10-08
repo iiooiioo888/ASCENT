@@ -23,6 +23,7 @@
 - 規則作為架構約束 → [ADR 0003](../adr/0003-production-rules.md)（編號 0002 已用於產品約束，**不**另建 `0002-production-rules.md`）
 - 目標首發展開 → [launch-scope.md](launch-scope.md)
 - 工程 MVP → [mvp.md](../mvp.md)
+- 現況與接下來要做的事 → [next.md](../next.md)（唯一任務入口）
 - 農業切片 ID／驗證對照 → [mvp-agriculture-catalog.md](mvp-agriculture-catalog.md)
 - AI 訂單（不在 MVP）→ [ai-orders.md](ai-orders.md)
 

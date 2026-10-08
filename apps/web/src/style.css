@@ -1539,3 +1539,71 @@ button.danger {
     min-width: 44px;
   }
 }
+
+.login-gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+.login-card {
+  width: min(22rem, 100%);
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  background: var(--panel);
+  color: var(--cream);
+  border: 3px solid var(--panel-edge);
+  box-shadow: var(--shadow-offset);
+}
+.login-card h1 {
+  margin: 0;
+  font-family: var(--font-display);
+}
+.login-card p { margin: 0; }
+.login-card label {
+  display: grid;
+  gap: 0.3rem;
+}
+.login-card input {
+  min-height: 44px;
+  padding: 0.45rem 0.55rem;
+  border: 2px solid var(--panel-edge);
+  background: var(--cream);
+  color: var(--ink);
+}
+.login-card button {
+  min-height: 44px;
+  border: 2px solid var(--ink);
+  background: var(--gold);
+  color: var(--ink);
+  font-weight: 700;
+}
+.login-switch {
+  background: transparent !important;
+  color: var(--cream) !important;
+  border-color: var(--panel-edge) !important;
+}
+.login-error { color: var(--danger); }
+.login-logout {
+  position: fixed;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 20;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.35rem 0.7rem;
+  border: 2px solid var(--ink);
+  background: var(--panel);
+  color: var(--cream);
+}
+.login-notice {
+  position: fixed;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 20;
+  margin: 0;
+  padding: 0.45rem 0.7rem;
+  background: var(--panel);
+  border: 2px solid var(--panel-edge);
+}
