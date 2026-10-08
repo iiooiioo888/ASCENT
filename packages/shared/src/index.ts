@@ -16,3 +16,4 @@ export * from "./land-config";
 export * from "./retail-config";
 export * from "./retail-shelf";
 export * from "./afk-config";
+export * from "./item-display-names";

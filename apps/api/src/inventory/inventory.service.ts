@@ -22,6 +22,7 @@ import {
   opsCostsFromDepth,
   wageGoldForBuilding,
   defaultAutoMethodIdForBuilding,
+  insufficientMaterialMessage,
   mapStartFailureToAutoPauseReason,
   sortBuildingsForAfkAutoStart,
   type BuildingQueueJob,
@@ -446,7 +447,7 @@ export class InventoryService {
         where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId } },
       });
       const have = row ? Number(row.quantity) : 0;
-      if (have + 1e-9 < qty) throw new BadRequestException(`資源不足：${itemId}`);
+      if (have + 1e-9 < qty) throw new BadRequestException(insufficientMaterialMessage(itemId));
     }
     const goldCost = wageGold + haulGold;
     if (goldCost > 0) {

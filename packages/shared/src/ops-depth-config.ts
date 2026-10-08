@@ -34,6 +34,7 @@ export const DEFAULT_OPS_DEPTH: OpsDepthConfig = {
       bdef_oven: 2,
       bdef_trading_post: 0,
       bdef_ranch: 2,
+      bdef_food_factory: 3,
       bdef_mine: 1,
       bdef_quarry: 1,
       bdef_forest: 1,
@@ -52,6 +53,7 @@ export const DEFAULT_OPS_DEPTH: OpsDepthConfig = {
       bdef_mill: 1,
       bdef_oven: 2,
       bdef_ranch: 0,
+      bdef_food_factory: 2,
       bdef_mine: 0,
       bdef_quarry: 0,
       bdef_forest: 0,
@@ -65,6 +67,7 @@ export const DEFAULT_OPS_DEPTH: OpsDepthConfig = {
   },
   sellTransport: {
     item_bread: 1,
+    item_cake: 1,
   },
 };
 

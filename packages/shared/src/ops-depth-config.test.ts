@@ -49,5 +49,8 @@ describe("ops-depth-config", () => {
     expect(costs.wageByBuilding.bdef_oven).toBe(2);
     expect(costs.haulByBuilding.bdef_oven).toBe(2);
     expect(costs.sellTransport.item_bread).toBe(1);
+    expect(costs.wageByBuilding.bdef_food_factory).toBe(3);
+    expect(costs.haulByBuilding.bdef_food_factory).toBe(2);
+    expect(costs.sellTransport.item_cake).toBe(1);
   });
 });
