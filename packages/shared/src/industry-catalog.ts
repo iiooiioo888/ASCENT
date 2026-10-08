@@ -80,6 +80,8 @@ export const industryItemTypes: ItemTypeDef[] = [
 export const industryItems: ItemDef[] = [
   item("item_iron_ore", "iron_ore", "it_mineral", "T", 1),
   item("item_copper_ore", "copper_ore", "it_mineral", "T", 1),
+  item("item_silver_ore", "silver_ore", "it_mineral", "T", 1),
+  item("item_gold_ore", "gold_ore", "it_mineral", "T", 1),
   item("item_stone", "stone", "it_mineral", "T", 1),
   item("item_clay", "clay", "it_mineral", "T", 1),
   item("item_sand", "sand", "it_mineral", "T", 1),
@@ -89,6 +91,8 @@ export const industryItems: ItemDef[] = [
   item("item_log", "log", "it_timber", "T", 1),
   item("item_iron_ingot", "iron_ingot", "it_industrial", "P", 1),
   item("item_copper_ingot", "copper_ingot", "it_industrial", "P", 1),
+  item("item_silver_ingot", "silver_ingot", "it_industrial", "P", 1),
+  item("item_gold_ingot", "gold_ingot", "it_industrial", "P", 1),
   item("item_coke", "coke", "it_energy", "P", 1),
   item("item_charcoal", "charcoal", "it_energy", "P", 1),
   item("item_lime", "lime", "it_chemical", "P", 1),
@@ -110,9 +114,14 @@ export const industryItems: ItemDef[] = [
   item("item_fertilizer", "fertilizer", "it_chemical", "P", 3),
 ];
 
+/** CURR-RES：採礦耗 1 水（對齊 P4-S4 typed ores）。 */
+const MINE_WATER_INPUT: ProductionRuleDef["inputs"] = [io("item_water", 1)];
+
 export const industryRules: ProductionRuleDef[] = [
-  rule("rule_mine_iron", "mine_iron", [], [io("item_iron_ore", 2)], 2400),
-  rule("rule_mine_copper", "mine_copper", [], [io("item_copper_ore", 2)], 2400),
+  rule("rule_mine_iron", "mine_iron", MINE_WATER_INPUT, [io("item_iron_ore", 2)], 2400),
+  rule("rule_mine_copper", "mine_copper", MINE_WATER_INPUT, [io("item_copper_ore", 2)], 2400),
+  rule("rule_mine_silver", "mine_silver", MINE_WATER_INPUT, [io("item_silver_ore", 2)], 2400),
+  rule("rule_mine_gold", "mine_gold", MINE_WATER_INPUT, [io("item_gold_ore", 1)], 2400),
   rule("rule_mine_coal", "mine_coal", [], [io("item_coal", 2)], 2400),
   rule("rule_mine_sulfur", "mine_sulfur", [], [io("item_sulfur", 1)], 3000),
   rule("rule_quarry_stone", "quarry_stone", [], [io("item_stone", 2)], 1800),
@@ -138,6 +147,20 @@ export const industryRules: ProductionRuleDef[] = [
     "smelt_copper",
     [io("item_copper_ore", 2), io("item_coal", 1)],
     [io("item_copper_ingot", 1)],
+    2400,
+  ),
+  rule(
+    "rule_smelt_silver",
+    "smelt_silver",
+    [io("item_silver_ore", 2), io("item_coal", 1)],
+    [io("item_silver_ingot", 1)],
+    2400,
+  ),
+  rule(
+    "rule_smelt_gold",
+    "smelt_gold",
+    [io("item_gold_ore", 1), io("item_coal", 1)],
+    [io("item_gold_ingot", 1)],
     2400,
   ),
   rule("rule_make_coke", "make_coke", [io("item_coal", 2)], [io("item_coke", 1)], 1800),
@@ -227,6 +250,8 @@ export const industryBuildingDefs: BuildingDef[] = [
   building("bdef_mine", "mine", "礦坑", "mining", [
     "rule_mine_iron",
     "rule_mine_copper",
+    "rule_mine_silver",
+    "rule_mine_gold",
     "rule_mine_coal",
     "rule_mine_sulfur",
   ]),
@@ -240,6 +265,8 @@ export const industryBuildingDefs: BuildingDef[] = [
     "rule_smelt_iron",
     "rule_smelt_iron_charcoal",
     "rule_smelt_copper",
+    "rule_smelt_silver",
+    "rule_smelt_gold",
     "rule_make_coke",
     "rule_make_steel",
   ]),
@@ -277,6 +304,8 @@ export const INDUSTRY_BUILDING_DEF_IDS: readonly string[] = industryBuildingDefs
 const METHOD_LABELS: Record<string, string> = {
   mine_iron: "開採鐵礦",
   mine_copper: "開採銅礦",
+  mine_silver: "開採銀礦",
+  mine_gold: "開採金礦",
   mine_coal: "開採煤",
   mine_sulfur: "開採硫磺",
   quarry_stone: "採石",
@@ -286,6 +315,8 @@ const METHOD_LABELS: Record<string, string> = {
   smelt_iron: "煉鐵",
   smelt_iron_charcoal: "木炭煉鐵",
   smelt_copper: "煉銅",
+  smelt_silver: "煉銀",
+  smelt_gold: "煉金",
   make_coke: "煉焦",
   make_steel: "煉鋼",
   fire_brick: "燒磚",

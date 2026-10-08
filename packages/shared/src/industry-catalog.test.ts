@@ -26,6 +26,32 @@ describe("產業擴充目錄", () => {
     expect(playableItems.filter((i) => i.layer === "T" && i.derived_tier >= 2)).toEqual([]);
   });
 
+  it("CURR-RES：採礦耗水、銀金礦錠與冶煉配方", () => {
+    const mine = industryRules.find((r) => r.id === "rule_mine_copper")!;
+    expect(mine.inputs).toEqual([{ item_id: "item_water", qty: 1 }]);
+    expect(mine.outputs).toEqual([{ item_id: "item_copper_ore", qty: 2 }]);
+    expect(industryRules.find((r) => r.id === "rule_mine_silver")?.outputs[0]).toEqual({
+      item_id: "item_silver_ore",
+      qty: 2,
+    });
+    expect(industryRules.find((r) => r.id === "rule_mine_gold")?.outputs[0]).toEqual({
+      item_id: "item_gold_ore",
+      qty: 1,
+    });
+    const smeltGold = industryRules.find((r) => r.id === "rule_smelt_gold")!;
+    expect(smeltGold.outputs[0]?.item_id).toBe("item_gold_ingot");
+    expect(smeltGold.outputs.some((o) => o.item_id === "item_gold")).toBe(false);
+    expect(playableItems.some((i) => i.id === "item_gold_ingot")).toBe(true);
+    const mineBuilding = industryBuildingDefs.find((b) => b.id === "bdef_mine")!;
+    expect(mineBuilding.allowed_rule_ids).toEqual(
+      expect.arrayContaining(["rule_mine_silver", "rule_mine_gold"]),
+    );
+    const smelter = industryBuildingDefs.find((b) => b.id === "bdef_smelter")!;
+    expect(smelter.allowed_rule_ids).toEqual(
+      expect.arrayContaining(["rule_smelt_silver", "rule_smelt_gold"]),
+    );
+  });
+
   it("五條產業都有建築，且方式名稱齊全", () => {
     const systems = new Set(industryBuildingDefs.map((b) => b.system_code));
     expect(systems).toEqual(new Set(["mining", "chemical", "industry", "energy", "timber"]));

@@ -27,6 +27,18 @@ describe("market-config", () => {
     expect(DEFAULT_MARKET_PRICES.buy.item_water).toBe(1);
   });
 
+  it("CURR-RES：MK 賣礦／錠價（整數金錢，無買礦）", () => {
+    expect(DEFAULT_MARKET_PRICES.sell.item_copper_ore).toBe(2);
+    expect(DEFAULT_MARKET_PRICES.sell.item_silver_ore).toBe(5);
+    expect(DEFAULT_MARKET_PRICES.sell.item_gold_ore).toBe(12);
+    expect(DEFAULT_MARKET_PRICES.sell.item_copper_ingot).toBe(4);
+    expect(DEFAULT_MARKET_PRICES.sell.item_silver_ingot).toBe(12);
+    expect(DEFAULT_MARKET_PRICES.sell.item_gold_ingot).toBe(25);
+    expect(DEFAULT_MARKET_PRICES.buy.item_copper_ore).toBeUndefined();
+    expect(DEFAULT_MARKET_PRICES.buy.item_silver_ore).toBeUndefined();
+    expect(DEFAULT_MARKET_PRICES.buy.item_gold_ore).toBeUndefined();
+  });
+
   it("不可交易金幣", () => {
     const book = marketPricesFromDb(null);
     expect(resolveMarketUnitPrice("sell", ITEM_GOLD_ID, book)).toBeNull();
