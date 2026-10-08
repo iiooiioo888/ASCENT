@@ -42,12 +42,13 @@ export const DEPLETION_CTA_MARKET = "前往商行";
 
 /** TODO(product): 待確認 — 各生產方式用途提示（U13） */
 export const METHOD_PURPOSE_HINTS: Partial<Record<string, string>> = {
-  method_mix_feed_default: "飼料：目前沒有下游用途，可先略過。",
+  method_mix_feed_default: "飼料：牧場用嚟養雞養牛。",
+  method_raise_livestock_default: "飼養禽畜：消耗飼料同水，產雞蛋同牛奶。",
 };
 
 /** TODO(product): 待確認 — 背包物品用途提示（U13） */
 export const ITEM_PURPOSE_HINTS: Partial<Record<string, string>> = {
-  item_feed: "目前沒有下游用途。",
+  item_feed: "飼料：牧場用嚟養雞養牛。",
   item_bread: "終產；本切片目標是做出並留存麵包。",
 };
 
@@ -122,7 +123,15 @@ export function productionProgressAriaLabel(buildingName: string, percent: numbe
 }
 
 /** Decorative industry chain strip (U15, P3-3 含飼料支線). */
-export const INDUSTRY_CHAIN_ARIA_LABEL = "產業鏈：田、磨坊、爐至麵包，磨坊可產飼料";
+export const INDUSTRY_CHAIN_ARIA_LABEL =
+  "產業鏈：田、磨坊、爐至麵包；磨坊可產飼料，飼料送牧場產蛋奶";
+
+/** AFK per-building recipe `<select>` (P4-S1). */
+export function autoMethodSelectAriaLabel(buildingName: string): string {
+  return `選擇${buildingName}的掛機配方`;
+}
+
+export const AUTO_METHOD_DEFAULT_OPTION_LABEL = "預設";
 
 /** TODO(product): 待確認 — 倉卡說明（U12 精簡卡） */
 export const SILO_CARD_BODY = "倉庫已隱藏：僅保留既有建築展示，無法再放置。";

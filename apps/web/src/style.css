@@ -1124,6 +1124,33 @@ dialog.offline-summary-dialog::backdrop {
 .auto-toggle-label {
   font-weight: 700;
 }
+.auto-method-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.auto-method-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--cream);
+  font-weight: 700;
+}
+.auto-method-select {
+  font-family: inherit;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--cream);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--cream);
+  box-shadow: 2px 2px 0 var(--ink);
+  max-width: 11rem;
+}
+.auto-method-select:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
 
 .plot-head {
   display: flex;

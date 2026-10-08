@@ -10,6 +10,26 @@ export function buildingAutoPendingKey(buildingId: string): string {
   return `auto:${buildingId}`;
 }
 
+export function buildingAutoMethodPendingKey(buildingId: string): string {
+  return `auto-method:${buildingId}`;
+}
+
 export function isBuildingAutoEnabled(building: Pick<Building, "autoEnabled">): boolean {
   return building.autoEnabled === true;
+}
+
+/** `<select>` value：空字串代表 API `null`（建築預設配方）。 */
+export function autoMethodSelectValue(autoMethodId: string | null | undefined): string {
+  return autoMethodId ?? "";
+}
+
+export function parseAutoMethodSelectValue(value: string): string | null {
+  return value === "" ? null : value;
+}
+
+export function showBuildingAutoMethodSelect(
+  building: Pick<Building, "buildingDefId">,
+  methodOptionCount: number,
+): boolean {
+  return showBuildingAutoToggle(building) && methodOptionCount > 0;
 }

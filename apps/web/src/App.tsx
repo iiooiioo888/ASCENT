@@ -63,7 +63,7 @@ import {
   MARKET_PANEL_ANCHOR_ID,
   resolveHudGold,
 } from "./market-feedback";
-import { buildingAutoPendingKey } from "./building-auto";
+import { buildingAutoMethodPendingKey, buildingAutoPendingKey } from "./building-auto";
 import { sortBuildingDefs } from "./buildingSort";
 import { nextPollFailureCount, shouldShowConnectionLost } from "./connectionPoll";
 import {
@@ -850,6 +850,7 @@ export default function App() {
           const selected = options.find((m) => m.id === selectedId);
           const actionKey = b.id;
           const autoActionKey = buildingAutoPendingKey(b.id);
+          const autoMethodActionKey = buildingAutoMethodPendingKey(b.id);
 
           if (
             isSiloBuilding(b) &&
@@ -942,6 +943,16 @@ export default function App() {
               autoActionError={actionErrors[autoActionKey]}
               onAutoToggle={(autoEnabled) =>
                 act(autoActionKey, `/api/v1/buildings/${b.id}/auto`, { autoEnabled }, { method: "PATCH" })
+              }
+              autoMethodPending={pendingKeys.has(autoMethodActionKey)}
+              autoMethodActionError={actionErrors[autoMethodActionKey]}
+              onAutoMethodChange={(autoMethodId) =>
+                act(
+                  autoMethodActionKey,
+                  `/api/v1/buildings/${b.id}/auto`,
+                  { autoMethodId },
+                  { method: "PATCH" },
+                )
               }
               goldBalance={hudGold}
               workforce={state.workforce}

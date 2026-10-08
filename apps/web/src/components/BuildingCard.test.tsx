@@ -7,7 +7,10 @@ import {
   demoMillRunning,
   growWheatDefault,
   mixFeedDefault,
+  raiseLivestockDefault,
+  demoRanchIdle,
 } from "../prb-demo/fixtures";
+import { BUILDING_ACTION_ERROR_COPY } from "../building-action-error";
 import { demoSiloBuilding } from "../screenshot-harness/fixtures";
 import { BuildingCard } from "./BuildingCard";
 import { DEMO_SERVER_REAL_TIME } from "../test/demoTime";
@@ -458,7 +461,48 @@ describe("BuildingCard AFK auto toggle", () => {
     expect(alerts.map((el) => el.textContent)).toEqual(["操作失敗，請重試", "資源不足：水"]);
   });
 
-  it("disables only auto switch while auto pending", () => {
+  it("selects auto method default null and calls handler with method id or null", async () => {
+    const user = userEvent.setup();
+    const onAutoMethodChange = vi.fn();
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoRanchIdle}
+        options={[raiseLivestockDefault]}
+        selectedId={raiseLivestockDefault.id}
+        selected={raiseLivestockDefault}
+        inventory={baseInventory}
+        onAutoToggle={vi.fn()}
+        onAutoMethodChange={onAutoMethodChange}
+      />,
+    );
+    const select = screen.getByRole("combobox", { name: "選擇牧場的掛機配方" });
+    expect(select).toHaveValue("");
+    await user.selectOptions(select, "method_raise_livestock_default");
+    expect(onAutoMethodChange).toHaveBeenCalledWith("method_raise_livestock_default");
+    await user.selectOptions(select, "預設");
+    expect(onAutoMethodChange).toHaveBeenCalledWith(null);
+  });
+
+  it("ranch card shows icon label and raise livestock recipe option", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoRanchIdle}
+        options={[raiseLivestockDefault]}
+        selectedId={raiseLivestockDefault.id}
+        selected={raiseLivestockDefault}
+        inventory={baseInventory}
+        onAutoToggle={vi.fn()}
+        onAutoMethodChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("img", { name: "牧場" })).toHaveTextContent("🐄");
+    expect(screen.getByRole("combobox", { name: "選擇牧場的生產方式" })).toHaveTextContent("飼養禽畜");
+    expect(screen.getByRole("combobox", { name: "選擇牧場的掛機配方" })).toBeInTheDocument();
+  });
+
+  it("shows auto method errors separately from auto toggle errors", () => {
     render(
       <BuildingCard
         {...baseProps}
@@ -466,12 +510,66 @@ describe("BuildingCard AFK auto toggle", () => {
         selectedId={growWheatDefault.id}
         selected={growWheatDefault}
         inventory={baseInventory}
-        autoPending={true}
         onAutoToggle={vi.fn()}
+        onAutoMethodChange={vi.fn()}
+        autoActionError={{ message: "操作失敗，請重試" }}
+        autoMethodActionError={{ message: BUILDING_ACTION_ERROR_COPY.METHOD_NOT_ALLOWED }}
       />,
     );
-    expect(screen.getByRole("switch", { name: "田自動生產" })).toBeDisabled();
+    const alerts = screen.getAllByRole("alert");
+    expect(alerts.map((el) => el.textContent)).toEqual([
+      BUILDING_ACTION_ERROR_COPY.METHOD_NOT_ALLOWED,
+      "操作失敗，請重試",
+    ]);
+  });
+
+  it("disables auto controls while auto or auto-method pending", () => {
+    const ranchInventory = [
+      ...baseInventory,
+      {
+        itemId: "item_feed",
+        quantity: "5",
+        item: { code: "item_feed", layer: "P", derivedTier: 1 },
+      },
+    ];
+    const { rerender } = render(
+      <BuildingCard
+        {...baseProps}
+        building={demoRanchIdle}
+        options={[raiseLivestockDefault]}
+        selectedId={raiseLivestockDefault.id}
+        selected={raiseLivestockDefault}
+        inventory={ranchInventory}
+        goldBalance={10}
+        workforce={{ hired: 1, busy: 0, free: 1, maxHired: 8 }}
+        opsCosts={{ ...defaultOpsCosts, wageByBuilding: { ...defaultOpsCosts.wageByBuilding, bdef_ranch: 2 } }}
+        autoPending={true}
+        onAutoToggle={vi.fn()}
+        onAutoMethodChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("switch", { name: "牧場自動生產" })).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: "選擇牧場的掛機配方" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "開工" })).not.toBeDisabled();
+
+    rerender(
+      <BuildingCard
+        {...baseProps}
+        building={demoRanchIdle}
+        options={[raiseLivestockDefault]}
+        selectedId={raiseLivestockDefault.id}
+        selected={raiseLivestockDefault}
+        inventory={ranchInventory}
+        goldBalance={10}
+        workforce={{ hired: 1, busy: 0, free: 1, maxHired: 8 }}
+        opsCosts={{ ...defaultOpsCosts, wageByBuilding: { ...defaultOpsCosts.wageByBuilding, bdef_ranch: 2 } }}
+        autoMethodPending={true}
+        onAutoToggle={vi.fn()}
+        onAutoMethodChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("switch", { name: "牧場自動生產" })).not.toBeDisabled();
+    expect(screen.getByRole("combobox", { name: "選擇牧場的掛機配方" })).toBeDisabled();
   });
 });
 

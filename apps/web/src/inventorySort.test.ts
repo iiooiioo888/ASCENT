@@ -16,6 +16,8 @@ describe("sortInventoryRows (P3-4)", () => {
   });
 
   it("exports stable catalog order length", () => {
-    expect(INVENTORY_DISPLAY_ORDER.length).toBe(9);
+    expect(INVENTORY_DISPLAY_ORDER.length).toBe(11);
+    expect(INVENTORY_DISPLAY_ORDER).toContain("item_egg");
+    expect(INVENTORY_DISPLAY_ORDER).toContain("item_milk");
   });
 });

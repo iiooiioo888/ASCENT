@@ -8,6 +8,8 @@ export const ITEM_META: Record<string, { name: string; icon: string }> = {
   item_water: { name: "水", icon: "💧" },
   item_flour: { name: "麵粉", icon: "🥣" },
   item_feed: { name: "飼料", icon: "🧺" },
+  item_egg: { name: "雞蛋", icon: "🥚" },
+  item_milk: { name: "牛奶", icon: "🥛" },
   item_dough: { name: "麵團", icon: "⚪" },
   item_bread: { name: "麵包", icon: "🍞" },
   item_gold: { name: "金幣", icon: "🪙" },
@@ -23,6 +25,7 @@ export const BUILDING_ICON: Record<string, string> = {
   bdef_mill: "⚙️",
   bdef_oven: "🔥",
   bdef_well: "💧",
+  bdef_ranch: "🐄",
   bdef_trading_post: "🏪",
 };
 
