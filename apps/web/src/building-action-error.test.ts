@@ -68,6 +68,8 @@ describe("mapBuildingActionError — known mappings", () => {
   });
 
   it("maps insufficient materials with item display names", () => {
+    expect(mapBuildingActionError(new ApiError("資源不足：item_egg", 400)).message).toBe("資源不足：雞蛋");
+    expect(mapBuildingActionError(new ApiError("資源不足：雞蛋", 400)).message).toBe("資源不足：雞蛋");
     expect(mapBuildingActionError(new ApiError("資源不足：item_water", 400)).message).toBe("資源不足：水");
     expect(
       mapBuildingActionError(

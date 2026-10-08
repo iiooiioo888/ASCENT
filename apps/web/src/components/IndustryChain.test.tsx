@@ -23,4 +23,13 @@ describe("IndustryChain (P3-3)", () => {
     expect(screen.queryByText("飼料")).not.toBeInTheDocument();
     expect(screen.queryByText("窯")).not.toBeInTheDocument();
   });
+
+  it("shows cake branch on industry tab", () => {
+    render(<IndustryChain buildings={prgBuildings} industry="industry" />);
+    expect(screen.getByText("蛋糕鏈")).toBeInTheDocument();
+    expect(screen.getByText("食品廠")).toBeInTheDocument();
+    expect(screen.getByText("蛋糕")).toBeInTheDocument();
+    expect(screen.getByText("麵粉")).toBeInTheDocument();
+    expect(screen.queryByText("飼料")).not.toBeInTheDocument();
+  });
 });

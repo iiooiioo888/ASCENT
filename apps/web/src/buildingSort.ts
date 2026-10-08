@@ -8,6 +8,7 @@ export const BUILDING_DEF_DISPLAY_ORDER: readonly string[] = [
   "bdef_field",
   "bdef_mill",
   "bdef_ranch",
+  "bdef_food_factory",
   "bdef_oven",
   "bdef_well",
   "bdef_silo",

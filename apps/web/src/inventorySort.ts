@@ -15,6 +15,7 @@ export const INVENTORY_DISPLAY_ORDER: readonly string[] = [
   "item_milk",
   "item_dough",
   "item_bread",
+  "item_cake",
   "item_iron_ore",
   "item_copper_ore",
   "item_coal",

@@ -44,6 +44,7 @@ export const DEPLETION_CTA_MARKET = "前往商行";
 export const METHOD_PURPOSE_HINTS: Partial<Record<string, string>> = {
   method_mix_feed_default: "飼料可送牧場養雞牛，或送化工廠與鹼製成肥料。",
   method_raise_livestock_default: "消耗飼料與水，產出雞蛋與牛奶。",
+  method_bake_cake_default: "消耗麵粉、雞蛋與牛奶，產出蛋糕。",
   method_mine_iron_default: "礦坑無原料消耗，開採後送冶煉爐。",
   method_mine_coal_default: "煤是冶煉、燒窯與煉焦的燃料。",
 };
@@ -55,6 +56,7 @@ export const ITEM_PURPOSE_HINTS: Partial<Record<string, string>> = {
   item_bread: "麵包是農產終產；可留存或在商行出售。",
   item_egg: "牧場產出；可留存或在商行出售。",
   item_milk: "牧場產出；可留存或在商行出售。",
+  item_cake: "食品廠終產；可在商行出售（貨架仍只賣麵包）。",
   item_coal: "冶煉、燒窯與煉焦的燃料。",
   item_fertilizer: "化工終產；可在商行出售。",
   item_machine: "工業終產；齒輪、銅線與工具組裝而成。",
@@ -147,7 +149,8 @@ export const INDUSTRY_CHAIN_ARIA_BY_ID = {
   mining: "礦業產業鏈：礦坑、冶煉爐至鋼",
   timber: "林木產業鏈：林地至原木",
   chemical: "化工產業鏈：窯、化工廠至肥料",
-  industry: "工業產業鏈：工坊、機械廠至機械，機械廠可產蒸汽機",
+  industry:
+    "工業產業鏈：工坊、機械廠至機械；麵粉與蛋奶送食品廠焗蛋糕；機械廠可產蒸汽機",
   energy: "能源產業鏈：鍋爐至蒸汽",
 } as const;
 

@@ -32,6 +32,19 @@ export const growWheatDefault: Method = {
   ],
 };
 
+export const bakeCakeDefault: Method = {
+  id: "method_bake_cake_default",
+  code: "bake_cake_default",
+  ruleId: "rule_bake_cake",
+  durationGameSec: 1800,
+  inputs: [
+    { item_id: "item_flour", qty: 1 },
+    { item_id: "item_egg", qty: 2 },
+    { item_id: "item_milk", qty: 1 },
+  ],
+  outputs: [{ item_id: "item_cake", qty: 1 }],
+};
+
 export const raiseLivestockDefault: Method = {
   id: "method_raise_livestock_default",
   code: "raise_livestock_default",
@@ -74,6 +87,18 @@ export const demoRanchIdle: Building = {
   status: "idle",
   buildingDefId: "bdef_ranch",
   buildingDef: { name: "牧場", allowedRuleIds: ["rule_raise_livestock"] },
+  methodId: null,
+  queue: [],
+  bufferedOutputs: {},
+  autoEnabled: false,
+  autoMethodId: null,
+};
+
+export const demoFoodFactoryIdle: Building = {
+  id: "demo-food-factory",
+  status: "idle",
+  buildingDefId: "bdef_food_factory",
+  buildingDef: { name: "食品廠", allowedRuleIds: ["rule_bake_cake"] },
   methodId: null,
   queue: [],
   bufferedOutputs: {},

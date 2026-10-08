@@ -15,6 +15,7 @@ describe("building-auto", () => {
     expect(showBuildingAutoToggle({ buildingDefId: "bdef_mill" })).toBe(true);
     expect(showBuildingAutoToggle({ buildingDefId: "bdef_oven" })).toBe(true);
     expect(showBuildingAutoToggle({ buildingDefId: "bdef_ranch" })).toBe(true);
+    expect(showBuildingAutoToggle({ buildingDefId: "bdef_food_factory" })).toBe(true);
   });
 
   it("hides toggle for trading post and silo", () => {
