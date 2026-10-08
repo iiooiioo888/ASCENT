@@ -32,6 +32,21 @@ export const growWheatDefault: Method = {
   ],
 };
 
+export const raiseLivestockDefault: Method = {
+  id: "method_raise_livestock_default",
+  code: "raise_livestock_default",
+  ruleId: "rule_raise_livestock",
+  durationGameSec: 2400,
+  inputs: [
+    { item_id: "item_feed", qty: 1 },
+    { item_id: "item_water", qty: 1 },
+  ],
+  outputs: [
+    { item_id: "item_egg", qty: 2 },
+    { item_id: "item_milk", qty: 1 },
+  ],
+};
+
 export const mixFeedDefault: Method = {
   id: "method_mix_feed_default",
   code: "mix_feed_default",
@@ -52,6 +67,18 @@ export const demoFieldIdle: Building = {
   methodId: null,
   queue: [],
   bufferedOutputs: {},
+};
+
+export const demoRanchIdle: Building = {
+  id: "demo-ranch",
+  status: "idle",
+  buildingDefId: "bdef_ranch",
+  buildingDef: { name: "牧場", allowedRuleIds: ["rule_raise_livestock"] },
+  methodId: null,
+  queue: [],
+  bufferedOutputs: {},
+  autoEnabled: false,
+  autoMethodId: null,
 };
 
 export const demoMillRunning: Building = {

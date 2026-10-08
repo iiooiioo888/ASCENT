@@ -20,8 +20,8 @@ import {
 
 describe("productCopy", () => {
   it("exposes feed and bread purpose hints for U13 (written Traditional Chinese)", () => {
-    expect(methodPurposeHint("method_mix_feed_default")).toBe("飼料：目前沒有下游用途，可先略過。");
-    expect(itemPurposeHint("item_feed")).toBe("目前沒有下游用途。");
+    expect(methodPurposeHint("method_mix_feed_default")).toBe("飼料：牧場用嚟養雞養牛。");
+    expect(itemPurposeHint("item_feed")).toBe("飼料：牧場用嚟養雞養牛。");
     expect(itemPurposeHint("item_bread")).toMatch(/麵包/);
     expect(itemPurposeHint("item_bread")).not.toMatch(/係|冇/);
   });

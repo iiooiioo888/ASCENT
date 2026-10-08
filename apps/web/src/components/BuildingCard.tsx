@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { isBuildingAutoEnabled, showBuildingAutoToggle } from "../building-auto";
+import {
+  autoMethodSelectValue,
+  isBuildingAutoEnabled,
+  parseAutoMethodSelectValue,
+  showBuildingAutoMethodSelect,
+  showBuildingAutoToggle,
+} from "../building-auto";
 import { canStopBuilding, showProductionActionButtons } from "../building-actions";
 import { fmtIo, statusLabel } from "../format";
 import { BuildingJobProgress } from "./BuildingJobProgress";
@@ -11,6 +17,8 @@ import { GoMarketCta } from "./GoMarketCta";
 import { OPS_DEPTH_COPY } from "../ops-depth-copy";
 import type { Building, InvRow, Method, OpsCostsSnapshot, WorkforceSnapshot } from "../types";
 import {
+  AUTO_METHOD_DEFAULT_OPTION_LABEL,
+  autoMethodSelectAriaLabel,
   methodPurposeHint,
   methodSelectAriaLabel,
   SILO_CARD_BODY,
@@ -39,6 +47,9 @@ type Props = {
   autoPending?: boolean;
   autoActionError?: BuildingActionErrorView;
   onAutoToggle?: (autoEnabled: boolean) => void;
+  autoMethodPending?: boolean;
+  autoMethodActionError?: BuildingActionErrorView;
+  onAutoMethodChange?: (autoMethodId: string | null) => void;
   highlight?: boolean;
   scrollAnchorId?: string;
   goldBalance?: number;
@@ -67,6 +78,9 @@ export function BuildingCard({
   autoPending = false,
   autoActionError,
   onAutoToggle,
+  autoMethodPending = false,
+  autoMethodActionError,
+  onAutoMethodChange,
   highlight = false,
   scrollAnchorId,
   goldBalance = 0,
@@ -108,7 +122,10 @@ export function BuildingCard({
   const inFallow = isFieldFallow(b.buildingDefId, b.fallowUntil);
   const showActions = showProductionActionButtons(b);
   const showAuto = showBuildingAutoToggle(b) && onAutoToggle != null;
+  const showAutoMethod =
+    showBuildingAutoMethodSelect(b, options.length) && onAutoMethodChange != null;
   const autoOn = isBuildingAutoEnabled(b);
+  const autoMethodSelectId = `auto-method-select-${b.id}`;
   const yieldMult =
     environmentYieldMult != null && selected && isFieldGrowRuleId(selected.ruleId)
       ? environmentYieldMult
@@ -130,25 +147,54 @@ export function BuildingCard({
       id={scrollAnchorId}
       className={`plot ${b.status}${pending ? " pending" : ""}${autoPending ? " auto-pending" : ""}${highlight ? " scroll-highlight" : ""}`}
     >
-      {showAuto ? (
+      {showAuto || showAutoMethod ? (
         <div className="plot-auto-bar">
-          <button
-            type="button"
-            className={`auto-toggle${autoOn ? " on" : ""}`}
-            role="switch"
-            aria-checked={autoOn}
-            aria-label={`${b.buildingDef.name}自動生產`}
-            disabled={autoPending}
-            onClick={() => onAutoToggle(!autoOn)}
-          >
-            <span className="auto-toggle-track" aria-hidden="true">
-              <span className="auto-toggle-thumb" />
-            </span>
-            <span className="auto-toggle-label">自動</span>
-          </button>
+          {showAuto ? (
+            <button
+              type="button"
+              className={`auto-toggle${autoOn ? " on" : ""}`}
+              role="switch"
+              aria-checked={autoOn}
+              aria-label={`${b.buildingDef.name}自動生產`}
+              disabled={autoPending}
+              onClick={() => onAutoToggle(!autoOn)}
+            >
+              <span className="auto-toggle-track" aria-hidden="true">
+                <span className="auto-toggle-thumb" />
+              </span>
+              <span className="auto-toggle-label">自動</span>
+            </button>
+          ) : null}
+          {showAutoMethod ? (
+            <div className="auto-method-field">
+              <label className="auto-method-label" htmlFor={autoMethodSelectId}>
+                掛機配方
+              </label>
+              <select
+                id={autoMethodSelectId}
+                className="auto-method-select"
+                aria-label={autoMethodSelectAriaLabel(b.buildingDef.name)}
+                value={autoMethodSelectValue(b.autoMethodId)}
+                disabled={autoMethodPending || autoPending}
+                onChange={(e) => onAutoMethodChange(parseAutoMethodSelectValue(e.target.value))}
+              >
+                <option value="">{AUTO_METHOD_DEFAULT_OPTION_LABEL}</option>
+                {options.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {METHOD_NAME[m.id] ?? m.code}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           {b.autoPauseReason ? (
             <p className="auto-pause-reason" data-testid="auto-pause-reason">
               {b.autoPauseReason}
+            </p>
+          ) : null}
+          {autoMethodActionError ? (
+            <p className="plot-action-error plot-auto-error" role="alert" title={autoMethodActionError.hint}>
+              {autoMethodActionError.message}
             </p>
           ) : null}
           {autoActionError ? (

@@ -32,7 +32,7 @@ describe("evaluateLandPurchaseUi", () => {
   });
 
   it("blocks when building slots full", () => {
-    const ui = evaluateLandPurchaseUi({ ...baseStats, slottedBuildingCount: 6 }, 100);
+    const ui = evaluateLandPurchaseUi({ ...baseStats, buildingSlotCap: 12, slottedBuildingCount: 12 }, 100);
     expect(ui.canBuy).toBe(false);
     expect(ui.blockReason).toBe(LAND_COPY.slotsFull);
   });
