@@ -1,5 +1,10 @@
 import { RELEASED_IN_VERSION } from "./config";
-import { ITEM_CURRENCY_TYPE_ID, ITEM_GOLD_ID, STARTING_GOLD } from "./market-config";
+import {
+  ITEM_CURRENCY_TYPE_ID,
+  ITEM_COPPER_INGOT_ID,
+  ITEM_GOLD_ID,
+  STARTING_COPPER_INGOT,
+} from "./market-config";
 import type { BuildingDef, ItemDef, ItemPropertyDef, ItemTypeDef, ProductionRuleDef } from "./types";
 
 /** GDD 範例屬性（純度、含水）；農業 MVP 最小集合，其餘（熱值、同位素）留待後續切片。 */
@@ -319,7 +324,7 @@ export const startingInventory: Record<string, number> = {
   item_feed: 0,
   item_dough: 0,
   item_bread: 0,
-  [ITEM_GOLD_ID]: STARTING_GOLD,
+  [ITEM_COPPER_INGOT_ID]: STARTING_COPPER_INGOT,
 };
 
 export const METHOD_NAME: Record<string, string> = {

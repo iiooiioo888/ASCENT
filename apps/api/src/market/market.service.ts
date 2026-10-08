@@ -1,7 +1,9 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import {
   ITEM_GOLD_ID,
+  ITEM_SETTLEMENT_CURRENCY_ID,
   LOCAL_PLAYER_ID,
+  SETTLEMENT_INSUFFICIENT_MESSAGE,
   parseTradeQuantity,
   resolveMarketUnitPrice,
   resolveSellGoldAfterTransport,
@@ -26,13 +28,18 @@ export class MarketService {
       where: { playerId: LOCAL_PLAYER_ID },
     });
     const qtyByItem = new Map(rows.map((r) => [r.itemId, Number(r.quantity)]));
-    const tradableIds = [...Object.keys(book.sell), ...Object.keys(book.buy), ITEM_GOLD_ID];
+    const tradableIds = [
+      ...new Set([...Object.keys(book.sell), ...Object.keys(book.buy), ITEM_SETTLEMENT_CURRENCY_ID]),
+    ];
     const holdings: Record<string, number> = {};
     for (const id of tradableIds) {
       holdings[id] = qtyByItem.get(id) ?? 0;
     }
+    const settlementBalance = holdings[ITEM_SETTLEMENT_CURRENCY_ID] ?? 0;
     return {
-      gold: holdings[ITEM_GOLD_ID] ?? 0,
+      /** @deprecated 欄位名保留；CURR-BARTER 起數值＝銅錠結算餘額。 */
+      gold: settlementBalance,
+      settlementCurrencyItemId: ITEM_SETTLEMENT_CURRENCY_ID,
       prices: book,
       holdings,
     };
@@ -54,7 +61,7 @@ export class MarketService {
 
       return this.prisma.$transaction(async (tx) => {
         await deductPlayerItem(tx, itemId, qty);
-        await creditPlayerItem(tx, ITEM_GOLD_ID, settled.netGold);
+        await creditPlayerItem(tx, ITEM_SETTLEMENT_CURRENCY_ID, settled.netGold);
         return {
           side: "sell" as const,
           itemId,
@@ -81,7 +88,7 @@ export class MarketService {
       const goldCost = unitPrice * qty;
 
       return this.prisma.$transaction(async (tx) => {
-        await deductPlayerItem(tx, ITEM_GOLD_ID, goldCost, "金幣不足");
+        await deductPlayerItem(tx, ITEM_SETTLEMENT_CURRENCY_ID, goldCost, SETTLEMENT_INSUFFICIENT_MESSAGE);
         await creditPlayerItem(tx, itemId, qty);
         return {
           side: "buy" as const,

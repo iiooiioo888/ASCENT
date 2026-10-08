@@ -1,4 +1,4 @@
-import { ITEM_GOLD_ID, LOCAL_PLAYER_ID } from "@ascent/shared";
+import { ITEM_SETTLEMENT_CURRENCY_ID, LOCAL_PLAYER_ID } from "@ascent/shared";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { BadRequestException } from "@nestjs/common";
 import { InventoryService } from "../inventory/inventory.service";
@@ -49,9 +49,9 @@ describe("工位池（OD-BE-1 整合）", () => {
 
   async function setGold(qty: number) {
     await prisma.playerInventory.upsert({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
       update: { quantity: qty },
-      create: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID, quantity: qty },
+      create: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID, quantity: qty },
     });
   }
 
@@ -102,13 +102,13 @@ describe("工位池（OD-BE-1 整合）", () => {
 
     await inventory.start(fieldId, growMethodId);
     const afterStart = await prisma.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
     });
     expect(Number(afterStart?.quantity)).toBe(0);
 
     await inventory.stop(fieldId);
     const afterStop = await prisma.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
     });
     expect(Number(afterStop?.quantity)).toBe(0);
   });
@@ -132,11 +132,11 @@ describe("工位池（OD-BE-1 整合）", () => {
     expect(state.opsCosts.laborCostPerStart).toBe(1);
   });
 
-  it("金幣不足僱工", async () => {
+  it("銅錠不足僱工", async () => {
     await setHired(1, 0);
     await setGold(7);
     await expect(workforce.hire()).rejects.toMatchObject({
-      response: { message: "金幣不足", statusCode: 400 },
+      response: { message: "銅錠不足", statusCode: 400 },
     });
   });
 });

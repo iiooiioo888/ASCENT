@@ -1,7 +1,7 @@
 import {
   COMMODITIES_CONFIG,
   DEFAULT_MARKET_PRICES,
-  ITEM_GOLD_ID,
+  ITEM_SETTLEMENT_CURRENCY_ID,
   ITEM_OIL_ID,
 } from "@ascent/shared";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -61,7 +61,7 @@ describe("大宗石油（整合）", () => {
   });
 
   it("買入石油扣金加庫存並推高價", async () => {
-    await setQty(ITEM_GOLD_ID, 100);
+    await setQty(ITEM_SETTLEMENT_CURRENCY_ID, 100);
     const before = await commodities.getCommodities();
     const priceBefore = before.listings[0].price;
     const res = await commodities.buyCommodity("oil", 5);
@@ -76,7 +76,7 @@ describe("大宗石油（整合）", () => {
   });
 
   it("賣出石油加金並壓低價", async () => {
-    await setQty(ITEM_GOLD_ID, 0);
+    await setQty(ITEM_SETTLEMENT_CURRENCY_ID, 0);
     await setQty(ITEM_OIL_ID, 3);
     const before = await commodities.getCommodities();
     const priceBefore = before.listings[0].price;
@@ -85,10 +85,10 @@ describe("大宗石油（整合）", () => {
     expect(res.listing.price).toBeLessThanOrEqual(priceBefore);
   });
 
-  it("金幣不足", async () => {
-    await setQty(ITEM_GOLD_ID, 0);
+  it("銅錠不足", async () => {
+    await setQty(ITEM_SETTLEMENT_CURRENCY_ID, 0);
     await expect(commodities.buyCommodity("oil", 1)).rejects.toMatchObject({
-      response: { message: "金幣不足", statusCode: 400 },
+      response: { message: "銅錠不足", statusCode: 400 },
     });
   });
 
@@ -99,21 +99,21 @@ describe("大宗石油（整合）", () => {
   });
 
   it("超過單筆上限", async () => {
-    await setQty(ITEM_GOLD_ID, 9999);
+    await setQty(ITEM_SETTLEMENT_CURRENCY_ID, 9999);
     await expect(commodities.buyCommodity("oil", 21)).rejects.toMatchObject({
       response: { message: "超過單筆上限", statusCode: 400 },
     });
   });
 
   it("disabled commodity 拒絕", async () => {
-    await setQty(ITEM_GOLD_ID, 100);
+    await setQty(ITEM_SETTLEMENT_CURRENCY_ID, 100);
     await expect(commodities.buyCommodity("grain", 1)).rejects.toMatchObject({
       response: { message: "不可交易：grain", statusCode: 400 },
     });
   });
 
   it("priceHistory 不超過 64", async () => {
-    await setQty(ITEM_GOLD_ID, 50000);
+    await setQty(ITEM_SETTLEMENT_CURRENCY_ID, 50000);
     for (let i = 0; i < 70; i++) {
       await commodities.buyCommodity("oil", 1);
     }
@@ -130,7 +130,7 @@ describe("大宗石油（整合）", () => {
 
   it("MK 賣麵包仍可用", async () => {
     await setQty("item_bread", 1);
-    await setQty(ITEM_GOLD_ID, 0);
+    await setQty(ITEM_SETTLEMENT_CURRENCY_ID, 0);
     const res = await market.sell("item_bread", 1);
     expect(res.transportFee).toBe(1);
     expect(res.netGoldDelta).toBe(7);

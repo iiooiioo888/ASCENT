@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { ITEM_GOLD_ID, LOCAL_PLAYER_ID } from "@ascent/shared";
+import { ITEM_SETTLEMENT_CURRENCY_ID, LOCAL_PLAYER_ID } from "@ascent/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { SimulationService } from "../simulation/simulation.service";
 import { InventoryService } from "../inventory/inventory.service";
@@ -24,7 +24,7 @@ export class WorkforceService {
         if (player.workforceHired >= maxHired) {
           throw new BadRequestException("已達僱工上限");
         }
-        await deductPlayerItem(tx, ITEM_GOLD_ID, hireCostGold);
+        await deductPlayerItem(tx, ITEM_SETTLEMENT_CURRENCY_ID, hireCostGold);
         await tx.player.update({
           where: { id: LOCAL_PLAYER_ID },
           data: { workforceHired: { increment: 1 } },
@@ -33,11 +33,12 @@ export class WorkforceService {
 
       const workforce = await this.inventory.workforceSnapshot();
       const goldRow = await this.prisma.playerInventory.findUnique({
-        where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+        where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
       });
       return {
         workforce,
         gold: Number(goldRow?.quantity ?? 0),
+        settlementCurrencyItemId: ITEM_SETTLEMENT_CURRENCY_ID,
       };
     });
   }

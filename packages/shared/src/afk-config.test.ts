@@ -57,6 +57,7 @@ describe("afk-config", () => {
 
   it("start 失敗訊息對齊暫停文案", () => {
     expect(mapStartFailureToAutoPauseReason("人手不足")).toBe(AFK_AUTO_PAUSE_REASON.WORKFORCE);
+    expect(mapStartFailureToAutoPauseReason("銅錠不足")).toBe(AFK_AUTO_PAUSE_REASON.GOLD);
     expect(mapStartFailureToAutoPauseReason("金幣不足")).toBe(AFK_AUTO_PAUSE_REASON.GOLD);
     expect(mapStartFailureToAutoPauseReason("資源不足：item_water")).toBe(AFK_AUTO_PAUSE_REASON.MATERIALS);
     expect(mapStartFailureToAutoPauseReason("建築忙碌或待收取")).toBeNull();

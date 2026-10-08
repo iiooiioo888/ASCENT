@@ -1,7 +1,8 @@
 import { BadRequestException, ConflictException, Injectable } from "@nestjs/common";
 import {
   COMMODITIES_CONFIG,
-  ITEM_GOLD_ID,
+  ITEM_SETTLEMENT_CURRENCY_ID,
+  SETTLEMENT_INSUFFICIENT_MESSAGE,
   LOCAL_PLAYER_ID,
   appendPriceHistory,
   computeCommodityFee,
@@ -54,6 +55,7 @@ export class CommodityMarketService {
       priceHistorySize: COMMODITIES_CONFIG.priceHistorySize,
       liquidity: COMMODITIES_CONFIG.liquidity,
       gold,
+      settlementCurrencyItemId: ITEM_SETTLEMENT_CURRENCY_ID,
       listings,
     };
   }
@@ -100,12 +102,12 @@ export class CommodityMarketService {
 
         if (side === "buy") {
           const goldCost = notional + fee;
-          await this.deductItem(tx, ITEM_GOLD_ID, goldCost, "金幣不足");
+          await this.deductItem(tx, ITEM_SETTLEMENT_CURRENCY_ID, goldCost, SETTLEMENT_INSUFFICIENT_MESSAGE);
           await this.creditItem(tx, listing.itemId, qty);
         } else {
           await this.deductItem(tx, listing.itemId, qty);
           const goldGain = notional - fee;
-          await this.creditItem(tx, ITEM_GOLD_ID, goldGain);
+          await this.creditItem(tx, ITEM_SETTLEMENT_CURRENCY_ID, goldGain);
         }
 
         await tx.commodityMarketState.update({
@@ -183,7 +185,7 @@ export class CommodityMarketService {
   }
 
   private async getGoldBalance(tx?: Prisma.TransactionClient) {
-    return this.getItemBalance(ITEM_GOLD_ID, tx);
+    return this.getItemBalance(ITEM_SETTLEMENT_CURRENCY_ID, tx);
   }
 
   private async getItemBalance(itemId: string, tx?: Prisma.TransactionClient) {
@@ -215,7 +217,9 @@ export class CommodityMarketService {
     });
     const have = row ? Number(row.quantity) : 0;
     if (have + EPS < qty) {
-      if (itemId === ITEM_GOLD_ID) throw new BadRequestException(insufficientMessage ?? "金幣不足");
+      if (itemId === ITEM_SETTLEMENT_CURRENCY_ID) {
+        throw new BadRequestException(insufficientMessage ?? SETTLEMENT_INSUFFICIENT_MESSAGE);
+      }
       throw new BadRequestException(insufficientMessage ?? `資源不足：${itemId}`);
     }
     throw new ConflictException(SETTLEMENT_CONFLICT_MESSAGE);

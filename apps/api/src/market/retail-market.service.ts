@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 import {
-  ITEM_GOLD_ID,
+  ITEM_SETTLEMENT_CURRENCY_ID,
   LOCAL_PLAYER_ID,
   RETAIL_OPS_HINT,
   RETAIL_SKU_ID,
@@ -106,7 +106,7 @@ export class RetailMarketService {
         }
 
         await deductPlayerItem(tx, RETAIL_SKU_ID, live.qty);
-        await creditPlayerItem(tx, ITEM_GOLD_ID, goldCredit);
+        await creditPlayerItem(tx, ITEM_SETTLEMENT_CURRENCY_ID, goldCredit);
 
         const anchor = resolveRetailBidAnchor(this.sim.marketPriceBook, config);
         const replacement = this.spawnOffer(live.slot, config, anchor, nowMs);

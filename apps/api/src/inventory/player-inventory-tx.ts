@@ -1,4 +1,9 @@
-import { ITEM_GOLD_ID, LOCAL_PLAYER_ID } from "@ascent/shared";
+import {
+  ITEM_GOLD_ID,
+  ITEM_SETTLEMENT_CURRENCY_ID,
+  LOCAL_PLAYER_ID,
+  SETTLEMENT_INSUFFICIENT_MESSAGE,
+} from "@ascent/shared";
 import { BadRequestException, ConflictException } from "@nestjs/common";
 import { Prisma } from "../../generated/prisma/client";
 import { SETTLEMENT_CONFLICT_MESSAGE } from "./building-state-update";
@@ -26,8 +31,8 @@ export async function deductPlayerItem(
   });
   const have = row ? Number(row.quantity) : 0;
   if (have + EPS < qty) {
-    if (itemId === ITEM_GOLD_ID) {
-      throw new BadRequestException(insufficientMessage ?? "金幣不足");
+    if (itemId === ITEM_SETTLEMENT_CURRENCY_ID || itemId === ITEM_GOLD_ID) {
+      throw new BadRequestException(insufficientMessage ?? SETTLEMENT_INSUFFICIENT_MESSAGE);
     }
     throw new BadRequestException(insufficientMessage ?? `資源不足：${itemId}`);
   }

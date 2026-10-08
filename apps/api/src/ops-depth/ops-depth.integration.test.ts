@@ -1,4 +1,4 @@
-import { ITEM_GOLD_ID, LOCAL_PLAYER_ID } from "@ascent/shared";
+import { ITEM_SETTLEMENT_CURRENCY_ID, LOCAL_PLAYER_ID } from "@ascent/shared";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { InventoryService } from "../inventory/inventory.service";
 import { MarketService } from "../market/market.service";
@@ -50,9 +50,9 @@ describe("經營深度運費（OD-BE-2 整合）", () => {
 
   async function setGold(qty: number) {
     await prisma.playerInventory.upsert({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
       update: { quantity: qty },
-      create: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID, quantity: qty },
+      create: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID, quantity: qty },
     });
   }
 
@@ -72,7 +72,7 @@ describe("經營深度運費（OD-BE-2 整合）", () => {
     await inventory.start(millId, millMethodId);
 
     const gold = await prisma.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
     });
     expect(Number(gold?.quantity)).toBe(17);
 
@@ -90,7 +90,7 @@ describe("經營深度運費（OD-BE-2 整合）", () => {
     expect(res.netGoldDelta).toBe(7);
     expect(res.goldDelta).toBe(7);
     const gold = await prisma.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
     });
     expect(Number(gold?.quantity)).toBe(7);
   });
@@ -117,14 +117,14 @@ describe("經營深度運費（OD-BE-2 整合）", () => {
 
     await inventory.start(fieldId, growMethodId);
     let gold = await prisma.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
     });
     expect(Number(gold?.quantity)).toBe(4);
 
     await inventory.stop(fieldId);
     await inventory.start(wellId, drawMethodId);
     gold = await prisma.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
     });
     expect(Number(gold?.quantity)).toBe(3);
   });

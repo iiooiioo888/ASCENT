@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_MARKET_PRICES,
   ITEM_GOLD_ID,
-  STARTING_GOLD,
+  ITEM_SETTLEMENT_CURRENCY_ID,
+  STARTING_COPPER_INGOT,
   marketPricesFromDb,
   parseTradeQuantity,
   resolveMarketUnitPrice,
@@ -17,8 +18,9 @@ describe("market-config", () => {
     expect(parseTradeQuantity(3)).toBe(3);
   });
 
-  it("開局金幣已拍板為 10", () => {
-    expect(STARTING_GOLD).toBe(10);
+  it("開局銅錠已拍板為 10", () => {
+    expect(STARTING_COPPER_INGOT).toBe(10);
+    expect(ITEM_SETTLEMENT_CURRENCY_ID).toBe("item_copper_ingot");
   });
 
   it("預設價目與規格佔位一致", () => {
@@ -27,7 +29,7 @@ describe("market-config", () => {
     expect(DEFAULT_MARKET_PRICES.buy.item_water).toBe(1);
   });
 
-  it("CURR-RES：MK 賣礦／錠價（整數金錢，無買礦）", () => {
+  it("CURR-BARTER：MK 賣礦／錠價（整數銅錠，無買礦）", () => {
     expect(DEFAULT_MARKET_PRICES.sell.item_copper_ore).toBe(2);
     expect(DEFAULT_MARKET_PRICES.sell.item_silver_ore).toBe(5);
     expect(DEFAULT_MARKET_PRICES.sell.item_gold_ore).toBe(12);
@@ -39,7 +41,7 @@ describe("market-config", () => {
     expect(DEFAULT_MARKET_PRICES.buy.item_gold_ore).toBeUndefined();
   });
 
-  it("不可交易金幣", () => {
+  it("不可交易 item_gold（舊金錢物品）", () => {
     const book = marketPricesFromDb(null);
     expect(resolveMarketUnitPrice("sell", ITEM_GOLD_ID, book)).toBeNull();
     expect(resolveMarketUnitPrice("buy", ITEM_GOLD_ID, book)).toBeNull();

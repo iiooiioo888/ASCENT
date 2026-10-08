@@ -1,6 +1,6 @@
 import {
   FIELD_BUILDING_DEF_ID,
-  ITEM_GOLD_ID,
+  ITEM_SETTLEMENT_CURRENCY_ID,
   LOCAL_PLAYER_ID,
   PLAYER_BUILDING_SLOT_CAP,
   SILO_BUILDING_DEF_ID,
@@ -40,9 +40,9 @@ describe("擴田（LAND-BE-1 整合）", () => {
 
   async function setGold(qty: number) {
     await prisma.playerInventory.upsert({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
       update: { quantity: qty },
-      create: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID, quantity: qty },
+      create: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID, quantity: qty },
     });
   }
 
@@ -79,10 +79,10 @@ describe("擴田（LAND-BE-1 整合）", () => {
     expect(fields.length).toBe(2);
   });
 
-  it("金幣不足 → 400", async () => {
+  it("銅錠不足 → 400", async () => {
     await setGold(9);
     await expect(inventory.purchaseField()).rejects.toMatchObject({
-      response: { message: "金幣不足", statusCode: 400 },
+      response: { message: "銅錠不足", statusCode: 400 },
     });
   });
 

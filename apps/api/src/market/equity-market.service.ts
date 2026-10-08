@@ -1,7 +1,8 @@
 import { BadRequestException, ConflictException, Injectable } from "@nestjs/common";
 import {
   EQUITY_CONFIG,
-  ITEM_GOLD_ID,
+  ITEM_SETTLEMENT_CURRENCY_ID,
+  SETTLEMENT_INSUFFICIENT_MESSAGE,
   LOCAL_PLAYER_ID,
   PriceHistoryPoint,
   appendPriceHistoryRing,
@@ -48,10 +49,11 @@ export class EquityMarketService {
     const tickers = await this.loadTickers();
     const holdings = await this.loadHoldings();
     const goldRow = await this.prisma.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
     });
     return {
       gold: goldRow ? Number(goldRow.quantity) : 0,
+      settlementCurrencyItemId: ITEM_SETTLEMENT_CURRENCY_ID,
       feeRate: EQUITY_CONFIG.feeRate,
       minFeeGold: EQUITY_CONFIG.minFeeGold,
       maxSharesPerEquity: EQUITY_CONFIG.maxSharesPerEquity,
@@ -188,7 +190,7 @@ export class EquityMarketService {
     const updated = await tx.playerInventory.updateMany({
       where: {
         playerId: LOCAL_PLAYER_ID,
-        itemId: ITEM_GOLD_ID,
+        itemId: ITEM_SETTLEMENT_CURRENCY_ID,
         quantity: { gte: qty },
       },
       data: { quantity: { decrement: qty } },
@@ -196,18 +198,18 @@ export class EquityMarketService {
     if (updated.count === 1) return;
 
     const row = await tx.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
     });
     const have = row ? Number(row.quantity) : 0;
-    if (have + EPS < qty) throw new BadRequestException("金幣不足");
+    if (have + EPS < qty) throw new BadRequestException(SETTLEMENT_INSUFFICIENT_MESSAGE);
     throw new ConflictException(SETTLEMENT_CONFLICT_MESSAGE);
   }
 
   private async creditGold(tx: Prisma.TransactionClient, qty: number) {
     await tx.playerInventory.upsert({
-      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID } },
+      where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
       update: { quantity: { increment: qty } },
-      create: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_GOLD_ID, quantity: qty },
+      create: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID, quantity: qty },
     });
   }
 }
