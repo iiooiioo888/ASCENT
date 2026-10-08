@@ -3,6 +3,7 @@ import { itemLabel } from "./meta";
 import { OPS_DEPTH_COPY } from "./ops-depth-copy";
 import { EQUITY_COPY } from "./equityCopy";
 import { LAND_COPY } from "./landCopy";
+import { SETTLEMENT_COPY } from "./settlementCopy";
 import { MARKET_COPY } from "./marketCopy";
 
 const INSUFFICIENT_PREFIX = "資源不足：";
@@ -22,6 +23,7 @@ type RegistryEntry = { copy: string; shouldRefresh: boolean };
 const REGISTRY: Readonly<Record<string, RegistryEntry>> = {
   數量無效: { copy: MARKET_COPY.invalidQuantity, shouldRefresh: false },
   金幣不足: { copy: MARKET_COPY.needGold, shouldRefresh: false },
+  [SETTLEMENT_COPY.insufficient]: { copy: MARKET_COPY.needGold, shouldRefresh: false },
   農田已達上限: { copy: LAND_COPY.fieldAtCap, shouldRefresh: false },
   建築欄位已滿: { copy: LAND_COPY.slotsFull, shouldRefresh: false },
   持倉不足: { copy: EQUITY_COPY.needShares, shouldRefresh: false },
@@ -37,7 +39,7 @@ const REGISTRY: Readonly<Record<string, RegistryEntry>> = {
 
 function formatInsufficientMaterialsMessage(rawMessage: string): string {
   const rest = rawMessage.slice(INSUFFICIENT_PREFIX.length).trim();
-  if (rest === "item_gold") return MARKET_COPY.needGold;
+  if (rest === "item_gold" || rest === "item_copper_ingot") return MARKET_COPY.needGold;
   return `${INSUFFICIENT_PREFIX}${itemLabel(rest)}`;
 }
 

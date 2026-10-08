@@ -125,7 +125,7 @@ describe("MarketPanel", () => {
     );
 
     expect(screen.getByRole("heading", { name: MARKET_COPY.title })).toBeInTheDocument();
-    expect(screen.getByTestId("market-gold-balance")).toHaveTextContent("金幣 10");
+    expect(screen.getByTestId("market-gold-balance")).toHaveTextContent("銅錠 10");
     expect(screen.getByRole("tab", { name: MARKET_COPY.sellTab })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: MARKET_COPY.buyTab })).toBeInTheDocument();
   });

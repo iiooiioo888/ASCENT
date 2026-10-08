@@ -38,7 +38,7 @@ function inv(itemId: string, quantity: string): InvRow {
 function industryState(): GameState {
   return {
     time: { displayGameTime: 3600, timeScale: 60, serverRealTime: "2026-01-01T00:00:00.000Z" },
-    inventory: [inv("item_wheat", "3"), inv("item_iron_ore", "2"), inv("item_log", "1"), inv("item_gold", "10")],
+    inventory: [inv("item_wheat", "3"), inv("item_iron_ore", "2"), inv("item_log", "1"), inv("item_copper_ingot", "10")],
     buildings: [building("pb_field", "bdef_field", "田"), building("pb_mine", "bdef_mine", "礦坑")],
     methods: [],
     buildingDefs: [
@@ -82,7 +82,7 @@ describe("industry tabs", () => {
     expect(screen.getByText("飼料")).toBeInTheDocument();
     expect(pack().getByLabelText("小麥 3")).toBeInTheDocument();
     expect(pack().queryByLabelText("鐵礦 2")).not.toBeInTheDocument();
-    expect(pack().queryByText("金幣")).not.toBeInTheDocument();
+    expect(pack().queryByText("金錢")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "礦業" }));
     expect(screen.getByRole("tab", { name: "礦業" })).toHaveAttribute("aria-selected", "true");

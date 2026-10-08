@@ -111,7 +111,7 @@ describe("TradingPostBuildingCard (v1.2)", () => {
     expect(within(panel!).getByRole("heading", { level: 2, name: MARKET_COPY.title })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: MARKET_COPY.sellTab })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: MARKET_COPY.buyTab })).toBeInTheDocument();
-    expect(screen.getByTestId("market-gold-balance")).toHaveTextContent("金幣 10");
+    expect(screen.getByTestId("market-gold-balance")).toHaveTextContent("銅錠 10");
 
     const breadRow = screen.getByTestId("market-row-sell-item_bread");
     expect(within(breadRow).getByRole("button", { name: MARKET_COPY.sellCta })).toBeEnabled();

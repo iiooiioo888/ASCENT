@@ -15,21 +15,21 @@ export const MARKET_COPY = {
   sellCta: "賣出",
   buyCta: "買入",
   emptySell: "先做出麵包或飼料再來換補給。",
-  needGold: "金幣不足",
+  needGold: "銅錠不足",
   needStock: "無存貨",
-  hint: "麵包與飼料可在此換金幣，再買種子與水。",
+  hint: "麵包與飼料可在此換銅錠，再買種子與水。",
   genericError: "操作失敗，請重試",
   invalidQuantity: "數量無效",
   notTradable: "此物品不可交易",
   settlementConflict: "建築結算衝突，請重試",
-  successSellTemplate: "已售出 {item}×{q}，＋🪙{n}",
-  successSellNetTemplate: "已售出 {item}×{q}，實收 🪙{n}",
-  successSellNetWithFeeTemplate: "已售出 {item}×{q}，實收 🪙{n}（運費 🪙{fee}）",
-  successBuyTemplate: "已購入 {item}×{q}，－🪙{n}",
+  successSellTemplate: "已售出 {item}×{q}，＋🟠{n}",
+  successSellNetTemplate: "已售出 {item}×{q}，實收 🟠{n}",
+  successSellNetWithFeeTemplate: "已售出 {item}×{q}，實收 🟠{n}（運費 🟠{fee}）",
+  successBuyTemplate: "已購入 {item}×{q}，－🟠{n}",
 } as const;
 
 export function marketBalanceLabel(gold: number): string {
-  return `金幣 ${gold}`;
+  return `銅錠 ${gold}`;
 }
 
 export function successSell(item: string, q: string, n: string): string {
@@ -60,7 +60,7 @@ export function successBuy(item: string, q: string, n: string): string {
     .replace("{n}", n);
 }
 
-/** HUD chip (§5.1). */
+/** @deprecated 主 HUD 改三錠 chip；保留供舊測／相容。 */
 export function hudGoldChip(gold: number): string {
-  return `🪙 ${gold}`;
+  return `🟠 ${gold}`;
 }
