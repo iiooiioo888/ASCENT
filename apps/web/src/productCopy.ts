@@ -42,16 +42,19 @@ export const DEPLETION_CTA_MARKET = "前往商行";
 
 /** TODO(product): 待確認 — 各生產方式用途提示（U13） */
 export const METHOD_PURPOSE_HINTS: Partial<Record<string, string>> = {
-  method_mix_feed_default: "飼料可送進化工廠，與鹼製成肥料。",
+  method_mix_feed_default: "飼料可送牧場養雞牛，或送化工廠與鹼製成肥料。",
+  method_raise_livestock_default: "消耗飼料與水，產出雞蛋與牛奶。",
   method_mine_iron_default: "礦坑無原料消耗，開採後送冶煉爐。",
   method_mine_coal_default: "煤是冶煉、燒窯與煉焦的燃料。",
 };
 
 /** TODO(product): 待確認 — 背包物品用途提示（U13） */
 export const ITEM_PURPOSE_HINTS: Partial<Record<string, string>> = {
-  item_feed: "可與鹼在化工廠製成肥料。",
+  item_feed: "可送牧場養雞牛，或與鹼在化工廠製成肥料。",
   item_straw: "可送進窯燒成木炭，或與小麥拌成飼料。",
   item_bread: "麵包是農產終產；可留存或在商行出售。",
+  item_egg: "牧場產出；可留存或在商行出售。",
+  item_milk: "牧場產出；可留存或在商行出售。",
   item_coal: "冶煉、燒窯與煉焦的燃料。",
   item_fertilizer: "化工終產；可在商行出售。",
   item_machine: "工業終產；齒輪、銅線與工具組裝而成。",
@@ -135,9 +138,9 @@ export function industryPackTitle(label: string): string {
 
 export const INDUSTRY_PACK_EMPTY = "此產業還沒有產品";
 
-/** Decorative industry chain strip (U15, P3-3 含飼料支線). 一次只描述目前選項卡。 */
+/** Decorative industry chain strip (U15, P3-3 含飼料與牧場支線). 一次只描述目前選項卡。 */
 export const INDUSTRY_CHAIN_ARIA_LABEL =
-  "農業產業鏈：田、磨坊、爐至麵包，磨坊可產飼料";
+  "農業產業鏈：田、磨坊、爐至麵包；磨坊可產飼料，飼料送牧場產蛋奶";
 
 export const INDUSTRY_CHAIN_ARIA_BY_ID = {
   agriculture: INDUSTRY_CHAIN_ARIA_LABEL,
@@ -147,6 +150,13 @@ export const INDUSTRY_CHAIN_ARIA_BY_ID = {
   industry: "工業產業鏈：工坊、機械廠至機械，機械廠可產蒸汽機",
   energy: "能源產業鏈：鍋爐至蒸汽",
 } as const;
+
+/** AFK per-building recipe `<select>` (P4-S1). */
+export function autoMethodSelectAriaLabel(buildingName: string): string {
+  return `選擇${buildingName}的掛機配方`;
+}
+
+export const AUTO_METHOD_DEFAULT_OPTION_LABEL = "預設";
 
 /** TODO(product): 待確認 — 倉卡說明（U12 精簡卡） */
 export const SILO_CARD_BODY = "倉庫已隱藏：僅保留既有建築展示，無法再放置。";

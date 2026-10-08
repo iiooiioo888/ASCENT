@@ -7,6 +7,7 @@ import type { Building } from "./types";
 export const BUILDING_DEF_DISPLAY_ORDER: readonly string[] = [
   "bdef_field",
   "bdef_mill",
+  "bdef_ranch",
   "bdef_oven",
   "bdef_well",
   "bdef_silo",

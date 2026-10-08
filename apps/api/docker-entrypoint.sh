@@ -19,6 +19,9 @@ until prisma migrate deploy; do
   sleep 2
 done
 
+echo "[ascent-api] Syncing catalog (idempotent upsert)..."
+tsx prisma/sync-catalog.ts
+
 echo "[ascent-api] Checking whether seed is required..."
 node <<'NODE'
 const { PrismaClient } = require("./dist/generated/prisma/client");

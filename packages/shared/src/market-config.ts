@@ -19,6 +19,8 @@ export const DEFAULT_MARKET_PRICES: MarketPriceBook = {
     item_dough: 5,
     item_wheat: 2,
     item_straw: 1,
+    item_egg: 3,
+    item_milk: 4,
     item_iron_ingot: 6,
     item_copper_ingot: 7,
     item_steel: 14,

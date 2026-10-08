@@ -39,9 +39,16 @@ const ENGINE_BRANCH: ChainItemNode = {
   icon: "🚂",
 };
 
-const BRANCHES: Partial<Record<IndustryId, { label: string; node: ChainItemNode }>> = {
-  agriculture: { label: "磨坊支線", node: FEED_BRANCH },
-  industry: { label: "機械廠支線", node: ENGINE_BRANCH },
+const AGRICULTURE_BRANCH: ChainNode[] = [
+  FEED_BRANCH,
+  { kind: "building", buildingDefId: "bdef_ranch", label: "牧場" },
+  { kind: "item", itemId: "item_egg", label: "雞蛋", icon: "🥚" },
+  { kind: "item", itemId: "item_milk", label: "牛奶", icon: "🥛" },
+];
+
+const BRANCHES: Partial<Record<IndustryId, { label: string; nodes: ChainNode[] }>> = {
+  agriculture: { label: "磨坊支線", nodes: AGRICULTURE_BRANCH },
+  industry: { label: "機械廠支線", nodes: [ENGINE_BRANCH] },
 };
 
 const LINES: Record<Exclude<IndustryId, "agriculture">, ChainNode[]> = {
@@ -139,7 +146,7 @@ export function IndustryChain({ buildings, industry = "agriculture" }: Props) {
           <i className="chain-arrow" aria-hidden>
             ↘
           </i>
-          {renderNode(branch.node, buildings)}
+          {renderLine(branch.nodes, buildings)}
         </div>
       ) : null}
     </div>

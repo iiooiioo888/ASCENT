@@ -227,19 +227,28 @@ export class InventoryService {
     }
     const def = await this.prisma.buildingDef.findFirst({ where: { id: buildingDefId, isActive: true } });
     if (!def) throw new BadRequestException("未知建築");
-    const now = new Date();
-    const clock = await this.requireState(this.prisma);
-    const game = this.sim.displayGameTime(
-      { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
-      now.getTime(),
-    );
-    const existing = await this.prisma.playerBuilding.findMany({
-      where: { playerId: LOCAL_PLAYER_ID },
-      select: { buildingDefId: true },
-    });
-    this.assertPlacementAllowed(def.id, existing);
-    return this.prisma.playerBuilding.create({
-      data: this.newPlayerBuildingData(def.id, game, now),
+
+    return this.runExclusive(async () => {
+      await this.settleAllUnlocked();
+      const now = new Date();
+      const clock = await this.requireState(this.prisma);
+      const game = this.sim.displayGameTime(
+        { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
+        now.getTime(),
+      );
+
+      let created: Awaited<ReturnType<typeof this.prisma.playerBuilding.create>>;
+      await this.prisma.$transaction(async (tx) => {
+        const existing = await tx.playerBuilding.findMany({
+          where: { playerId: LOCAL_PLAYER_ID },
+          select: { buildingDefId: true },
+        });
+        this.assertPlacementAllowed(def.id, existing);
+        created = await tx.playerBuilding.create({
+          data: this.newPlayerBuildingData(def.id, game, now),
+        });
+      });
+      return created!;
     });
   }
 
@@ -333,19 +342,46 @@ export class InventoryService {
     });
   }
 
-  async setAutoEnabled(buildingId: string, autoEnabled: boolean) {
-    if (typeof autoEnabled !== "boolean") {
+  async patchBuildingAuto(
+    buildingId: string,
+    body: { autoEnabled?: boolean; autoMethodId?: string | null },
+  ) {
+    if (body.autoEnabled !== undefined && typeof body.autoEnabled !== "boolean") {
       throw new BadRequestException("autoEnabled 必須為布林值");
+    }
+    if (
+      body.autoMethodId !== undefined &&
+      body.autoMethodId !== null &&
+      typeof body.autoMethodId !== "string"
+    ) {
+      throw new BadRequestException("autoMethodId 必須為字串或 null");
     }
     return this.withSettlementTx(async (tx) => {
       await this.settleBuildingUnlocked(tx, buildingId);
-      const building = await tx.playerBuilding.findUnique({ where: { id: buildingId } });
+      const building = await tx.playerBuilding.findUnique({
+        where: { id: buildingId },
+        include: { buildingDef: true },
+      });
       if (!building) throw new NotFoundException("建築不存在");
+
+      if (body.autoMethodId !== undefined && body.autoMethodId !== null) {
+        const method = await tx.productionMethod.findFirst({
+          where: { id: body.autoMethodId, isActive: true },
+        });
+        if (!method) throw new BadRequestException("未知生產方式");
+        const allowed = (building.buildingDef.allowedRuleIds as string[]) ?? [];
+        if (!isMethodAllowedForBuilding(allowed, method.ruleId)) {
+          throw new BadRequestException("此建築不能使用該方式");
+        }
+      }
+
+      const autoEnabled = body.autoEnabled ?? building.autoEnabled;
       await tx.playerBuilding.update({
         where: { id: buildingId },
         data: {
           autoEnabled,
           autoPauseReason: autoEnabled ? building.autoPauseReason : null,
+          ...(body.autoMethodId !== undefined ? { autoMethodId: body.autoMethodId } : {}),
         },
       });
       if (autoEnabled) {
@@ -356,6 +392,11 @@ export class InventoryService {
         include: { buildingDef: true, method: true },
       });
     });
+  }
+
+  /** @deprecated 使用 {@link patchBuildingAuto} */
+  async setAutoEnabled(buildingId: string, autoEnabled: boolean) {
+    return this.patchBuildingAuto(buildingId, { autoEnabled });
   }
 
   private async executeStartInTx(
@@ -462,7 +503,8 @@ export class InventoryService {
       include: { buildingDef: true },
     });
     if (!building?.autoEnabled || building.status !== "idle") return;
-    const methodId = defaultAutoMethodIdForBuilding(building.buildingDefId);
+    const methodId =
+      building.autoMethodId ?? defaultAutoMethodIdForBuilding(building.buildingDefId);
     if (!methodId) return;
     try {
       await this.executeStartInTx(tx, buildingId, methodId);

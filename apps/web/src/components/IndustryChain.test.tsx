@@ -8,6 +8,9 @@ describe("IndustryChain (P3-3)", () => {
     render(<IndustryChain buildings={prgBuildings} />);
     expect(screen.getByLabelText(/飼料/)).toBeInTheDocument();
     expect(screen.getByText("飼料")).toBeInTheDocument();
+    expect(screen.getByText("牧場")).toBeInTheDocument();
+    expect(screen.getByText("雞蛋")).toBeInTheDocument();
+    expect(screen.getByText("牛奶")).toBeInTheDocument();
     const field = screen.getByTitle(/田 · running/);
     expect(field).toHaveClass("running");
     expect(screen.queryByText("礦坑")).not.toBeInTheDocument();

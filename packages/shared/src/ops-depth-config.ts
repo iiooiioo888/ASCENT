@@ -22,7 +22,7 @@ export type OpsCostsSnapshot = {
 export const DEFAULT_OPS_DEPTH: OpsDepthConfig = {
   workforce: {
     startingHired: 1,
-    maxHired: 4,
+    maxHired: 8,
     hireCostGold: 8,
     laborCostPerStart: 1,
   },
@@ -33,6 +33,7 @@ export const DEFAULT_OPS_DEPTH: OpsDepthConfig = {
       bdef_mill: 2,
       bdef_oven: 2,
       bdef_trading_post: 0,
+      bdef_ranch: 2,
       bdef_mine: 1,
       bdef_quarry: 1,
       bdef_forest: 1,
@@ -50,6 +51,7 @@ export const DEFAULT_OPS_DEPTH: OpsDepthConfig = {
       bdef_well: 0,
       bdef_mill: 1,
       bdef_oven: 2,
+      bdef_ranch: 0,
       bdef_mine: 0,
       bdef_quarry: 0,
       bdef_forest: 0,

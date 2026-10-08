@@ -11,6 +11,8 @@ export const INVENTORY_DISPLAY_ORDER: readonly string[] = [
   "item_straw",
   "item_flour",
   "item_feed",
+  "item_egg",
+  "item_milk",
   "item_dough",
   "item_bread",
   "item_iron_ore",

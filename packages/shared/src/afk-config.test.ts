@@ -16,20 +16,31 @@ describe("afk-config", () => {
     expect(defaultAutoMethodIdForBuilding("bdef_trading_post")).toBeNull();
   });
 
-  it("麵包鏈自動開工排序：爐 → 磨 → 田", () => {
+  it("麵包鏈自動開工排序：爐 → 牧場 → 磨 → 田", () => {
     const ids = sortBuildingsForAfkAutoStart([
       { id: "pb_player_local_bdef_field", buildingDefId: "bdef_field" },
       { id: "pb_player_local_bdef_oven", buildingDefId: "bdef_oven" },
       { id: "pb_player_local_bdef_mill", buildingDefId: "bdef_mill" },
+      { id: "pb_player_local_bdef_ranch", buildingDefId: "bdef_ranch" },
       { id: "pb_player_local_bdef_well", buildingDefId: "bdef_well" },
     ]).map((b) => b.buildingDefId);
-    expect(ids).toEqual(["bdef_oven", "bdef_mill", "bdef_field", "bdef_well"]);
+    expect(ids).toEqual(["bdef_oven", "bdef_ranch", "bdef_mill", "bdef_field", "bdef_well"]);
     expect(
       compareBuildingsForAfkAutoStart(
         { buildingDefId: "bdef_mill" },
         { buildingDefId: "bdef_field" },
       ),
     ).toBeLessThan(0);
+    expect(
+      compareBuildingsForAfkAutoStart(
+        { buildingDefId: "bdef_ranch" },
+        { buildingDefId: "bdef_mill" },
+      ),
+    ).toBeLessThan(0);
+  });
+
+  it("牧場預設自動配方", () => {
+    expect(defaultAutoMethodIdForBuilding("bdef_ranch")).toBe("method_raise_livestock_default");
   });
 
   it("start 失敗訊息對齊暫停文案", () => {

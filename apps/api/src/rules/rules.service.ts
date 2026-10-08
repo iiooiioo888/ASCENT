@@ -57,6 +57,11 @@ export class RulesService {
         name: "能源蒸汽機",
         steps: ["rule_mine_coal", "rule_make_coke", "rule_raise_steam", "rule_build_engine"],
       },
+      {
+        id: "loop_feed_livestock",
+        name: "飼料畜牧支線",
+        steps: ["rule_mix_feed", "rule_raise_livestock"],
+      },
     ];
   }
 

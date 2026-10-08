@@ -93,6 +93,7 @@ export type BuildingStatus = "idle" | "running" | "ready";
 export type BuildingAfkState = {
   autoEnabled: boolean;
   autoPauseReason: string | null;
+  autoMethodId: string | null;
 };
 
 /** GET state 上的商行貨架摘要（AFK-BE-2 / AFK-D9）。 */

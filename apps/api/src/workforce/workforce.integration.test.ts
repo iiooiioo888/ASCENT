@@ -113,8 +113,8 @@ describe("工位池（OD-BE-1 整合）", () => {
     expect(Number(afterStop?.quantity)).toBe(0);
   });
 
-  it("僱工上限：hired=4 拒絕", async () => {
-    await setHired(4, 0);
+  it("僱工上限：hired=8 拒絕", async () => {
+    await setHired(8, 0);
     await setGold(100);
     await expect(workforce.hire()).rejects.toBeInstanceOf(BadRequestException);
     await expect(workforce.hire()).rejects.toMatchObject({
@@ -124,7 +124,7 @@ describe("工位池（OD-BE-1 整合）", () => {
 
   it("GET state 含 workforce 與 opsCosts", async () => {
     const state = await inventory.state();
-    expect(state.workforce).toMatchObject({ hired: 1, busy: 0, free: 1, maxHired: 4 });
+    expect(state.workforce).toMatchObject({ hired: 1, busy: 0, free: 1, maxHired: 8 });
     expect(state.opsCosts.hireCostGold).toBe(8);
     expect(state.opsCosts.wageByBuilding.bdef_field).toBe(1);
     expect(state.opsCosts.haulByBuilding.bdef_mill).toBe(1);
