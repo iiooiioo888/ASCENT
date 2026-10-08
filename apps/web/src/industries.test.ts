@@ -36,6 +36,8 @@ describe("industry tabs", () => {
     expect(industryOfItem("item_charcoal")).toBe("chemical");
     expect(industryOfItem("item_plank")).toBe("industry");
     expect(industryOfItem("item_engine")).toBe("industry");
+    expect(industryOfItem("item_cake")).toBe("industry");
+    expect(industryOfBuildingDef("bdef_food_factory")).toBe("industry");
     expect(industryOfItem("item_steam")).toBe("energy");
     expect(industryOfItem(ITEM_GOLD_ID)).toBeNull();
     expect(industryOfItem(ITEM_OIL_ID)).toBeNull();

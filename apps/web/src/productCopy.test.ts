@@ -22,6 +22,8 @@ describe("productCopy", () => {
   it("exposes feed and bread purpose hints for U13 (written Traditional Chinese)", () => {
     expect(methodPurposeHint("method_mix_feed_default")).toBe("飼料可送牧場養雞牛，或送化工廠與鹼製成肥料。");
     expect(methodPurposeHint("method_raise_livestock_default")).toBe("消耗飼料與水，產出雞蛋與牛奶。");
+    expect(methodPurposeHint("method_bake_cake_default")).toMatch(/蛋糕/);
+    expect(itemPurposeHint("item_cake")).toMatch(/食品廠/);
     expect(itemPurposeHint("item_feed")).toBe("可送牧場養雞牛，或與鹼在化工廠製成肥料。");
     expect(itemPurposeHint("item_bread")).toMatch(/麵包/);
     expect(itemPurposeHint("item_bread")).not.toMatch(/係|冇/);

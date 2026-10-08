@@ -9,6 +9,8 @@ import {
   mixFeedDefault,
   raiseLivestockDefault,
   demoRanchIdle,
+  bakeCakeDefault,
+  demoFoodFactoryIdle,
 } from "../prb-demo/fixtures";
 import { BUILDING_ACTION_ERROR_COPY } from "../building-action-error";
 import { demoSiloBuilding } from "../screenshot-harness/fixtures";
@@ -482,6 +484,24 @@ describe("BuildingCard AFK auto toggle", () => {
     expect(onAutoMethodChange).toHaveBeenCalledWith("method_raise_livestock_default");
     await user.selectOptions(select, "預設");
     expect(onAutoMethodChange).toHaveBeenCalledWith(null);
+  });
+
+  it("food factory card shows icon label and bake cake recipe option", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoFoodFactoryIdle}
+        options={[bakeCakeDefault]}
+        selectedId={bakeCakeDefault.id}
+        selected={bakeCakeDefault}
+        inventory={baseInventory}
+        onAutoToggle={vi.fn()}
+        onAutoMethodChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("img", { name: "食品廠" })).toHaveTextContent("🧁");
+    expect(screen.getByRole("combobox", { name: "選擇食品廠的生產方式" })).toHaveTextContent("焗蛋糕");
+    expect(screen.getByRole("combobox", { name: "選擇食品廠的掛機配方" })).toBeInTheDocument();
   });
 
   it("ranch card shows icon label and raise livestock recipe option", () => {

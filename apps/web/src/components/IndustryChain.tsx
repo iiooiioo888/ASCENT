@@ -39,6 +39,14 @@ const ENGINE_BRANCH: ChainItemNode = {
   icon: "🚂",
 };
 
+const CAKE_BRANCH: ChainNode[] = [
+  { kind: "item", itemId: "item_flour", label: "麵粉", icon: "🥣" },
+  { kind: "item", itemId: "item_egg", label: "雞蛋", icon: "🥚" },
+  { kind: "item", itemId: "item_milk", label: "牛奶", icon: "🥛" },
+  { kind: "building", buildingDefId: "bdef_food_factory", label: "食品廠" },
+  { kind: "item", itemId: "item_cake", label: "蛋糕", icon: "🍰" },
+];
+
 const AGRICULTURE_BRANCH: ChainNode[] = [
   FEED_BRANCH,
   { kind: "building", buildingDefId: "bdef_ranch", label: "牧場" },
@@ -46,9 +54,14 @@ const AGRICULTURE_BRANCH: ChainNode[] = [
   { kind: "item", itemId: "item_milk", label: "牛奶", icon: "🥛" },
 ];
 
-const BRANCHES: Partial<Record<IndustryId, { label: string; nodes: ChainNode[] }>> = {
-  agriculture: { label: "磨坊支線", nodes: AGRICULTURE_BRANCH },
-  industry: { label: "機械廠支線", nodes: [ENGINE_BRANCH] },
+type ChainBranch = { label: string; nodes: ChainNode[] };
+
+const BRANCHES: Partial<Record<IndustryId, ChainBranch[]>> = {
+  agriculture: [{ label: "磨坊支線", nodes: AGRICULTURE_BRANCH }],
+  industry: [
+    { label: "蛋糕鏈", nodes: CAKE_BRANCH },
+    { label: "機械廠支線", nodes: [ENGINE_BRANCH] },
+  ],
 };
 
 const LINES: Record<Exclude<IndustryId, "agriculture">, ChainNode[]> = {
@@ -136,19 +149,19 @@ type Props = {
 
 export function IndustryChain({ buildings, industry = "agriculture" }: Props) {
   const line = industry === "agriculture" ? MAIN_LINE : LINES[industry];
-  const branch = BRANCHES[industry];
+  const branches = BRANCHES[industry] ?? [];
   return (
     <div className="chain" aria-label={INDUSTRY_CHAIN_ARIA_BY_ID[industry]}>
       <div className="chain-main">{renderLine(line, buildings)}</div>
-      {branch ? (
-        <div className="chain-branch">
+      {branches.map((branch) => (
+        <div key={branch.label} className="chain-branch">
           <span className="chain-branch-label">{branch.label}</span>
           <i className="chain-arrow" aria-hidden>
             ↘
           </i>
           {renderLine(branch.nodes, buildings)}
         </div>
-      ) : null}
+      ))}
     </div>
   );
 }
