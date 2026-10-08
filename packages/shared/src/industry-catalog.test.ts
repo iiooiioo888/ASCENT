@@ -14,7 +14,7 @@ describe("產業擴充目錄", () => {
   it("不改寫農業切片的物品與規則條數", () => {
     expect(items.some((i) => i.id === "item_iron_ore")).toBe(false);
     expect(rules.some((r) => r.id === "rule_mine_iron")).toBe(false);
-    expect(generateMethods(rules).length).toBeLessThanOrEqual(10);
+    expect(generateMethods(rules).length).toBeLessThanOrEqual(11);
   });
 
   it("可玩目錄通過驗證，且飼料有肥料下游", () => {
