@@ -8,9 +8,11 @@ describe("mapMarketActionError", () => {
     expect(mapMarketActionError(new ApiError("資源不足：item_bread", 400)).message).toBe("資源不足：麵包");
   });
 
-  it("maps insufficient gold", () => {
+  it("maps insufficient settlement currency", () => {
     expect(mapMarketActionError(new ApiError("金幣不足", 400)).message).toBe(MARKET_COPY.needGold);
+    expect(mapMarketActionError(new ApiError("銅錠不足", 400)).message).toBe(MARKET_COPY.needGold);
     expect(mapMarketActionError(new ApiError("資源不足：item_gold", 400)).message).toBe(MARKET_COPY.needGold);
+    expect(mapMarketActionError(new ApiError("資源不足：item_copper_ingot", 400)).message).toBe(MARKET_COPY.needGold);
   });
 
   it("maps transport fee too high", () => {
@@ -22,7 +24,7 @@ describe("mapMarketActionError", () => {
   });
 
   it("maps not tradable items", () => {
-    expect(mapMarketActionError(new ApiError("不可交易：item_gold", 400)).message).toContain("金幣");
+    expect(mapMarketActionError(new ApiError("不可交易：item_gold", 400)).message).toContain("金錢");
   });
 
   it("falls back to generic copy", () => {

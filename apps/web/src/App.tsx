@@ -19,6 +19,7 @@ import {
 import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { INDUSTRY_TABS, inIndustry, industryOfBuildingDef, industryOfItem, type IndustryId } from "./industries";
+import { IngotHud } from "./components/IngotHud";
 import { maybeWorkforceHud } from "./components/WorkforceHud";
 import { maybeEnvironmentHud } from "./components/EnvironmentHud";
 import type { BuildingActionErrorView } from "./building-action-error";
@@ -60,7 +61,6 @@ import { fetchMarket, postMarketBuy, postMarketSell, type MarketSnapshot } from 
 import {
   canAffordAnyMarketBuy,
   formatMarketTradeSuccess,
-  hudGoldChipLabel,
   MARKET_PANEL_ANCHOR_ID,
   resolveHudGold,
 } from "./market-feedback";
@@ -86,6 +86,7 @@ import { isResourceDepleted } from "./depletion";
 import { FEATURE_SHOW_DEPLETION_EMPTY_STATE, FEATURE_SHOW_SILO_PLACEMENT, FEATURE_SILO_CARD_MODE } from "./featureFlags";
 import { formatUserError, fmtGameClockChip } from "./format";
 import { sortInventoryRows } from "./inventorySort";
+import { ITEM_COPPER_INGOT_ID } from "@ascent/shared";
 import { BUILDING_ICON } from "./meta";
 import {
   BRAND_DISPLAY_NAME,
@@ -476,7 +477,7 @@ export default function App() {
     setMarketSuccessToast(message);
     setHighlightItems((prev) => {
       const next = new Set(prev);
-      next.add("item_gold");
+      next.add(ITEM_COPPER_INGOT_ID);
       next.add(tradedItemId);
       return next;
     });
@@ -485,7 +486,7 @@ export default function App() {
       setMarketSuccessToast(null);
       setHighlightItems((prev) => {
         const next = new Set(prev);
-        next.delete("item_gold");
+        next.delete(ITEM_COPPER_INGOT_ID);
         next.delete(tradedItemId);
         return next;
       });
@@ -839,9 +840,7 @@ export default function App() {
             {fmtGameClockChip(state.time.displayGameTime, GAME_TIME_CHIP_PREFIX)}
           </span>
           <span className="chip">{timeScaleHudChip(state.time.timeScale)}</span>
-          <span className="chip chip-gold" data-testid="hud-gold-chip">
-            {hudGoldChipLabel(hudGold)}
-          </span>
+          <IngotHud inventory={state.inventory} copperQty={hudGold} />
           {maybeEnvironmentHud(state.environment)}
           {maybeWorkforceHud({
             workforce: state.workforce,

@@ -40,7 +40,7 @@ export function inIndustry<T extends { id?: string; buildingDefId?: string }>(
 
 const ITEM_INDUSTRY = buildItemIndustry();
 
-/** 產品歸到產出它的產業。金幣與大宗不進任何產業卡。 */
+/** 產品歸到產出它的產業。金錢（item_gold）與大宗不進任何產業卡。 */
 export function industryOfItem(itemId: string): IndustryId | null {
   if (itemId === ITEM_GOLD_ID || itemId === ITEM_OIL_ID) return null;
   return ITEM_INDUSTRY.get(itemId) ?? null;

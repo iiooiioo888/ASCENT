@@ -1,4 +1,4 @@
-import type { MarketPriceBook } from "@ascent/shared";
+import { ITEM_COPPER_INGOT_ID, type MarketPriceBook } from "@ascent/shared";
 import { formatQuantity } from "./format";
 import { inventoryQtyMap } from "./inventory";
 import { hudGoldChip, successBuy, successSell, successSellNet } from "./marketCopy";
@@ -7,8 +7,9 @@ import type { InvRow } from "./types";
 
 export const MARKET_PANEL_ANCHOR_ID = "market-panel";
 
+/** 結算餘額（Phase B：銅錠）。 */
 export function goldBalanceFromInventory(inventory: InvRow[]): number {
-  return inventoryQtyMap(inventory).get("item_gold") ?? 0;
+  return inventoryQtyMap(inventory).get(ITEM_COPPER_INGOT_ID) ?? 0;
 }
 
 /** Prefer authoritative market snapshot; fall back to inventory row. */

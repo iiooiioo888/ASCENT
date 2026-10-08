@@ -56,8 +56,33 @@ const AGRICULTURE_BRANCH: ChainNode[] = [
 
 type ChainBranch = { label: string; nodes: ChainNode[] };
 
+const MINING_METAL_BRANCHES: ChainBranch[] = [
+  {
+    label: "銅鏈（冶煉）",
+    nodes: [
+      { kind: "item", itemId: "item_copper_ore", label: "銅礦", icon: "🟠" },
+      { kind: "item", itemId: "item_copper_ingot", label: "銅錠", icon: "🟠" },
+    ],
+  },
+  {
+    label: "銀鏈（冶煉）",
+    nodes: [
+      { kind: "item", itemId: "item_silver_ore", label: "銀礦", icon: "⚪" },
+      { kind: "item", itemId: "item_silver_ingot", label: "銀錠", icon: "🥈" },
+    ],
+  },
+  {
+    label: "金鏈（冶煉）",
+    nodes: [
+      { kind: "item", itemId: "item_gold_ore", label: "金礦", icon: "🟡" },
+      { kind: "item", itemId: "item_gold_ingot", label: "金錠", icon: "🥇" },
+    ],
+  },
+];
+
 const BRANCHES: Partial<Record<IndustryId, ChainBranch[]>> = {
   agriculture: [{ label: "磨坊支線", nodes: AGRICULTURE_BRANCH }],
+  mining: MINING_METAL_BRANCHES,
   industry: [
     { label: "蛋糕鏈", nodes: CAKE_BRANCH },
     { label: "機械廠支線", nodes: [ENGINE_BRANCH] },

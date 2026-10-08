@@ -1,5 +1,6 @@
 import { ApiError } from "./api";
 import { itemLabel } from "./meta";
+import { SETTLEMENT_COPY } from "./settlementCopy";
 import { COMMODITY_COPY } from "./commodityCopy";
 import type { MarketActionErrorView } from "./market-action-error";
 
@@ -15,6 +16,7 @@ type RegistryEntry = { copy: string; shouldRefresh: boolean };
 const REGISTRY: Readonly<Record<string, RegistryEntry>> = {
   數量無效: { copy: COMMODITY_COPY.invalidQuantity, shouldRefresh: false },
   金幣不足: { copy: COMMODITY_COPY.needGold, shouldRefresh: false },
+  [SETTLEMENT_COPY.insufficient]: { copy: COMMODITY_COPY.needGold, shouldRefresh: false },
   超過單筆上限: { copy: COMMODITY_COPY.qtyCap, shouldRefresh: false },
   手續費過高: { copy: COMMODITY_COPY.feeHigh, shouldRefresh: false },
   進口額度已滿: { copy: COMMODITY_COPY.liquidity, shouldRefresh: false },
@@ -26,7 +28,7 @@ const REGISTRY: Readonly<Record<string, RegistryEntry>> = {
 
 function formatInsufficientMaterialsMessage(rawMessage: string): string {
   const rest = rawMessage.slice(INSUFFICIENT_PREFIX.length).trim();
-  if (rest === "item_gold") return COMMODITY_COPY.needGold;
+  if (rest === "item_gold" || rest === "item_copper_ingot") return COMMODITY_COPY.needGold;
   if (rest === "item_oil") return COMMODITY_COPY.needStock;
   return `${INSUFFICIENT_PREFIX}${itemLabel(rest)}`;
 }

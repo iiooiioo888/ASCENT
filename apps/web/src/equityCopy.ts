@@ -10,7 +10,7 @@ export const EQUITY_COPY = {
   sellCta: "賣出",
   previewBuy: (n: number) => `預估支付 🪙${n}（含手續費）`,
   previewSell: (n: number) => `預估實收 🪙${n}（已扣手續費）`,
-  needGold: "金幣不足",
+  needGold: "銅錠不足",
   needShares: "無持倉",
   cap: "已達持倉上限",
   qtyCap: "超過單筆上限",

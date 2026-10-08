@@ -63,6 +63,7 @@ describe("mapBuildingActionError — known mappings", () => {
   it("maps ops-depth workforce and gold errors", () => {
     expect(mapBuildingActionError(new ApiError("人手不足", 400)).message).toBe(OPS_DEPTH_COPY.needHands);
     expect(mapBuildingActionError(new ApiError("金幣不足", 400)).message).toBe(OPS_DEPTH_COPY.needGold);
+    expect(mapBuildingActionError(new ApiError("銅錠不足", 400)).message).toBe(OPS_DEPTH_COPY.needGold);
     expect(mapBuildingActionError(new ApiError("已達僱工上限", 400)).message).toBe(OPS_DEPTH_COPY.workforceCap);
     expect(mapBuildingActionError(new ApiError("資源不足：item_gold", 400)).message).toBe(OPS_DEPTH_COPY.needGold);
   });

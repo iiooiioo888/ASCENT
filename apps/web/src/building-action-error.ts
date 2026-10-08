@@ -118,6 +118,10 @@ const REGISTRY: Readonly<Record<string, RegistryEntry>> = {
     copy: OPS_DEPTH_COPY.needGold,
     shouldRefresh: false,
   },
+  銅錠不足: {
+    copy: OPS_DEPTH_COPY.needGold,
+    shouldRefresh: false,
+  },
   已達僱工上限: {
     copy: OPS_DEPTH_COPY.workforceCap,
     shouldRefresh: false,
@@ -147,7 +151,7 @@ export type MappedBuildingActionError = BuildingActionErrorView & {
 function formatInsufficientMaterialsMessage(rawMessage: string): string {
   const rest = rawMessage.slice(INSUFFICIENT_PREFIX.length);
   const itemId = rest.trim();
-  if (itemId === "item_gold") return OPS_DEPTH_COPY.needGold;
+  if (itemId === "item_gold" || itemId === "item_copper_ingot") return OPS_DEPTH_COPY.needGold;
   return `${INSUFFICIENT_PREFIX}${itemLabel(itemId)}`;
 }
 

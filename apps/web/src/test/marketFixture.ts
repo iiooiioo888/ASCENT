@@ -4,7 +4,7 @@ import type { MarketSnapshot } from "../market";
 
 /** Minimal market payload for App integration tests. */
 export function defaultMarketSnapshotForTests(overrides?: Partial<MarketSnapshot>): MarketSnapshot {
-  const holdings: Record<string, number> = { item_gold: 0 };
+  const holdings: Record<string, number> = { item_copper_ingot: 0 };
   for (const id of Object.keys(DEFAULT_MARKET_PRICES.sell)) holdings[id] = 0;
   for (const id of Object.keys(DEFAULT_MARKET_PRICES.buy)) holdings[id] = 0;
   return {

@@ -15,7 +15,7 @@ export const COMMODITY_COPY = {
   sellCta: "賣出",
   previewBuy: (n: number) => `預估支付 🪙${n}（含手續費）`,
   previewSell: (n: number) => `預估實收 🪙${n}（已扣手續費）`,
-  needGold: "金幣不足",
+  needGold: "銅錠不足",
   needStock: "無存貨",
   qtyCap: "超過單筆上限",
   feeHigh: "手續費過高，無法賣出",

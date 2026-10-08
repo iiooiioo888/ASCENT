@@ -19,9 +19,9 @@ function makeStateWithWorkforce(): GameState {
     time: { displayGameTime: 0, timeScale: 60, serverRealTime: "2026-01-01T00:00:00.000Z" },
     inventory: [
       {
-        itemId: "item_gold",
+        itemId: "item_copper_ingot",
         quantity: "10",
-        item: { code: "item_gold", layer: "T", derivedTier: 1 },
+        item: { code: "item_copper_ingot", layer: "T", derivedTier: 1 },
       },
       {
         itemId: "item_seed_wheat",
@@ -63,7 +63,7 @@ describe("App OD-FE-1 workforce HUD", () => {
     const state = makeStateWithWorkforce();
     const market = defaultMarketSnapshotForTests({
       gold: 10,
-      holdings: { item_gold: 10, item_seed_wheat: 40, item_water: 80 },
+      holdings: { item_copper_ingot: 10, item_seed_wheat: 40, item_water: 80 },
     });
     apiMock.mockImplementation(
       withMarketApiRoute(
@@ -106,7 +106,7 @@ describe("App OD-FE-1 workforce HUD", () => {
     );
 
     render(<App />);
-    await waitFor(() => expect(screen.getByTestId("hud-gold-chip")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId("hud-copper-ingot")).toBeInTheDocument());
     expect(screen.queryByTestId("workforce-hud")).not.toBeInTheDocument();
   });
 });
