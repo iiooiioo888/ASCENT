@@ -64,17 +64,34 @@ describe("登入（F1）", () => {
     const body = (await state.json()) as { inventory: unknown };
     expect(body.inventory).toBeTruthy();
 
+    const invBefore = await prisma.playerInventory.findMany({
+      where: { playerId: LOCAL_PLAYER_ID },
+    });
+    const buildingsBefore = await prisma.playerBuilding.count({
+      where: { playerId: LOCAL_PLAYER_ID },
+    });
+    expect(invBefore.length).toBeGreaterThan(0);
+    expect(buildingsBefore).toBeGreaterThan(0);
+
     const again = await fetch(`${base}/api/v1/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: "miller", password: "field-water" }),
     });
-    expect(again.status).toBe(201);
-    const second = (await again.json()) as { playerId: string; adoptedExistingWorld: boolean };
-    expect(second.adoptedExistingWorld).toBe(false);
-    expect(second.playerId).not.toBe(LOCAL_PLAYER_ID);
+    expect(again.status).toBe(409);
+    const conflict = (await again.json()) as { message: string };
+    expect(conflict.message).toContain("主線存檔已存在");
 
-    const buildings = await prisma.playerBuilding.count({ where: { playerId: second.playerId } });
-    expect(buildings).toBeGreaterThan(0);
+    expect(await prisma.player.count()).toBe(1);
+    expect(await prisma.account.count()).toBe(1);
+
+    const invAfter = await prisma.playerInventory.findMany({
+      where: { playerId: LOCAL_PLAYER_ID },
+    });
+    const buildingsAfter = await prisma.playerBuilding.count({
+      where: { playerId: LOCAL_PLAYER_ID },
+    });
+    expect(invAfter).toEqual(invBefore);
+    expect(buildingsAfter).toBe(buildingsBefore);
   });
 });

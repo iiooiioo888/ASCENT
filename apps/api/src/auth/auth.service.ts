@@ -46,6 +46,10 @@ export class AuthService {
           }
         }
         if (!playerId) {
+          const worldCount = await tx.player.count();
+          if (worldCount >= 1) {
+            throw new ConflictException("主線存檔已存在，請登入現有帳號");
+          }
           playerId = `player_${randomBytes(8).toString("hex")}`;
           await provisionNewPlayer(tx, playerId, now);
         }
