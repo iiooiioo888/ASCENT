@@ -83,7 +83,7 @@ describe("App OD-FE-1 workforce HUD", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await waitFor(() => expect(screen.getByTestId("hud-workforce-chip")).toHaveTextContent("👷 1/1"));
+    await waitFor(() => expect(screen.getByTestId("hud-workforce-chip")).toHaveTextContent("👷 1/4·忙0"));
 
     await user.click(screen.getByRole("button", { name: /僱工/ }));
     await waitFor(() =>

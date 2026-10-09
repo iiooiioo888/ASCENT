@@ -12,7 +12,7 @@ const opsCosts = {
 };
 
 describe("WorkforceHud", () => {
-  it("shows free/hired chip and hire preview", () => {
+  it("shows hire preview on僱工按鈕", () => {
     render(
       <WorkforceHud
         workforce={{ hired: 1, busy: 0, free: 1, maxHired: 4 }}
@@ -22,7 +22,6 @@ describe("WorkforceHud", () => {
         onHire={vi.fn()}
       />,
     );
-    expect(screen.getByTestId("hud-workforce-chip")).toHaveTextContent("👷 1/1");
     expect(screen.getByRole("button", { name: /僱工/ })).toHaveTextContent("支付 🪙8");
   });
 

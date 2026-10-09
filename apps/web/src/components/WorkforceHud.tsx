@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { BuildingActionErrorView } from "../building-action-error";
-import { canHireWorkforce, hasWorkforceUi, showGoMarketForHire, workforceHudLabel } from "../ops-depth";
+import { canHireWorkforce, hasWorkforceUi, showGoMarketForHire } from "../ops-depth";
 import { OPS_DEPTH_COPY } from "../ops-depth-copy";
 import type { OpsCostsSnapshot, WorkforceSnapshot } from "../types";
 import { GoMarketCta } from "./GoMarketCta";
@@ -23,9 +23,6 @@ export function WorkforceHud({ workforce, opsCosts, gold, pending, error, onHire
 
   return (
     <div className="workforce-hud" data-testid="workforce-hud">
-      <span className="chip chip-workforce" data-testid="hud-workforce-chip">
-        {workforceHudLabel(workforce)}
-      </span>
       <button
         type="button"
         className="workforce-hire-btn"
