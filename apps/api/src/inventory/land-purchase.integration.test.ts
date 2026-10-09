@@ -86,8 +86,9 @@ describe("擴田（LAND-BE-1 整合）", () => {
     });
   });
 
-  it("已有兩塊田 → 農田已達上限", async () => {
-    await setGold(30);
+  it("已有三塊田 → 農田已達上限", async () => {
+    await setGold(50);
+    await inventory.purchaseField();
     await inventory.purchaseField();
     await expect(inventory.purchaseField()).rejects.toMatchObject({
       response: { message: "農田已達上限", statusCode: 400 },
@@ -140,7 +141,7 @@ describe("擴田（LAND-BE-1 整合）", () => {
   it("GET state 含 fieldCount／fieldCap（buildingCount 不含倉）", async () => {
     const state = await inventory.state();
     expect(state.fieldCount).toBe(1);
-    expect(state.fieldCap).toBe(2);
+    expect(state.fieldCap).toBe(3);
     expect(state.buildingCount).toBe(5);
     expect(state.buildingSlotCap).toBe(PLAYER_BUILDING_SLOT_CAP);
     await seedLegacySilo();

@@ -11,6 +11,9 @@ export const ITEM_DISPLAY_NAME: Record<string, string> = {
   item_egg: "雞蛋",
   item_milk: "牛奶",
   item_cake: "蛋糕",
+  item_seed_cotton: "棉花種子",
+  item_cotton: "棉花",
+  item_cloth: "布",
   item_gold: "金幣",
   item_oil: "石油",
 };

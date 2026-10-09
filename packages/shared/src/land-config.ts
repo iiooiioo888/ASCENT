@@ -8,7 +8,7 @@ export const FIELD_BUILDING_DEF_ID = "bdef_field";
 export const SILO_BUILDING_DEF_ID = "bdef_silo";
 
 /** LD-D3：玩家田數上限（含開局 1 塊）。 */
-export const FIELD_CAP = 2;
+export const FIELD_CAP = 3;
 
 /**
  * P-D3／LD-D4：佔槽建築上限（**不含**倉，亦**不含**產業擴充建築）。
@@ -20,6 +20,7 @@ export const PLAYER_BUILDING_SLOT_CAP = 12;
 /** LD-D2：第 n 塊「加購」田金幣（n 為當前已有田數，1→第二塊田）。 */
 export const FIELD_PURCHASE_PRICE_BY_CURRENT_COUNT: Record<number, number> = {
   1: 10,
+  2: 18,
 };
 
 export const LAND_ERROR_COPY = {
