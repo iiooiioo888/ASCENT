@@ -39,9 +39,9 @@ function baseState(): GameState {
     buildingDefs: [{ id: "bdef_field", name: "田", code: "field" }],
     workforce: { hired: 2, busy: 1, free: 1, maxHired: 4 },
     opsCosts: {
-      hireCostGold: 8,
+      hireCostGold: 80,
       laborCostPerStart: 1,
-      wageByBuilding: { bdef_field: 1 },
+      wageByBuilding: { bdef_field: 10 },
       haulByBuilding: { bdef_field: 0 },
     },
     environment: { weather: "fair", yieldMult: 1 },

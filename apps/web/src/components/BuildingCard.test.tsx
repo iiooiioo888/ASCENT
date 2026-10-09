@@ -48,9 +48,9 @@ const fieldMethodSelectName = "選擇田的生產方式";
 const millMethodSelectName = "選擇磨坊的生產方式";
 
 const defaultOpsCosts = {
-  hireCostGold: 8,
+  hireCostGold: 80,
   laborCostPerStart: 1,
-  wageByBuilding: { bdef_field: 1, bdef_mill: 2 },
+  wageByBuilding: { bdef_field: 10, bdef_mill: 20 },
   haulByBuilding: { bdef_field: 0, bdef_mill: 1 },
 };
 
@@ -560,9 +560,9 @@ describe("BuildingCard AFK auto toggle", () => {
         selectedId={raiseLivestockDefault.id}
         selected={raiseLivestockDefault}
         inventory={ranchInventory}
-        goldBalance={10}
+        goldBalance={30}
         workforce={{ hired: 1, busy: 0, free: 1, maxHired: 8 }}
-        opsCosts={{ ...defaultOpsCosts, wageByBuilding: { ...defaultOpsCosts.wageByBuilding, bdef_ranch: 2 } }}
+        opsCosts={{ ...defaultOpsCosts, wageByBuilding: { ...defaultOpsCosts.wageByBuilding, bdef_ranch: 20 } }}
         autoPending={true}
         onAutoToggle={vi.fn()}
         onAutoMethodChange={vi.fn()}
@@ -580,9 +580,9 @@ describe("BuildingCard AFK auto toggle", () => {
         selectedId={raiseLivestockDefault.id}
         selected={raiseLivestockDefault}
         inventory={ranchInventory}
-        goldBalance={10}
+        goldBalance={30}
         workforce={{ hired: 1, busy: 0, free: 1, maxHired: 8 }}
-        opsCosts={{ ...defaultOpsCosts, wageByBuilding: { ...defaultOpsCosts.wageByBuilding, bdef_ranch: 2 } }}
+        opsCosts={{ ...defaultOpsCosts, wageByBuilding: { ...defaultOpsCosts.wageByBuilding, bdef_ranch: 20 } }}
         autoMethodPending={true}
         onAutoToggle={vi.fn()}
         onAutoMethodChange={vi.fn()}

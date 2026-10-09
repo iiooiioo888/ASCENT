@@ -64,9 +64,9 @@ describe("經營深度運費（OD-BE-2 整合）", () => {
     });
   }
 
-  it("T1：磨坊 start 扣 haul(1)＋wage(2)＋物料", async () => {
+  it("T1：磨坊 start 扣 haul(1)＋wage(20)＋物料", async () => {
     await resetBuilding(millId);
-    await setGold(20);
+    await setGold(50);
     await setQty("item_wheat", 10);
 
     await inventory.start(millId, millMethodId);
@@ -74,7 +74,7 @@ describe("經營深度運費（OD-BE-2 整合）", () => {
     const gold = await prisma.playerInventory.findUnique({
       where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
     });
-    expect(Number(gold?.quantity)).toBe(17);
+    expect(Number(gold?.quantity)).toBe(29);
 
     const wheat = await prisma.playerInventory.findUnique({
       where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: "item_wheat" } },
@@ -110,22 +110,22 @@ describe("經營深度運費（OD-BE-2 整合）", () => {
     });
   });
 
-  it("田／井開工 haul=0，僅扣工資 1", async () => {
+  it("田／井開工 haul=0，僅扣工資 10", async () => {
     await resetBuilding(fieldId);
     await resetBuilding(wellId);
-    await setGold(5);
+    await setGold(50);
 
     await inventory.start(fieldId, growMethodId);
     let gold = await prisma.playerInventory.findUnique({
       where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
     });
-    expect(Number(gold?.quantity)).toBe(4);
+    expect(Number(gold?.quantity)).toBe(40);
 
     await inventory.stop(fieldId);
     await inventory.start(wellId, drawMethodId);
     gold = await prisma.playerInventory.findUnique({
       where: { playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID } },
     });
-    expect(Number(gold?.quantity)).toBe(3);
+    expect(Number(gold?.quantity)).toBe(30);
   });
 });

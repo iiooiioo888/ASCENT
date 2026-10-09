@@ -73,7 +73,7 @@ function makeCommodities(overrides?: Partial<CommoditiesSnapshot>): CommoditiesS
 }
 
 const defaultOpsCosts: OpsCostsSnapshot = {
-  hireCostGold: 8,
+  hireCostGold: 80,
   laborCostPerStart: 1,
   wageByBuilding: {},
   haulByBuilding: {},

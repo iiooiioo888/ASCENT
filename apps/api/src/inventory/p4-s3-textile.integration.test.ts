@@ -155,7 +155,7 @@ describe.sequential("P4-S3 紡織（棉花）", () => {
     expect(until).toBeLessThanOrEqual(expectedMax);
   });
 
-  it("紡織：3 棉 → 30s → 1 布；工資 2＋運費 1", async () => {
+  it("紡織：3 棉 → 30s → 1 布；工資 20＋運費 1", async () => {
     const factory = await inventory.place("bdef_textile_mill");
     await setQty("item_cotton", 3);
     await prisma.player.update({
@@ -178,7 +178,7 @@ describe.sequential("P4-S3 紡織（棉花）", () => {
         playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID },
       },
     });
-    expect(Number(copperBefore?.quantity) - Number(copperAfterStart?.quantity)).toBe(3);
+    expect(Number(copperBefore?.quantity) - Number(copperAfterStart?.quantity)).toBe(21);
 
     await windBuildingBack(factory.id, 30);
     const ready = await prisma.playerBuilding.findUnique({ where: { id: factory.id } });
@@ -213,7 +213,7 @@ describe.sequential("P4-S3 紡織（棉花）", () => {
 
   it("state.opsCosts 含紡織廠工資與運費", async () => {
     const state = await inventory.state();
-    expect(state.opsCosts.wageByBuilding.bdef_textile_mill).toBe(2);
+    expect(state.opsCosts.wageByBuilding.bdef_textile_mill).toBe(20);
     expect(state.opsCosts.haulByBuilding.bdef_textile_mill).toBe(1);
     expect(state.opsCosts.sellTransport.item_cloth).toBe(1);
   });
