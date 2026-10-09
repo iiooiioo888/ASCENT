@@ -66,7 +66,9 @@ describe.sequential("P4-S4 礦冶（接大宗石油）", () => {
     await syncCatalog(prisma);
     const mine = await prisma.buildingDef.findUnique({ where: { id: "bdef_mine" } });
     expect(mine?.name).toBe("礦場");
-    expect(mine?.systemCode).toBe("industry");
+    expect(mine?.systemCode).toBe("mining");
+    const smelter = await prisma.buildingDef.findUnique({ where: { id: "bdef_smelter" } });
+    expect(smelter?.systemCode).toBe("mining");
     const ore = await prisma.item.findUnique({ where: { id: "item_ore" } });
     expect(ore?.typeId).toBe("it_industrial");
     const mineMethod = await prisma.productionMethod.findUnique({ where: { id: "method_mine_ore_default" } });
