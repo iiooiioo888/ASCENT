@@ -1,3 +1,5 @@
+import { emptySeedLineage, lineageFromUnknown, type SeedLineageMap } from "./seed-lineage";
+
 /** LOCKED MVP：產業選項卡解鎖。農業永遠開；其餘看生涯收取量。 */
 
 export const MILESTONE_INDUSTRIES = [
@@ -31,12 +33,14 @@ export const DEFAULT_UNLOCKED_INDUSTRIES: MilestoneIndustryId[] = ["agriculture"
 export type PlayerProgress = {
   lifetimeCollected: Record<string, number>;
   unlockedIndustries: MilestoneIndustryId[];
+  seedLineage: SeedLineageMap;
 };
 
 export function emptyPlayerProgress(): PlayerProgress {
   return {
     lifetimeCollected: {},
     unlockedIndustries: [...DEFAULT_UNLOCKED_INDUSTRIES],
+    seedLineage: emptySeedLineage(),
   };
 }
 
@@ -64,6 +68,9 @@ export function playerProgressFromDb(raw: unknown): PlayerProgress {
       if (!base.unlockedIndustries.includes(id)) base.unlockedIndustries.push(id);
     }
   }
+  if ("seedLineage" in obj) {
+    base.seedLineage = lineageFromUnknown((obj as { seedLineage?: unknown }).seedLineage);
+  }
   return base;
 }
 
@@ -79,6 +86,7 @@ export function addLifetimeCollected(
   return {
     lifetimeCollected,
     unlockedIndustries: evaluateUnlockedIndustries(lifetimeCollected, progress.unlockedIndustries),
+    seedLineage: { ...progress.seedLineage },
   };
 }
 

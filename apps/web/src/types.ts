@@ -21,6 +21,7 @@ export type Building = {
   methodId: string | null;
   queue: { elapsedGameSec: number; durationGameSec: number }[];
   bufferedOutputs: Record<string, number>;
+  specialization?: string | null;
   /** 休地結束遊戲秒（僅休地中由 API 回傳） */
   fallowUntil?: number;
   /** AFK-BE-1：自動循環開關（GET /state） */
@@ -36,6 +37,8 @@ export type Building = {
 export type NpcOrderView = {
   id: string;
   ruleId: string;
+  tier?: number;
+  label?: string;
   status: string;
   requiredItems: { item_id: string; quantity: number }[];
   rewards: { kind: string; item_id: string; quantity: number }[];
@@ -85,6 +88,11 @@ export type GameState = {
   buildingCount?: number;
   buildingSlotCap?: number;
   unlockedIndustries?: string[];
+  lifetimeCollected?: Record<string, number>;
+  seedLineage?: Record<string, number>;
+  storageUsed?: number;
+  storageCap?: number;
+  economyBottleneck?: { kind: string; label: string; hint: string };
   npcOrders?: NpcOrderView[];
   /** AFK-BE-2：商行麵包貨架摘要（GET /state）。 */
   retailShelf?: {

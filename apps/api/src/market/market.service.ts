@@ -2,6 +2,8 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import {
   ITEM_GOLD_ID,
   ITEM_SETTLEMENT_CURRENCY_ID,
+  MARKET_SEED_GENERATION,
+  SEED_WHEAT_ITEM_ID,
   SETTLEMENT_INSUFFICIENT_MESSAGE,
   parseTradeQuantity,
   resolveMarketUnitPrice,
@@ -12,6 +14,12 @@ import { PrismaService } from "../prisma/prisma.service";
 import { SimulationService } from "../simulation/simulation.service";
 import { InventoryService } from "../inventory/inventory.service";
 import { creditPlayerItem, deductPlayerItem } from "../inventory/player-inventory-tx";
+import {
+  assertStorageAllowsGain,
+  loadPlayerProgress,
+  mixLineageOnCredit,
+  savePlayerProgress,
+} from "../inventory/player-progress-tx";
 
 @Injectable()
 export class MarketService {
@@ -88,6 +96,17 @@ export class MarketService {
       const goldCost = unitPrice * qty;
 
       return this.prisma.$transaction(async (tx) => {
+        await assertStorageAllowsGain(tx, { [itemId]: qty });
+        if (itemId === SEED_WHEAT_ITEM_ID) {
+          const progress = await loadPlayerProgress(tx);
+          const mixed = await mixLineageOnCredit(
+            progress,
+            tx,
+            { [itemId]: qty },
+            { [itemId]: MARKET_SEED_GENERATION },
+          );
+          await savePlayerProgress(tx, mixed);
+        }
         await deductPlayerItem(tx, ITEM_SETTLEMENT_CURRENCY_ID, goldCost, SETTLEMENT_INSUFFICIENT_MESSAGE);
         await creditPlayerItem(tx, itemId, qty);
         return {

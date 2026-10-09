@@ -91,8 +91,8 @@ describe.sequential("P4-S3 紡織（棉花）", () => {
     expect(fieldDef?.allowedRuleIds).toContain("rule_grow_cotton");
   });
 
-  it("FIELD_CAP=3、第三塊田價 18", () => {
-    expect(FIELD_CAP).toBe(3);
+  it("田終局 cap 12、早期 2；第三塊田價 18", () => {
+    expect(FIELD_CAP).toBe(12);
     expect(fieldPurchasePriceGold(2)).toBe(18);
   });
 
@@ -112,7 +112,7 @@ describe.sequential("P4-S3 紡織（棉花）", () => {
     expect(Number(copperAfter)).toBe(Number(copperBefore));
     expect(stateAfter.buildingCount).toBe(countBefore + 1);
     expect(stateAfter.buildingSlotCap).toBe(12);
-    expect(stateAfter.fieldCap).toBe(3);
+    expect(stateAfter.fieldCap).toBe(2);
   });
 
   it("田種棉：1 棉種＋1 水 → 約 60s → 3 棉；收成後休耕", async () => {
@@ -242,9 +242,8 @@ describe.sequential("P4-S3 紡織（棉花）", () => {
     await expect(inventory.place("bdef_textile_mill")).rejects.toThrow(LAND_ERROR_COPY.DUPLICATE_BUILDING_DEF);
   });
 
-  it("第四塊田 → 農田已達上限", async () => {
+  it("早期第二塊田後達上限", async () => {
     await setQty(ITEM_SETTLEMENT_CURRENCY_ID, 50);
-    await inventory.purchaseField();
     await inventory.purchaseField();
     await expect(inventory.purchaseField()).rejects.toMatchObject({
       response: { message: LAND_ERROR_COPY.FIELD_AT_CAP },

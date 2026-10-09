@@ -1,18 +1,30 @@
 import { BadRequestException, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import {
   addLifetimeCollected,
+  applyOutputFactor,
+  applySeedGenerationToGrowOutputs,
+  canSwitchFieldToIntensive,
+  countStorageStacks,
+  diagnoseEconomyBottleneck,
   DURABILITY_MAX,
   DURABILITY_REPAIR_COST_COPPER,
   FIELD_BUILDING_DEF_ID,
-  FIELD_CAP,
+  FIELD_CULTIVATION_INTENSIVE,
+  FIELD_CULTIVATION_ROTATION,
+  fieldCapForLifetime,
+  fieldCultivationOutputFactor,
+  GROW_WHEAT_RULE_ID,
   ITEM_SETTLEMENT_CURRENCY_ID,
   playerProgressFromDb,
+  SAVE_SEED_RULE_ID,
+  SEED_WHEAT_ITEM_ID,
   SETTLEMENT_INSUFFICIENT_MESSAGE,
   settleDurability,
   LAND_ERROR_COPY,
   PLAYER_BUILDING_SLOT_CAP,
   allowsAnotherInstanceOfDef,
   SILO_BUILDING_DEF_ID,
+  STORAGE_STACK_CAP,
   canPurchaseField,
   countBuildingsOccupyingSlots,
   isPlacementBlockedBySlotCap,
@@ -21,6 +33,7 @@ import {
   isFieldGrowRuleId,
   isFallowActive,
   mergeQty,
+  nextSavedSeedGeneration,
   scaleOutputsByYield,
   weatherYieldMult,
   haulGoldForBuilding,
@@ -30,8 +43,10 @@ import {
   insufficientMaterialMessage,
   mapStartFailureToAutoPauseReason,
   sortBuildingsForAfkAutoStart,
+  WHEAT_ITEM_ID,
   type BuildingQueueJob,
   type BuildingStatus,
+  type FieldCultivation,
   type ItemIo,
 } from "@ascent/shared";
 import { Prisma } from "../../generated/prisma/client";
@@ -52,6 +67,13 @@ import {
 } from "./settlement-db-lock";
 import { deductPlayerItem } from "./player-inventory-tx";
 import { OrdersService } from "../orders/orders.service";
+import {
+  assertStorageAllowsGain,
+  loadPlayerProgress,
+  mixLineageOnCredit,
+  mixLineageOnDeplete,
+  savePlayerProgress,
+} from "./player-progress-tx";
 
 function toGameInt(sec: number): bigint {
   return BigInt(Math.max(0, Math.floor(sec)));
@@ -182,6 +204,19 @@ export class InventoryService {
     const player = await this.prisma.player.findUniqueOrThrow({ where: { id: currentPlayerId() } });
     const progress = playerProgressFromDb(player.progress);
     const npcOrders = (await this.orders?.listPending()) ?? [];
+    const fieldCap = fieldCapForLifetime(progress.lifetimeCollected);
+    const storageRows = inventory.map((row) => ({ itemId: row.itemId, quantity: Number(row.quantity) }));
+    const storageUsed = countStorageStacks(storageRows);
+    const water = storageRows.find((r) => r.itemId === "item_water")?.quantity ?? 0;
+    const seeds = storageRows.find((r) => r.itemId === SEED_WHEAT_ITEM_ID)?.quantity ?? 0;
+    const economyBottleneck = diagnoseEconomyBottleneck({
+      water,
+      seeds,
+      fieldCount,
+      fieldCap,
+      storageUsed,
+      storageCap: STORAGE_STACK_CAP,
+    });
     return {
       time,
       inventory,
@@ -192,10 +227,15 @@ export class InventoryService {
       opsCosts,
       environment,
       fieldCount,
-      fieldCap: FIELD_CAP,
+      fieldCap,
       buildingCount,
       buildingSlotCap: PLAYER_BUILDING_SLOT_CAP,
       unlockedIndustries: progress.unlockedIndustries,
+      lifetimeCollected: progress.lifetimeCollected,
+      seedLineage: progress.seedLineage,
+      storageUsed,
+      storageCap: STORAGE_STACK_CAP,
+      economyBottleneck,
       npcOrders,
       retailShelf: {
         enabled: shelf.enabled,
@@ -268,9 +308,10 @@ export class InventoryService {
       await this.prisma.$transaction(async (tx) => {
         const existing = await tx.playerBuilding.findMany({
           where: { playerId: currentPlayerId() },
-          select: { buildingDefId: true },
+          select: { buildingDefId: true, specialization: true },
         });
-        this.assertPlacementAllowed(def.id, existing);
+        const progress = await loadPlayerProgress(tx);
+        this.assertPlacementAllowed(def.id, existing, fieldCapForLifetime(progress.lifetimeCollected));
         created = await tx.playerBuilding.create({
           data: this.newPlayerBuildingData(def.id, game, now),
         });
@@ -301,11 +342,16 @@ export class InventoryService {
       await this.prisma.$transaction(async (tx) => {
         const buildings = await tx.playerBuilding.findMany({
           where: { playerId: currentPlayerId() },
-          select: { buildingDefId: true },
+          select: { buildingDefId: true, specialization: true },
         });
+        const progress = await loadPlayerProgress(tx);
         const fieldCount = countPlayerFields(buildings);
         const slottedBuildingCount = countBuildingsOccupyingSlots(buildings);
-        const gate = canPurchaseField({ fieldCount, slottedBuildingCount });
+        const gate = canPurchaseField({
+          fieldCount,
+          slottedBuildingCount,
+          fieldCap: fieldCapForLifetime(progress.lifetimeCollected),
+        });
         if (!gate.ok) {
           throw new BadRequestException(LAND_ERROR_COPY[gate.reason]);
         }
@@ -331,13 +377,14 @@ export class InventoryService {
 
   private assertPlacementAllowed(
     buildingDefId: string,
-    existing: { buildingDefId: string }[],
+    existing: { buildingDefId: string; specialization?: string | null }[],
+    fieldCap: number,
   ): void {
     if (isPlacementBlockedBySlotCap(buildingDefId, existing)) {
       throw new BadRequestException(LAND_ERROR_COPY.BUILDING_SLOTS_FULL);
     }
     const sameDef = existing.filter((b) => b.buildingDefId === buildingDefId).length;
-    if (!allowsAnotherInstanceOfDef(buildingDefId, sameDef)) {
+    if (!allowsAnotherInstanceOfDef(buildingDefId, sameDef, fieldCap)) {
       throw new BadRequestException(
         buildingDefId === FIELD_BUILDING_DEF_ID
           ? LAND_ERROR_COPY.FIELD_AT_CAP
@@ -360,6 +407,7 @@ export class InventoryService {
       outputs: {},
       bufferedOutputs: {},
       status: "idle" as const,
+      specialization: buildingDefId === FIELD_BUILDING_DEF_ID ? FIELD_CULTIVATION_ROTATION : null,
     };
   }
 
@@ -426,6 +474,44 @@ export class InventoryService {
     });
   }
 
+  async patchCultivation(buildingId: string, modeRaw: unknown) {
+    if (modeRaw !== FIELD_CULTIVATION_ROTATION && modeRaw !== FIELD_CULTIVATION_INTENSIVE) {
+      throw new BadRequestException(LAND_ERROR_COPY.UNKNOWN_CULTIVATION);
+    }
+    const mode = modeRaw as FieldCultivation;
+    return this.withSettlementTx(async (tx) => {
+      await this.settleBuildingUnlocked(tx, buildingId);
+      const building = await tx.playerBuilding.findUnique({ where: { id: buildingId } });
+      if (!building) throw new NotFoundException("建築不存在");
+      if (building.buildingDefId !== FIELD_BUILDING_DEF_ID) {
+        throw new BadRequestException(LAND_ERROR_COPY.UNKNOWN_CULTIVATION);
+      }
+      const others = await tx.playerBuilding.findMany({
+        where: { playerId: currentPlayerId() },
+        select: { buildingDefId: true, specialization: true },
+      });
+      const slottedBuildingCount = countBuildingsOccupyingSlots(others);
+      if (mode === FIELD_CULTIVATION_INTENSIVE) {
+        const gate = canSwitchFieldToIntensive({
+          status: building.status,
+          currentMode: building.specialization,
+          slottedBuildingCount,
+        });
+        if (!gate.ok) throw new BadRequestException(LAND_ERROR_COPY[gate.reason]);
+      } else if (building.status !== "idle") {
+        throw new BadRequestException(LAND_ERROR_COPY.CULTIVATION_BUSY);
+      }
+      await tx.playerBuilding.update({
+        where: { id: buildingId },
+        data: { specialization: mode },
+      });
+      return tx.playerBuilding.findUniqueOrThrow({
+        where: { id: buildingId },
+        include: { buildingDef: true, method: true },
+      });
+    });
+  }
+
   /** @deprecated 使用 {@link patchBuildingAuto} */
   async setAutoEnabled(buildingId: string, autoEnabled: boolean) {
     return this.patchBuildingAuto(buildingId, { autoEnabled });
@@ -465,12 +551,26 @@ export class InventoryService {
       throw new BadRequestException("土地休耕中");
     }
     const inputs = iosToRecord(method.inputs as ItemIo[]);
-    const outputs = iosToRecord(method.outputs as ItemIo[]);
+    let outputs = iosToRecord(method.outputs as ItemIo[]);
     const depth = this.sim.opsDepth;
     const laborCost = depth.workforce.laborCostPerStart;
     const wageGold = wageGoldForBuilding(building.buildingDefId, depth);
     const haulGold = haulGoldForBuilding(building.buildingDefId, depth);
     const player = await tx.player.findUniqueOrThrow({ where: { id: currentPlayerId() } });
+    let progress = playerProgressFromDb(player.progress);
+    const produceLineage: Record<string, number> = {};
+    if (method.ruleId === GROW_WHEAT_RULE_ID) {
+      const gen = progress.seedLineage[SEED_WHEAT_ITEM_ID] ?? 0;
+      outputs = applySeedGenerationToGrowOutputs(outputs, gen);
+      produceLineage[WHEAT_ITEM_ID] = gen;
+    }
+    if (method.ruleId === SAVE_SEED_RULE_ID) {
+      const wheatGen = progress.seedLineage[WHEAT_ITEM_ID] ?? 0;
+      produceLineage[SEED_WHEAT_ITEM_ID] = nextSavedSeedGeneration(wheatGen);
+    }
+    if (building.buildingDefId === FIELD_BUILDING_DEF_ID && isFieldGrowRuleId(method.ruleId)) {
+      outputs = applyOutputFactor(outputs, fieldCultivationOutputFactor(building.specialization));
+    }
     const free = player.workforceHired - player.workforceBusy;
     if (free < laborCost) throw new BadRequestException("人手不足");
     for (const [itemId, qty] of Object.entries(inputs)) {
@@ -494,6 +594,7 @@ export class InventoryService {
       elapsedGameSec: 0,
       inputs,
       outputs,
+      ...(Object.keys(produceLineage).length > 0 ? { lineage: { produce: produceLineage } } : {}),
     };
     const started = await tx.playerBuilding.updateMany({
       where: { id: buildingId, status: "idle" },
@@ -522,9 +623,13 @@ export class InventoryService {
     if (haulGold > 0) {
       await deductPlayerItem(tx, ITEM_SETTLEMENT_CURRENCY_ID, haulGold);
     }
+    progress = await mixLineageOnDeplete(progress, tx, inputs);
     await tx.player.update({
       where: { id: currentPlayerId() },
-      data: { workforceBusy: { increment: laborCost } },
+      data: {
+        workforceBusy: { increment: laborCost },
+        progress: progress as Prisma.InputJsonValue,
+      },
     });
   }
 
@@ -615,6 +720,11 @@ export class InventoryService {
         building.status === "ready"
           ? ((building.bufferedOutputs as Record<string, number>) ?? {})
           : {};
+      if (Object.keys(buffered).length > 0) {
+        await assertStorageAllowsGain(tx, buffered);
+      }
+      const queueJobs = (building.queue as unknown as BuildingQueueJob[]) ?? [];
+      const produceGeneration = queueJobs[0]?.lineage?.produce ?? {};
       const now = new Date();
       const clock = await this.requireState(tx);
       const game = this.sim.displayGameTime(
@@ -647,13 +757,16 @@ export class InventoryService {
       const laborCost = this.sim.opsDepth.workforce.laborCostPerStart;
       const player = await tx.player.findUniqueOrThrow({ where: { id: currentPlayerId() } });
       const nextBusy = Math.max(0, player.workforceBusy - laborCost);
-      const progress =
+      let progress =
         Object.keys(buffered).length > 0
           ? addLifetimeCollected(playerProgressFromDb(player.progress), buffered)
-          : null;
+          : playerProgressFromDb(player.progress);
+      if (Object.keys(buffered).length > 0) {
+        progress = await mixLineageOnCredit(progress, tx, buffered, produceGeneration);
+      }
       const playerPatch = {
         ...(nextBusy !== player.workforceBusy ? { workforceBusy: nextBusy } : {}),
-        ...(progress ? { progress: progress as Prisma.InputJsonValue } : {}),
+        progress: progress as Prisma.InputJsonValue,
       };
       if (Object.keys(playerPatch).length > 0) {
         await tx.player.update({

@@ -86,13 +86,33 @@ describe("擴田（LAND-BE-1 整合）", () => {
     });
   });
 
-  it("已有三塊田 → 農田已達上限", async () => {
+  it("早期兩塊田後拒買", async () => {
     await setGold(50);
-    await inventory.purchaseField();
     await inventory.purchaseField();
     await expect(inventory.purchaseField()).rejects.toMatchObject({
       response: { message: "農田已達上限", statusCode: 400 },
     });
+  });
+
+  it("收取 8 麵包後田上限升到 12，可買第三塊", async () => {
+    await prisma.player.update({
+      where: { id: LOCAL_PLAYER_ID },
+      data: {
+        progress: {
+          lifetimeCollected: { item_bread: 8 },
+          unlockedIndustries: ["agriculture", "mining"],
+          seedLineage: { item_seed_wheat: 0, item_wheat: 0 },
+        },
+      },
+    });
+    await setGold(50);
+    await inventory.purchaseField();
+    const third = await inventory.purchaseField();
+    expect(third.pricePaid).toBe(18);
+    const fields = await prisma.playerBuilding.findMany({
+      where: { playerId: LOCAL_PLAYER_ID, buildingDefId: FIELD_BUILDING_DEF_ID },
+    });
+    expect(fields.length).toBe(3);
   });
 
   it("佔槽建築達 cap 時拒買（與倉無關）", async () => {
@@ -141,7 +161,7 @@ describe("擴田（LAND-BE-1 整合）", () => {
   it("GET state 含 fieldCount／fieldCap（buildingCount 不含倉）", async () => {
     const state = await inventory.state();
     expect(state.fieldCount).toBe(1);
-    expect(state.fieldCap).toBe(3);
+    expect(state.fieldCap).toBe(2);
     expect(state.buildingCount).toBe(5);
     expect(state.buildingSlotCap).toBe(PLAYER_BUILDING_SLOT_CAP);
     await seedLegacySilo();

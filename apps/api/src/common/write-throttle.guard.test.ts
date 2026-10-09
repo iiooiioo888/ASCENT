@@ -46,6 +46,16 @@ describe("WriteThrottleGuard", () => {
     expect(() => guard.canActivate(mockCtx("POST", "/api/v1/auth/login"))).toThrow(HttpException);
   });
 
+  it("refresh 超過每分鐘 8 次回 429", () => {
+    process.env.NODE_ENV = "development";
+    delete process.env.ASCENT_THROTTLE;
+    const guard = new WriteThrottleGuard();
+    for (let i = 0; i < 8; i++) {
+      expect(guard.canActivate(mockCtx("POST", "/api/v1/auth/refresh"))).toBe(true);
+    }
+    expect(() => guard.canActivate(mockCtx("POST", "/api/v1/auth/refresh"))).toThrow(HttpException);
+  });
+
   it("PATCH 建築寫入也計入限速", () => {
     process.env.NODE_ENV = "development";
     delete process.env.ASCENT_THROTTLE;

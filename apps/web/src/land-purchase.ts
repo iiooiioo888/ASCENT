@@ -50,12 +50,15 @@ const REASON_COPY: Record<keyof typeof LAND_ERROR_COPY, string> = {
   FIELD_USE_PURCHASE_API: LAND_COPY.fieldAtCap,
   DUPLICATE_BUILDING_DEF: LAND_COPY.fieldAtCap,
   SILO_PLACEMENT_FORBIDDEN: LAND_COPY.fieldAtCap,
+  CULTIVATION_BUSY: "運作中無法改耕作",
+  UNKNOWN_CULTIVATION: "未知耕作方式",
 };
 
 export function evaluateLandPurchaseUi(stats: LandPurchaseStats, gold: number): LandPurchaseUiState {
   const gate = canPurchaseField({
     fieldCount: stats.fieldCount,
     slottedBuildingCount: stats.slottedBuildingCount,
+    fieldCap: stats.fieldCap,
   });
   if (!gate.ok) {
     return {

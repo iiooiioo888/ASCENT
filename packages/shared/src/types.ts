@@ -109,6 +109,8 @@ export type BuildingQueueJob = {
   elapsedGameSec: number;
   inputs: Record<string, number>;
   outputs: Record<string, number>;
+  /** 產出物品的代數快照（開工時寫入；結算純函數不改）。 */
+  lineage?: { produce?: Record<string, number> };
 };
 
 export type SettleWindowInput = {

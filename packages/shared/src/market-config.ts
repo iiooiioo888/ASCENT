@@ -56,11 +56,39 @@ export const DEFAULT_MARKET_PRICES: MarketPriceBook = {
   buy: {
     item_seed_wheat: 3,
     item_seed_cotton: 3,
-    item_water: 1,
+    item_water: 2,
+    item_bread: 14,
     item_coal: 2,
     item_iron_ore: 2,
   },
 };
+
+/**
+ * 商行三價節奏（固定價也要有「自己產 vs 買」的划算線）：
+ * - 麵包賣 8：現金流出口
+ * - 種子買 3：低於 2 麥賣出機會成本（4），買種較省現金但沖代數
+ * - 水買 2：與水井工資均攤相近；井忙碌時買水換時間
+ * - 麵包買 14：高於賣價，只在趕訂單時划算
+ */
+export const MARKET_RHYTHM = {
+  breadSell: 8,
+  seedBuy: 3,
+  waterBuy: 2,
+  breadBuy: 14,
+  wheatSell: 2,
+} as const;
+
+export function saveSeedOpportunityCopper(): number {
+  return (MARKET_RHYTHM.wheatSell * 2);
+}
+
+export function buySeedCheaperThanSave(): boolean {
+  return MARKET_RHYTHM.seedBuy < saveSeedOpportunityCopper();
+}
+
+export function buyBreadBeatsMarketSellForOrder(goldMult: number): boolean {
+  return MARKET_RHYTHM.breadSell * goldMult > MARKET_RHYTHM.breadBuy;
+}
 
 function isPositiveInt(n: number): boolean {
   return Number.isFinite(n) && Number.isInteger(n) && n > 0;

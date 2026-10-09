@@ -221,6 +221,46 @@ body {
   margin: 0 0 0.4rem;
   font-size: 0.95rem;
 }
+.npc-orders-hint,
+.npc-orders-empty {
+  margin: 0 0 0.45rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.session-coach {
+  margin: 0 1.2rem 0.85rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  background: rgba(18, 36, 28, 0.55);
+}
+.session-coach p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.session-coach-bottleneck {
+  color: var(--warn);
+  font-weight: 600;
+}
+.storage-meter,
+.seed-lineage-line {
+  margin: 0.25rem 0 0.45rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.cultivation-toggle {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0.45rem 0 0.2rem;
+  flex-wrap: wrap;
+}
+.cultivation-toggle button {
+  font-size: 0.78rem;
+}
+.cultivation-toggle button.active {
+  outline: 1px solid rgba(141, 220, 110, 0.7);
+}
 .plot-action-success {
   margin: 0.45rem 0 0;
   padding: 0.45rem 0.55rem;

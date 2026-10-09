@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import { BuildingCard } from "./components/BuildingCard";
 import { NpcOrdersPanel, npcOrderPendingKey } from "./components/NpcOrdersPanel";
+import { SessionCoach } from "./components/SessionCoach";
 import { IndustryChain } from "./components/IndustryChain";
 import { SiloBuildingCard } from "./components/SiloBuildingCard";
 import { TradingPostBuildingCard } from "./components/TradingPostBuildingCard";
@@ -92,8 +93,13 @@ import { formatUserError } from "./format";
 import { sortInventoryRows } from "./inventorySort";
 import {
   ITEM_COPPER_INGOT_ID,
+  SEED_WHEAT_ITEM_ID,
+  STORAGE_STACK_CAP,
   buildingBottleneck,
+  countStorageStacks,
   milestoneLockReason,
+  resolveSessionDecision,
+  resolveTutorialCoach,
   type MilestoneIndustryId,
   wheatThroughputLabel,
 } from "@ascent/shared";
@@ -472,6 +478,33 @@ export default function App() {
     const stats = landPurchaseStatsFromState(state);
     return evaluateLandPurchaseUi(stats, hudGold);
   }, [state, hudGold]);
+
+  const tutorialCoach = useMemo(() => {
+    if (!state) return null;
+    return resolveTutorialCoach({
+      displayGameTime: state.time.displayGameTime,
+      timeScale: state.time.timeScale,
+      lifetimeCollected: state.lifetimeCollected ?? {},
+      seedGeneration: state.seedLineage?.[SEED_WHEAT_ITEM_ID] ?? 0,
+      fieldCount: state.fieldCount ?? 1,
+    });
+  }, [state]);
+
+  const sessionDecision = useMemo(() => {
+    if (!state) return null;
+    const storageCap = state.storageCap ?? STORAGE_STACK_CAP;
+    const storageUsed =
+      state.storageUsed ??
+      countStorageStacks(state.inventory.map((row) => ({ itemId: row.itemId, quantity: Number(row.quantity) })));
+    return resolveSessionDecision({
+      pendingOrderCount: (state.npcOrders ?? []).length,
+      storageFill: storageCap > 0 ? storageUsed / storageCap : 0,
+      seedGeneration: state.seedLineage?.[SEED_WHEAT_ITEM_ID] ?? 0,
+      fieldCount: state.fieldCount ?? 1,
+      fieldCap: state.fieldCap ?? 2,
+      readyBuildingCount: state.buildings.filter((b) => b.status === "ready").length,
+    });
+  }, [state]);
 
   const goToWell = useCallback(() => {
     if (!state) return;
@@ -945,6 +978,14 @@ export default function App() {
       <p className="banner banner-goal">{SLICE_GOAL_BANNER}</p>
       <p className="banner">{SLICE_FLOW_BANNER}</p>
       <p className="banner banner-muted">{OFFLINE_PROGRESS_BANNER}</p>
+      {tutorialCoach && sessionDecision ? (
+        <SessionCoach
+          tutorial={tutorialCoach}
+          decision={sessionDecision}
+          bottleneckLabel={state.economyBottleneck?.label}
+          bottleneckHint={state.economyBottleneck?.hint}
+        />
+      ) : null}
       {offlineSummary ? (
         <OfflineSummaryNotice summary={offlineSummary} onDismiss={dismissOfflineSummary} />
       ) : null}
@@ -990,6 +1031,9 @@ export default function App() {
         inventory={industryInventory}
         highlightItemIds={highlightItems}
         emptyText={INDUSTRY_PACK_EMPTY}
+        storageUsed={state.storageUsed}
+        storageCap={state.storageCap}
+        seedGeneration={state.seedLineage?.[SEED_WHEAT_ITEM_ID]}
       />
 
       <section className="settlement">
@@ -1158,6 +1202,14 @@ export default function App() {
               }
               onRepair={() => act(repairKey, `/api/v1/buildings/${b.id}/repair`)}
               repairPending={pendingKeys.has(repairKey)}
+              seedGeneration={state.seedLineage?.[SEED_WHEAT_ITEM_ID] ?? 0}
+              cultivationPending={pendingKeys.has(`${b.id}:cultivation`)}
+              onCultivationChange={
+                b.buildingDefId === FIELD_BUILDING_DEF_ID
+                  ? (mode) =>
+                      act(`${b.id}:cultivation`, `/api/v1/buildings/${b.id}/cultivation`, { mode }, { method: "PATCH" })
+                  : undefined
+              }
             />
           );
         })}

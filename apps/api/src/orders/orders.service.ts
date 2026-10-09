@@ -1,17 +1,17 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import {
   ITEM_SETTLEMENT_CURRENCY_ID,
-  NPC_ORDER_CONSUME_ITEM_ID,
-  NPC_ORDER_MAX_ACTIVE,
-  NPC_ORDER_RATE_PER_GAME_HOUR,
+  NPC_ORDER_MAX_ACTIVE_PER_RULE,
   NPC_ORDER_RULE_ID,
+  NPC_ORDER_TIERS,
   npcOrderCreatedGameSec,
   npcOrderExpiresGameSec,
   npcOrderGoldReward,
-  npcOrderRequiredQuantity,
   npcOrderSpawnBucket,
+  npcOrderTierByRuleId,
   type NpcOrderRequiredItem,
   type NpcOrderReward,
+  type NpcOrderTierDef,
 } from "@ascent/shared";
 import { randomBytes } from "node:crypto";
 import { currentPlayerId } from "../auth/player-context";
@@ -22,11 +22,12 @@ import {
 } from "../inventory/settlement-db-lock";
 import { PrismaService } from "../prisma/prisma.service";
 import { SimulationService } from "../simulation/simulation.service";
-import { npcOrderConsumeRatio, npcOrderSpawnRoll } from "./npc-order-hash";
 
 export type NpcOrderPublic = {
   id: string;
   ruleId: string;
+  tier: number;
+  label: string;
   status: string;
   requiredItems: NpcOrderRequiredItem[];
   rewards: NpcOrderReward[];
@@ -66,7 +67,7 @@ export class OrdersService {
       where: { playerId_ruleId: { playerId, ruleId: NPC_ORDER_RULE_ID } },
     });
     if (!scan) {
-      await this.maybeSpawnBucket(tx, playerId, currentBucket);
+      await this.fillEmptyTiers(tx, playerId, currentBucket);
       await tx.playerNpcOrderScan.create({
         data: {
           playerId,
@@ -79,7 +80,7 @@ export class OrdersService {
 
     const last = Number(scan.lastScannedBucket);
     for (let bucket = last + 1; bucket <= currentBucket; bucket++) {
-      await this.maybeSpawnBucket(tx, playerId, bucket);
+      await this.fillEmptyTiers(tx, playerId, bucket);
     }
     if (currentBucket > last) {
       await tx.playerNpcOrderScan.update({
@@ -125,50 +126,50 @@ export class OrdersService {
     });
   }
 
-  private async maybeSpawnBucket(
+  private async fillEmptyTiers(
     tx: SettlementTransactionClient,
     playerId: string,
     spawnBucket: number,
+  ): Promise<void> {
+    for (const tier of NPC_ORDER_TIERS) {
+      await this.maybeSpawnTier(tx, playerId, spawnBucket, tier);
+    }
+  }
+
+  private async maybeSpawnTier(
+    tx: SettlementTransactionClient,
+    playerId: string,
+    spawnBucket: number,
+    tier: NpcOrderTierDef,
   ): Promise<void> {
     const existing = await tx.playerNpcOrder.findUnique({
       where: {
         playerId_spawnBucket_ruleId: {
           playerId,
           spawnBucket: BigInt(spawnBucket),
-          ruleId: NPC_ORDER_RULE_ID,
+          ruleId: tier.ruleId,
         },
       },
     });
     if (existing) return;
 
     const pendingCount = await tx.playerNpcOrder.count({
-      where: { playerId, ruleId: NPC_ORDER_RULE_ID, status: "pending" },
+      where: { playerId, ruleId: tier.ruleId, status: "pending" },
     });
-    if (pendingCount >= NPC_ORDER_MAX_ACTIVE) return;
+    if (pendingCount >= NPC_ORDER_MAX_ACTIVE_PER_RULE) return;
 
-    const roll = npcOrderSpawnRoll(playerId, spawnBucket, NPC_ORDER_RULE_ID);
-    if (roll >= NPC_ORDER_RATE_PER_GAME_HOUR) return;
-
-    const breadRow = await tx.playerInventory.findUnique({
-      where: { playerId_itemId: { playerId, itemId: NPC_ORDER_CONSUME_ITEM_ID } },
-    });
-    const holdings = breadRow ? Number(breadRow.quantity) : 0;
-    const ratio = npcOrderConsumeRatio(playerId, spawnBucket, NPC_ORDER_RULE_ID, NPC_ORDER_CONSUME_ITEM_ID);
-    const quantity = npcOrderRequiredQuantity(holdings, ratio);
-    if (quantity <= 0) return;
-
-    const unitPrice = this.sim.marketPriceBook.sell[NPC_ORDER_CONSUME_ITEM_ID] ?? 8;
-    const gold = npcOrderGoldReward(quantity, unitPrice);
+    const unitPrice = this.sim.marketPriceBook.sell[tier.consumeItemId] ?? 8;
+    const gold = npcOrderGoldReward(tier.quantity, unitPrice, tier.goldMult);
     if (gold <= 0) return;
 
     await tx.playerNpcOrder.create({
       data: {
         id: `npcord_${randomBytes(8).toString("hex")}`,
         playerId,
-        ruleId: NPC_ORDER_RULE_ID,
+        ruleId: tier.ruleId,
         spawnBucket: BigInt(spawnBucket),
         status: "pending",
-        requiredItems: [{ item_id: NPC_ORDER_CONSUME_ITEM_ID, quantity }],
+        requiredItems: [{ item_id: tier.consumeItemId, quantity: tier.quantity }],
         rewardsSnapshot: [
           {
             kind: "gold",
@@ -177,7 +178,7 @@ export class OrdersService {
           },
         ],
         createdGameSec: BigInt(npcOrderCreatedGameSec(spawnBucket)),
-        expiresGameSec: BigInt(npcOrderExpiresGameSec(spawnBucket)),
+        expiresGameSec: BigInt(npcOrderExpiresGameSec(spawnBucket, tier.durationGameSec)),
       },
     });
   }
@@ -192,9 +193,12 @@ function toPublic(order: {
   createdGameSec: bigint;
   expiresGameSec: bigint;
 }): NpcOrderPublic {
+  const tier = npcOrderTierByRuleId(order.ruleId);
   return {
     id: order.id,
     ruleId: order.ruleId,
+    tier: tier?.tier ?? 1,
+    label: tier?.label ?? "訂單",
     status: order.status,
     requiredItems: order.requiredItems as NpcOrderRequiredItem[],
     rewards: order.rewardsSnapshot as NpcOrderReward[],

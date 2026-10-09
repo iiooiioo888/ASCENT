@@ -1,23 +1,37 @@
 import { describe, expect, it } from "vitest";
 import {
   FIELD_CAP,
+  FIELD_EARLY_CAP,
   FIELD_BUILDING_DEF_ID,
+  FIELD_CULTIVATION_INTENSIVE,
   PLAYER_BUILDING_SLOT_CAP,
   SILO_BUILDING_DEF_ID,
   allowsAnotherInstanceOfDef,
   buildingCountsTowardSlotCap,
+  buildingSlotFootprint,
   canPurchaseField,
+  canSwitchFieldToIntensive,
   isPlacementBlockedBySlotCap,
   countBuildingsOccupyingSlots,
   countPlayerFields,
+  fieldCapForLifetime,
   fieldPurchasePriceGold,
 } from "./land-config";
 
 describe("land-config", () => {
-  it("加購田價：第二塊 10、第三塊 18", () => {
+  it("加購田價：第二塊 10、第三塊 18；終局 cap 12", () => {
     expect(fieldPurchasePriceGold(1)).toBe(10);
     expect(fieldPurchasePriceGold(2)).toBe(18);
-    expect(fieldPurchasePriceGold(3)).toBeNull();
+    expect(fieldPurchasePriceGold(11)).toBe(180);
+    expect(fieldPurchasePriceGold(12)).toBeNull();
+    expect(FIELD_EARLY_CAP).toBe(2);
+    expect(FIELD_CAP).toBe(PLAYER_BUILDING_SLOT_CAP);
+  });
+
+  it("未收 8 麵包前田上限 2", () => {
+    expect(fieldCapForLifetime({})).toBe(2);
+    expect(fieldCapForLifetime({ item_bread: 7 })).toBe(2);
+    expect(fieldCapForLifetime({ item_bread: 8 })).toBe(12);
   });
 
   it("countPlayerFields", () => {
@@ -48,6 +62,30 @@ describe("land-config", () => {
     expect(isPlacementBlockedBySlotCap("bdef_kiln", atCap)).toBe(false);
   });
 
+  it("密集田佔 2 槽", () => {
+    expect(
+      buildingSlotFootprint({
+        buildingDefId: FIELD_BUILDING_DEF_ID,
+        specialization: FIELD_CULTIVATION_INTENSIVE,
+      }),
+    ).toBe(2);
+    expect(
+      countBuildingsOccupyingSlots([
+        { buildingDefId: FIELD_BUILDING_DEF_ID, specialization: FIELD_CULTIVATION_INTENSIVE },
+        { buildingDefId: "bdef_mill" },
+      ]),
+    ).toBe(3);
+  });
+
+  it("槽滿時不能改密集", () => {
+    const blocked = canSwitchFieldToIntensive({
+      status: "idle",
+      currentMode: "rotation",
+      slottedBuildingCount: PLAYER_BUILDING_SLOT_CAP,
+    });
+    expect(blocked.ok).toBe(false);
+  });
+
   it("倉不佔槽", () => {
     expect(buildingCountsTowardSlotCap(SILO_BUILDING_DEF_ID)).toBe(false);
     const buildings = [
@@ -63,13 +101,9 @@ describe("land-config", () => {
     expect(r).toEqual({ ok: true, priceGold: 10 });
   });
 
-  it("有倉仍可按佔槽數擴田", () => {
-    const r = canPurchaseField({ fieldCount: 1, slottedBuildingCount: 5 });
-    expect(r.ok).toBe(true);
-  });
-
-  it("田達上限拒買", () => {
-    expect(canPurchaseField({ fieldCount: FIELD_CAP, slottedBuildingCount: 5 }).ok).toBe(false);
+  it("早期田上限 2 拒買", () => {
+    expect(canPurchaseField({ fieldCount: 2, slottedBuildingCount: 5 }).ok).toBe(false);
+    expect(canPurchaseField({ fieldCount: 2, slottedBuildingCount: 5, fieldCap: 12 }).ok).toBe(true);
   });
 
   it("建築槽滿拒買", () => {
@@ -81,8 +115,8 @@ describe("land-config", () => {
   it("allowsAnotherInstanceOfDef", () => {
     expect(allowsAnotherInstanceOfDef(FIELD_BUILDING_DEF_ID, 0)).toBe(true);
     expect(allowsAnotherInstanceOfDef(FIELD_BUILDING_DEF_ID, 1)).toBe(true);
-    expect(allowsAnotherInstanceOfDef(FIELD_BUILDING_DEF_ID, 2)).toBe(true);
-    expect(allowsAnotherInstanceOfDef(FIELD_BUILDING_DEF_ID, 3)).toBe(false);
+    expect(allowsAnotherInstanceOfDef(FIELD_BUILDING_DEF_ID, 2)).toBe(false);
+    expect(allowsAnotherInstanceOfDef(FIELD_BUILDING_DEF_ID, 2, 12)).toBe(true);
     expect(allowsAnotherInstanceOfDef("bdef_mill", 0)).toBe(true);
     expect(allowsAnotherInstanceOfDef("bdef_mill", 1)).toBe(false);
   });

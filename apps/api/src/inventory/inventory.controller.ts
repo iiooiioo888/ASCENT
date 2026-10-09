@@ -69,4 +69,9 @@ export class InventoryController {
   ) {
     return this.inventory.patchBuildingAuto(id, body);
   }
+
+  @Patch("buildings/:id/cultivation")
+  setCultivation(@Param("id") id: string, @Body() body: { mode?: string }) {
+    return this.inventory.patchCultivation(id, body.mode);
+  }
 }

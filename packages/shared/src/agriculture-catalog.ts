@@ -409,15 +409,10 @@ export const seedPlacedBuildingDefIds = [
   "bdef_trading_post",
 ] as const;
 
+/** 早期卡水、接著卡種：不要開局給滿。 */
 export const startingInventory: Record<string, number> = {
-  item_seed_wheat: 40,
-  item_wheat: 0,
-  item_straw: 0,
-  item_water: 80,
-  item_flour: 0,
-  item_feed: 0,
-  item_dough: 0,
-  item_bread: 0,
+  item_seed_wheat: 10,
+  item_water: 4,
   [ITEM_COPPER_INGOT_ID]: STARTING_COPPER,
 };
 

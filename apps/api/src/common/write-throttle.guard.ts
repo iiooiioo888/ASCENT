@@ -16,7 +16,10 @@ export function resetWriteThrottleBuckets(): void {
 }
 
 function ruleFor(method: string, path: string): { limit: number; windowMs: number; name: string } | null {
-  if (method === "POST" && (path === "/api/v1/auth/login" || path === "/api/v1/auth/register")) {
+  if (
+    method === "POST" &&
+    (path === "/api/v1/auth/login" || path === "/api/v1/auth/register" || path === "/api/v1/auth/refresh")
+  ) {
     return { limit: 8, windowMs: 60_000, name: "auth" };
   }
   if (method === "POST" && (path === "/api/v1/market/buy" || path === "/api/v1/market/sell")) {

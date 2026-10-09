@@ -46,15 +46,31 @@ type Props = {
   highlightItemIds?: Set<string>;
   title?: string;
   emptyText?: string;
+  storageUsed?: number;
+  storageCap?: number;
+  seedGeneration?: number;
 };
 
-export function Inventory({ inventory, highlightItemIds, title = "背包", emptyText }: Props) {
+export function Inventory({
+  inventory,
+  highlightItemIds,
+  title = "背包",
+  emptyText,
+  storageUsed,
+  storageCap,
+  seedGeneration,
+}: Props) {
   const { pinned, sections } = layoutInventoryRows(inventory);
   const hasContent = pinned.length > 0 || sections.length > 0;
 
   return (
     <section className="pack pack-rich" data-testid="industry-pack">
       <h2>{title}</h2>
+      {storageCap != null && storageUsed != null ? (
+        <p className="storage-meter" data-testid="storage-meter">
+          倉 {storageUsed}/{storageCap}
+        </p>
+      ) : null}
       {inventory.length === 0 && emptyText ? <p className="pack-empty">{emptyText}</p> : null}
       {!hasContent && inventory.length > 0 ? (
         <div className="items">

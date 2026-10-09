@@ -1,4 +1,12 @@
-import { isFieldGrowRuleId, scaleOutputsByYield } from "@ascent/shared";
+import {
+  applyOutputFactor,
+  applySeedGenerationToGrowOutputs,
+  fieldCultivationOutputFactor,
+  GROW_WHEAT_RULE_ID,
+  isFieldGrowRuleId,
+  iosToRecord,
+  scaleOutputsByYield,
+} from "@ascent/shared";
 
 /** 與 poll 間插值一致：由 state.time 推算當前遊戲秒。 */
 export function smoothCurrentGameSec(
@@ -33,10 +41,17 @@ export function scaledGrowOutputsPreview(
   ruleId: string,
   outputs: { item_id: string; qty: number }[],
   yieldMult: number,
+  opts?: { seedGeneration?: number; cultivation?: string | null },
 ): { item_id: string; qty: number }[] {
-  if (!isFieldGrowRuleId(ruleId) || yieldMult === 1) return outputs;
-  const asRecord: Record<string, number> = {};
-  for (const o of outputs) asRecord[o.item_id] = o.qty;
-  const scaled = scaleOutputsByYield(asRecord, yieldMult);
-  return outputs.map((o) => ({ item_id: o.item_id, qty: scaled[o.item_id] ?? o.qty }));
+  let rec = iosToRecord(outputs);
+  if (ruleId === GROW_WHEAT_RULE_ID && (opts?.seedGeneration ?? 0) > 0) {
+    rec = applySeedGenerationToGrowOutputs(rec, opts?.seedGeneration ?? 0);
+  }
+  if (isFieldGrowRuleId(ruleId)) {
+    rec = applyOutputFactor(rec, fieldCultivationOutputFactor(opts?.cultivation));
+  }
+  if (isFieldGrowRuleId(ruleId) && yieldMult !== 1) {
+    rec = scaleOutputsByYield(rec, yieldMult);
+  }
+  return outputs.map((o) => ({ item_id: o.item_id, qty: rec[o.item_id] ?? o.qty }));
 }

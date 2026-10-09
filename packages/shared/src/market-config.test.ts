@@ -26,7 +26,8 @@ describe("market-config", () => {
   it("預設價目與簽核表一致", () => {
     expect(DEFAULT_MARKET_PRICES.sell.item_bread).toBe(8);
     expect(DEFAULT_MARKET_PRICES.buy.item_seed_wheat).toBe(3);
-    expect(DEFAULT_MARKET_PRICES.buy.item_water).toBe(1);
+    expect(DEFAULT_MARKET_PRICES.buy.item_water).toBe(2);
+    expect(DEFAULT_MARKET_PRICES.buy.item_bread).toBe(14);
   });
 
   it("CURR-BARTER：MK 賣礦／錠價（整數銅錠，無買礦）", () => {

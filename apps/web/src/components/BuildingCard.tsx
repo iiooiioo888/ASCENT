@@ -3,7 +3,11 @@ import {
   DURABILITY_MAX,
   DURABILITY_REPAIR_COST_COPPER,
   DURABILITY_REPAIR_HINT_BELOW,
+  FIELD_CULTIVATION_INTENSIVE,
+  FIELD_CULTIVATION_ROTATION,
   isFieldGrowRuleId,
+  parseFieldCultivation,
+  seedGenerationLabel,
 } from "@ascent/shared";
 import { canStopBuilding, showProductionActionButtons } from "../building-actions";
 import { fmtIo, statusLabel } from "../format";
@@ -58,6 +62,9 @@ type Props = {
   throughputLabel?: string | null;
   onRepair?: () => void;
   repairPending?: boolean;
+  seedGeneration?: number;
+  onCultivationChange?: (mode: "rotation" | "intensive") => void;
+  cultivationPending?: boolean;
 };
 
 function BuildingCardView({
@@ -95,6 +102,9 @@ function BuildingCardView({
   throughputLabel,
   onRepair,
   repairPending = false,
+  seedGeneration = 0,
+  onCultivationChange,
+  cultivationPending = false,
 }: Props) {
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
@@ -130,10 +140,13 @@ function BuildingCardView({
     environmentYieldMult != null && selected && isFieldGrowRuleId(selected.ruleId)
       ? environmentYieldMult
       : undefined;
-  const previewOutputs =
-    displayMethod && yieldMult != null
-      ? scaledGrowOutputsPreview(displayMethod.ruleId, displayMethod.outputs, yieldMult)
-      : displayMethod?.outputs;
+  const previewOutputs = displayMethod
+    ? scaledGrowOutputsPreview(displayMethod.ruleId, displayMethod.outputs, yieldMult ?? 1, {
+        seedGeneration,
+        cultivation: b.specialization,
+      })
+    : displayMethod?.outputs;
+  const cultivation = parseFieldCultivation(b.specialization);
   const methodSelectId = `method-select-${b.id}`;
   const buildingIconLabel = plotTitle ?? b.buildingDef.name;
   const fieldPlot = isFieldBuilding(b);
@@ -208,6 +221,31 @@ function BuildingCardView({
               <p className="bottleneck-line" data-testid="building-bottleneck">
                 {bottleneckLabel}
               </p>
+            ) : null}
+            {fieldPlot ? (
+              <p className="seed-lineage-line" data-testid="seed-generation">
+                {seedGenerationLabel(seedGeneration)}
+              </p>
+            ) : null}
+            {fieldPlot && onCultivationChange ? (
+              <div className="cultivation-toggle" data-testid="field-cultivation">
+                <button
+                  type="button"
+                  className={cultivation === FIELD_CULTIVATION_ROTATION ? "active" : ""}
+                  disabled={cultivationPending || methodLocked}
+                  onClick={() => onCultivationChange(FIELD_CULTIVATION_ROTATION)}
+                >
+                  輪作 · 1 格 · 100%
+                </button>
+                <button
+                  type="button"
+                  className={cultivation === FIELD_CULTIVATION_INTENSIVE ? "active" : ""}
+                  disabled={cultivationPending || methodLocked}
+                  onClick={() => onCultivationChange(FIELD_CULTIVATION_INTENSIVE)}
+                >
+                  密集 · 2 格 · 130%
+                </button>
+              </div>
             ) : null}
             {typeof b.durability === "number" ? (
               <p className="durability-line" data-testid="building-durability">

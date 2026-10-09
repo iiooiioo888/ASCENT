@@ -24,7 +24,7 @@ export const SLICE_FLOW_BANNER =
 
 /** LOCKED MVP：切片目標／終局出口說明 */
 export const SLICE_GOAL_BANNER =
-  "目標：做出第一個麵包，再靠商行與懸賞訂單把產線養順（本切片無排行榜）。";
+  "目標：做出第一個麵包賣掉，再在留種／接單／加田裡挑一個皺眉十秒的決定。";
 
 /** LOCKED MVP：耗盡橫幅標題（資源循環 §5.2 / U6） */
 export const DEPLETION_EMPTY_TITLE = "生產已暫停：種子或水不足";
