@@ -606,7 +606,7 @@ describe("BuildingCard environment fallow", () => {
       />,
     );
     expect(screen.getByRole("button", { name: "開工" })).toBeDisabled();
-    expect(screen.getByTestId("field-fallow-notice")).toHaveTextContent(FALLOW_ACTIVE_COPY);
+    expect(screen.getByTestId("field-plot-meta")).toHaveTextContent(FALLOW_ACTIVE_COPY);
   });
 
   it("雨天倍率預覽調整產出顯示", () => {
@@ -621,6 +621,22 @@ describe("BuildingCard environment fallow", () => {
       />,
     );
     expect(screen.getByTestId("env-yield-preview")).toHaveTextContent("115%");
+  });
+});
+
+describe("BuildingCard FE-RICH-2 field titles", () => {
+  it("uses plotTitle when provided for multi-field", () => {
+    render(
+      <BuildingCard
+        {...baseProps}
+        building={demoFieldIdle}
+        plotTitle="田 2"
+        selectedId={growWheatDefault.id}
+        selected={growWheatDefault}
+        inventory={baseInventory}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "田 2" })).toBeInTheDocument();
   });
 });
 

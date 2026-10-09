@@ -942,6 +942,78 @@ dialog.offline-summary-dialog::backdrop {
   color: #fff6d8;
   font-variant-numeric: tabular-nums;
 }
+.item .qty.qty-emphasis {
+  font-size: 1.15rem;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+.item-compact {
+  min-width: 4.5rem;
+  padding: 0.45rem 0.35rem 0.35rem;
+}
+.item-compact .name {
+  font-size: 0.62rem;
+  max-width: 4.2rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.item .name {
+  cursor: default;
+}
+.pack-rich .inventory-pinned {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.65rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 2px dashed rgba(255, 212, 90, 0.35);
+}
+.pack-rich .inventory-section {
+  margin-top: 0.55rem;
+}
+.pack-rich .inventory-section-label {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #d4b878;
+  text-transform: none;
+}
+.plot.field-plot .plot-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+}
+.plot-head-main {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+}
+.field-plot-meta {
+  flex: 1 1 8rem;
+  min-height: 1.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  text-align: right;
+}
+.field-plot-meta-line {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #f0d878;
+  padding: 0.25rem 0.45rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 212, 90, 0.35);
+}
+.field-plot-meta-placeholder {
+  visibility: hidden;
+  font-size: 0.72rem;
+}
 .item.empty { opacity: 0.45; filter: grayscale(0.4); }
 .item.highlight {
   border-color: #8fdc6e;

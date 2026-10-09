@@ -12,9 +12,11 @@ import { StopConfirmDialog } from "./StopConfirmDialog";
 import { fieldYieldPreviewLine } from "../environment-copy";
 import { isFieldFallow, scaledGrowOutputsPreview } from "../environment-ui";
 import { isFieldGrowRuleId } from "@ascent/shared";
-import { FieldFallowNotice } from "./FieldFallowNotice";
 import { BuildingCardRecipeRow } from "./BuildingCardRecipeRow";
 import { BuildingCardSecondaryDetails } from "./BuildingCardSecondaryDetails";
+import { FieldPlotMeta } from "./FieldPlotMeta";
+import { isFieldBuilding } from "../field-plot";
+import type { EnvironmentState } from "../types";
 
 type Props = {
   building: Building;
@@ -45,6 +47,8 @@ type Props = {
   onGoMarket?: () => void;
   displayGameTime?: number;
   environmentYieldMult?: number;
+  environment?: EnvironmentState;
+  plotTitle?: string;
 };
 
 export function BuildingCard({
@@ -76,6 +80,8 @@ export function BuildingCard({
   onGoMarket,
   displayGameTime = 0,
   environmentYieldMult,
+  environment,
+  plotTitle,
 }: Props) {
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
@@ -116,7 +122,8 @@ export function BuildingCard({
       ? scaledGrowOutputsPreview(displayMethod.ruleId, displayMethod.outputs, yieldMult)
       : displayMethod?.outputs;
   const methodSelectId = `method-select-${b.id}`;
-  const buildingIconLabel = b.buildingDef.name;
+  const buildingIconLabel = plotTitle ?? b.buildingDef.name;
+  const fieldPlot = isFieldBuilding(b);
 
   const handleStopConfirm = () => {
     setStopConfirmOpen(false);
@@ -126,38 +133,39 @@ export function BuildingCard({
   return (
     <article
       id={scrollAnchorId}
-      className={`plot ${b.status}${pending ? " pending" : ""}${autoPending ? " auto-pending" : ""}${highlight ? " scroll-highlight" : ""}`}
+      className={`plot ${b.status}${fieldPlot ? " field-plot" : ""}${pending ? " pending" : ""}${autoPending ? " auto-pending" : ""}${highlight ? " scroll-highlight" : ""}`}
     >
       <fieldset className="plot-body" disabled={pending}>
         <div className="plot-head">
-          <div style={{ display: "flex", gap: "0.7rem", alignItems: "center" }}>
+          <div className="plot-head-main">
             <div className="bicon" role="img" aria-label={buildingIconLabel}>
               {BUILDING_ICON[b.buildingDefId] ?? "🏠"}
             </div>
             <div>
-              <h3 className="bname">{b.buildingDef.name}</h3>
+              <h3 className="bname">{buildingIconLabel}</h3>
               <span className={`badge ${b.status}`}>{statusLabel(b.status)}</span>
             </div>
           </div>
+          {fieldPlot ? (
+            <FieldPlotMeta
+              buildingDefId={b.buildingDefId}
+              fallowUntil={b.fallowUntil}
+              displayGameTime={displayGameTime}
+              timeScale={timeScale}
+              serverRealTime={serverRealTime}
+              environment={environment}
+            />
+          ) : null}
         </div>
 
         <BuildingJobProgress
-          buildingName={b.buildingDef.name}
+          buildingName={buildingIconLabel}
           status={b.status}
           job={job}
           timeScale={timeScale}
           serverRealTime={serverRealTime}
           bufferedOutputs={b.bufferedOutputs}
         />
-
-        {inFallow && b.fallowUntil != null ? (
-          <FieldFallowNotice
-            fallowUntil={b.fallowUntil}
-            displayGameTime={displayGameTime}
-            timeScale={timeScale}
-            serverRealTime={serverRealTime}
-          />
-        ) : null}
 
         {options.length ? (
           <>
