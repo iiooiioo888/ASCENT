@@ -116,6 +116,44 @@ body {
   justify-content: flex-end;
   font-variant-numeric: tabular-nums;
 }
+.hud-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.hud-primary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+  align-items: center;
+  max-width: 100%;
+}
+.hud-secondary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+  align-items: center;
+  max-width: 100%;
+}
+.chip-hud-timescale {
+  font-size: 0.74rem;
+  padding: 0.2rem 0.55rem;
+}
+.chip-hud-clock {
+  font-size: 0.78rem;
+}
+.chip-hud-activity {
+  max-width: min(100%, 14rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.76rem;
+}
 .chip {
   background: var(--panel);
   border: 2px solid var(--panel-edge);
@@ -1670,7 +1708,10 @@ button.danger {
 
 @media (max-width: 720px) {
   .hud { flex-direction: column; align-items: flex-start; }
-  .clock { justify-content: flex-start; }
+  .clock,
+  .hud-status,
+  .hud-primary-chips,
+  .hud-secondary-chips { justify-content: flex-start; align-items: flex-start; }
 }
 
 @media (max-width: 480px) {

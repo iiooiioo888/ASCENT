@@ -19,9 +19,11 @@ import {
 import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { INDUSTRY_TABS, inIndustry, industryOfBuildingDef, industryOfItem, type IndustryId } from "./industries";
-import { IngotHud } from "./components/IngotHud";
+import { HudPrimaryChips } from "./components/HudPrimaryChips";
+import { HudRecentActivity } from "./components/HudRecentActivity";
 import { maybeWorkforceHud } from "./components/WorkforceHud";
 import { maybeEnvironmentHud } from "./components/EnvironmentHud";
+import { hasWorkforceUi } from "./ops-depth";
 import type { BuildingActionErrorView } from "./building-action-error";
 import { mapBuildingActionError } from "./building-action-error";
 import type { MarketActionErrorView } from "./market-action-error";
@@ -85,7 +87,7 @@ import {
 } from "./depletion-scroll";
 import { isResourceDepleted } from "./depletion";
 import { FEATURE_SHOW_DEPLETION_EMPTY_STATE, FEATURE_SHOW_SILO_PLACEMENT, FEATURE_SILO_CARD_MODE } from "./featureFlags";
-import { formatUserError, fmtGameClockChip } from "./format";
+import { formatUserError } from "./format";
 import { sortInventoryRows } from "./inventorySort";
 import { ITEM_COPPER_INGOT_ID } from "@ascent/shared";
 import { BUILDING_ICON } from "./meta";
@@ -93,9 +95,7 @@ import {
   BRAND_DISPLAY_NAME,
   BRAND_SUBTITLE,
   FEATURE_OFFLINE_SUMMARY,
-  GAME_TIME_CHIP_PREFIX,
   OFFLINE_PROGRESS_BANNER,
-  OFFLINE_PROGRESS_HUD_CHIP,
   INDUSTRY_PACK_EMPTY,
   SLICE_FLOW_BANNER,
   SLICE_GOAL_BANNER,
@@ -841,26 +841,31 @@ export default function App() {
             <small>{BRAND_SUBTITLE}</small>
           </div>
         </div>
-        <div className="clock">
-          <span className="chip chip-muted">
-            {fmtGameClockChip(state.time.displayGameTime, GAME_TIME_CHIP_PREFIX)}
-          </span>
-          <span className="chip">{timeScaleHudChip(state.time.timeScale)}</span>
-          <IngotHud inventory={state.inventory} copperQty={hudGold} />
-          {maybeEnvironmentHud(state.environment)}
-          {maybeWorkforceHud({
-            workforce: state.workforce,
-            opsCosts: state.opsCosts,
-            gold: hudGold,
-            pending: pendingKeys.has(HIRE_ACTION_KEY),
-            error: hireError ?? actionErrors[HIRE_ACTION_KEY],
-            onHire: () => {
-              setHireError(null);
-              hireWorkforce();
-            },
-            onGoMarket: () => goToMarket(),
-          })}
-          <span className="chip">{OFFLINE_PROGRESS_HUD_CHIP}</span>
+        <div className="hud-status">
+          <HudPrimaryChips
+            inventory={state.inventory}
+            copperQty={hudGold}
+            time={state.time}
+            workforce={state.workforce}
+            showWorkforceSummary={hasWorkforceUi(state.workforce, state.opsCosts)}
+          />
+          <div className="hud-secondary-chips">
+            <span className="chip chip-muted chip-hud-timescale">{timeScaleHudChip(state.time.timeScale)}</span>
+            {maybeEnvironmentHud(state.environment)}
+            {maybeWorkforceHud({
+              workforce: state.workforce,
+              opsCosts: state.opsCosts,
+              gold: hudGold,
+              pending: pendingKeys.has(HIRE_ACTION_KEY),
+              error: hireError ?? actionErrors[HIRE_ACTION_KEY],
+              onHire: () => {
+                setHireError(null);
+                hireWorkforce();
+              },
+              onGoMarket: () => goToMarket(),
+            })}
+            {marketSuccessToast ? <HudRecentActivity message={marketSuccessToast} /> : null}
+          </div>
         </div>
       </header>
 
