@@ -1,4 +1,10 @@
-import { useState } from "react";
+import { memo, useState } from "react";
+import {
+  DURABILITY_MAX,
+  DURABILITY_REPAIR_COST_COPPER,
+  DURABILITY_REPAIR_HINT_BELOW,
+  isFieldGrowRuleId,
+} from "@ascent/shared";
 import { canStopBuilding, showProductionActionButtons } from "../building-actions";
 import { fmtIo, statusLabel } from "../format";
 import { BuildingJobProgress } from "./BuildingJobProgress";
@@ -11,7 +17,6 @@ import { methodPurposeHint, methodSelectAriaLabel, SILO_CARD_BODY } from "../pro
 import { StopConfirmDialog } from "./StopConfirmDialog";
 import { fieldYieldPreviewLine } from "../environment-copy";
 import { isFieldFallow, scaledGrowOutputsPreview } from "../environment-ui";
-import { isFieldGrowRuleId } from "@ascent/shared";
 import { BuildingCardRecipeRow } from "./BuildingCardRecipeRow";
 import { BuildingCardSecondaryDetails } from "./BuildingCardSecondaryDetails";
 import { FieldPlotMeta } from "./FieldPlotMeta";
@@ -49,9 +54,13 @@ type Props = {
   environmentYieldMult?: number;
   environment?: EnvironmentState;
   plotTitle?: string;
+  bottleneckLabel?: string | null;
+  throughputLabel?: string | null;
+  onRepair?: () => void;
+  repairPending?: boolean;
 };
 
-export function BuildingCard({
+function BuildingCardView({
   building: b,
   options,
   inventory,
@@ -82,6 +91,10 @@ export function BuildingCard({
   environmentYieldMult,
   environment,
   plotTitle,
+  bottleneckLabel,
+  throughputLabel,
+  onRepair,
+  repairPending = false,
 }: Props) {
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
@@ -186,6 +199,32 @@ export function BuildingCard({
               ))}
               </select>
             </div>
+            {throughputLabel ? (
+              <p className="takt-line" data-testid="building-throughput">
+                {throughputLabel}
+              </p>
+            ) : null}
+            {bottleneckLabel ? (
+              <p className="bottleneck-line" data-testid="building-bottleneck">
+                {bottleneckLabel}
+              </p>
+            ) : null}
+            {typeof b.durability === "number" ? (
+              <p className="durability-line" data-testid="building-durability">
+                耐久 {Math.round(b.durability)}/{DURABILITY_MAX}
+                {b.durability + 1e-9 < DURABILITY_REPAIR_HINT_BELOW ? " · 設備需維修" : ""}
+              </p>
+            ) : null}
+            {onRepair && typeof b.durability === "number" && b.durability + 1e-9 < DURABILITY_MAX ? (
+              <button
+                type="button"
+                className="ghost"
+                disabled={repairPending}
+                onClick={onRepair}
+              >
+                修復（🟠{DURABILITY_REPAIR_COST_COPPER}）
+              </button>
+            ) : null}
             <div className="recipe">
               {displayMethod ? (
                 <>
@@ -290,3 +329,5 @@ export function BuildingCard({
     </article>
   );
 }
+
+export const BuildingCard = memo(BuildingCardView);

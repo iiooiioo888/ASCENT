@@ -29,6 +29,18 @@ export type Building = {
   autoPauseReason?: string | null;
   /** P4-S1：自動開工使用的配方；null 表示使用建築預設 */
   autoMethodId?: string | null;
+  /** 確定性離線磨損後的耐久（0–100）。 */
+  durability?: number;
+};
+
+export type NpcOrderView = {
+  id: string;
+  ruleId: string;
+  status: string;
+  requiredItems: { item_id: string; quantity: number }[];
+  rewards: { kind: string; item_id: string; quantity: number }[];
+  createdGameSec: number;
+  expiresGameSec: number;
 };
 
 export type WorkforceSnapshot = {
@@ -72,6 +84,8 @@ export type GameState = {
   fieldCap?: number;
   buildingCount?: number;
   buildingSlotCap?: number;
+  unlockedIndustries?: string[];
+  npcOrders?: NpcOrderView[];
   /** AFK-BE-2：商行麵包貨架摘要（GET /state）。 */
   retailShelf?: {
     enabled: boolean;

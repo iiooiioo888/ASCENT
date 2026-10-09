@@ -218,7 +218,7 @@ GDD 原稿 `maxOfflineGameSec=86400` 保留為日長：1 遊戲日 = 24 現實�
 
 | 項 | 程式現況 |
 | --- | --- |
-| 結算貨幣 | 庫存 `item_copper_ingot`；開局 **10** 銅錠（`STARTING_COPPER_INGOT`）。`STARTING_GOLD` 只是別名 |
+| 結算貨幣 | 庫存 `item_copper_ingot`；開局 **50,000** 銅錠（`STARTING_COPPER`）。`STARTING_GOLD` 只是別名 |
 | 佔槽 | 上限 **12**；倉隱藏且不佔槽；田上限 **2** |
 | 產業擴充 | 礦、化、工、能源、林木建築不佔這 12 槽，每種最多 1 座 |
 | 商行 | NPC 固定價。不是第 18 項所禁的玩家市場 |
@@ -249,7 +249,7 @@ GDD 原稿 `maxOfflineGameSec=86400` 保留為日長：1 遊戲日 = 24 現實�
 | 原則 | 能用現成不自寫、能單體不微服務、能一個資料庫不拆、能手動不自動化、能簡單不複雜 |
 | 規模 | 單體、單一 PostgreSQL、1000 人以內 |
 
-MVP **無登入**；JWT 在玩家互動／多存檔之前才做。[ADR 0001](adr/0001-tech-stack.md) **不**因此改成 OAuth。
+F1 登入已完成：簡單 JWT（access 短 TTL＋旋轉 refresh），無第三方、無 OAuth。[ADR 0001](adr/0001-tech-stack.md) **不**因此改成 OAuth。
 
 ### 10.2 與 ADR 0001 不衝突（目標 vs MVP）
 
@@ -262,7 +262,7 @@ MVP 技術切片：**NestJS + PostgreSQL + Prisma + HTTP**。Redis／BullMQ／We
 | Redis + BullMQ | Session、熱狀態、離線補算與 tick；Redis 不是主庫 | **可不啟用**；結算走 HTTP；不強依 Redis | 請求路徑補算過慢；需要未發請求時的 tick 且 NestJS 定時器不夠用；需要 Session／熱狀態／排行榜；併發接近 1000 人且同步結算堵住 HTTP |
 | Socket.IO | 推已入帳結果 | **不用 WebSocket**；HTTP 輪詢或進頁 GET | 輪詢負載或停留頁完工反饋不可接受；需要 `settlement`／`production_complete` 推送；市場／互助等即時狀態 |
 | 部署 | 本機 Docker Compose；雲端不鎖定 | 初期可單一服務；Railway／Render 僅建議 | 雲端供應商另開 ADR 才鎖定 |
-| 認證 | 不改成 OAuth | **MVP 無登入**；其後簡單 JWT | 需要多玩家身分、市場或排行榜時 |
+| 認證 | 不改成 OAuth | **簡單 JWT**（access＋refresh；無 OAuth） | 已完成（F1）；多玩家身分走既有 JWT，不另開 OAuth |
 
 引入 Redis 後，BullMQ 必須呼叫與 `inventory` 相同的結算入口。引入 Socket.IO 後，Gateway 只推已入帳結果。Cron 與 tick 都不得另寫一套扣庫公式。
 
@@ -317,8 +317,8 @@ React + TS + Vite ──HTTP──► NestJS 單體
 
 ## 13. 下一步
 
-程式已在倉庫根 `apps/`、`packages/shared`。結算用庫存 **`item_copper_ingot`**，開局 **10** 銅錠。佔槽上限 **12**，倉不佔槽，田上限 **2**。農業切片仍鎖 8 物品，見 [gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md)。驗收見 [mvp.md](mvp.md)。
+程式已在倉庫根 `apps/`、`packages/shared`。結算用庫存 **`item_copper_ingot`**，開局 **50,000** 銅錠。佔槽上限 **12**，倉不佔槽，田上限 **2**。農業切片仍鎖 8 物品，見 [gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md)。驗收見 [mvp.md](mvp.md)。
 
-任務只維護在 [next.md](next.md)。內容順序仍是：數值可玩化 → 目錄補洞 → 顯示名單一來源 → 目標首發補到 50–100 物品 → 視覺。登入已開工；玩家對玩家市場、排行榜、AI 訂單、Redis、WebSocket 的順序與完成樣子只寫在該檔「未來開發任務」。
+任務只維護在 [next.md](next.md)。內容順序仍是：數值可玩化（已完成）→ 目錄補洞 → 顯示名單一來源 → 目標首發補到 50–100 物品 → 視覺。登入（F1）已完成；玩家對玩家市場、排行榜、完整 AI 訂單、Redis、WebSocket 的順序與完成樣子只寫在該檔「未來開發任務」。
 
 與第 9 節同義：生產鏈核心（已）→ 數值平衡 → 離線結算（已）→ 存檔（已）→ 視覺 → 玩家互動。

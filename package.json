@@ -16,6 +16,8 @@
     "db:migrate": "pnpm --filter @ascent/api prisma:migrate",
     "db:seed": "pnpm --filter @ascent/api prisma:seed",
     "typecheck": "pnpm --filter @ascent/shared build && pnpm --filter @ascent/api exec tsc --noEmit && pnpm --filter @ascent/web exec tsc --noEmit",
-    "test": "pnpm --filter @ascent/shared build && pnpm --filter @ascent/shared test && pnpm --filter @ascent/api test"
+    "test": "pnpm --filter @ascent/shared build && pnpm --filter @ascent/shared test && pnpm --filter @ascent/api test && pnpm --filter @ascent/web test",
+    "profit:sim": "pnpm --filter @ascent/shared build && node scripts/profit-sim.mjs",
+    "test:e2e": "pnpm --filter @ascent/web test:e2e"
   }
 }

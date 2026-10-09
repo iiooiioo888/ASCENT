@@ -25,7 +25,7 @@
 | 系統 | 僅 `agriculture` | 不得啟用礦／化／通用／能源大包 |
 | T2 同位素 | 全部 `is_active=false` | V-ACTIVE |
 
-本表物品與規則的 `released_in_version` 一律 `"mvp"`。可玩擴充用 `industry-1`，不寫進本表。開局庫存仍給足種子與水；**資源循環（RL-BE-1）**另加水井汲水與田留種以解軟卡死，數值為 **TODO(product) 待確認** 佔位（見 §5 新規則）。
+本表物品與規則的 `released_in_version` 一律 `"mvp"`。可玩擴充用 `industry-1`，不寫進本表。開局庫存仍給足種子與水；**資源循環（RL-BE-1）**另加水井汲水與田留種以解軟卡死。汲水／留種數值已於 MVP 簽核（見 §5）。
 
 ---
 
@@ -85,25 +85,25 @@ dough → bread
 | `bdef_oven` | `oven` | 爐 | `agriculture` | 和麵、烘烤 |
 | `bdef_well` | `well` | 水井 | `agriculture` | 僅 `rule_draw_water`；**已拍板 D2**：開局預放 1 座 |
 
-`can_upgrade` / `can_specialize` 目標欄可留預設，**MVP 不驗收**。`queue_limit` 建議常數 **1**。佔地／相鄰／耐久不做。
+`can_upgrade` / `can_specialize` 目標欄可留預設，**MVP 不驗收**。`queue_limit` 建議常數 **1**。佔地／相鄰不做。運轉中確定性耐久磨損已進結算純函數。
 
-玩家實例至少能放置田、磨坊、爐各一座，才構成種植→加工→烘烤閉環；水井支援再生水（**待確認** 與種子留種並存）。倉可延後放置。
+玩家實例至少能放置田、磨坊、爐各一座，才構成種植→加工→烘烤閉環；水井汲水與田留種已拍板並存。倉可延後放置。
 
 ---
 
 ## 5. 規則槽位（方式由規則生成）
 
-`duration_game_sec` 下列為**結構占位**（正整數即可過 V-TIME），不是平衡定案。公式欄可空物件；若寫公式只准白名單。
+`duration_game_sec` 下列已與 `packages/shared/src/agriculture-catalog.ts` 簽核一致。公式欄可空物件；若寫公式只准白名單。
 
-| `id` | `code` | 輸入 | 輸出 | 占位工時（遊戲秒） | 生成方式（預估） |
+| `id` | `code` | 輸入 | 輸出 | 工時（遊戲秒） | 生成方式（預估） |
 | --- | --- | --- | --- | --- | --- |
 | `rule_grow_wheat` | `grow_wheat` | 種子 1、水 1 | 小麥 2、秸稈 1 | 3600 | 標準種植；可再生成「省水」變體 → 2 筆 |
 | `rule_mill_flour` | `mill_flour` | 小麥 2 | 麵粉 1 | 1800 | 1 筆 |
 | `rule_mix_feed` | `mix_feed` | 秸稈 2、小麥 1 | 飼料 1 | 1200 | 1 筆 |
 | `rule_make_dough` | `make_dough` | 麵粉 1、水 1 | 麵團 1 | 600 | 1 筆 |
 | `rule_bake_bread` | `bake_bread` | 麵團 1 | 麵包 1 | 1200 | 1–2 筆 |
-| `rule_draw_water` | `draw_water` | （無） | 水 ×5 **待確認** | 600 **待確認** | 1 筆 `method_draw_water_default` |
-| `rule_save_seed` | `save_seed` | 小麥 ×2 **待確認** | 種子 ×1 **待確認** | 1800 **待確認** | 1 筆 `method_save_seed_default` |
+| `rule_draw_water` | `draw_water` | （無） | 水 ×5 | 600 | 1 筆 `method_draw_water_default` |
+| `rule_save_seed` | `save_seed` | 小麥 ×2 | 種子 ×1 | 1800 | 1 筆 `method_save_seed_default` |
 
 合計 **7** 條根規則。方式預估：
 

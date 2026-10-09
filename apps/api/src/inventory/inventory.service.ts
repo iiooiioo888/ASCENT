@@ -1,9 +1,14 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import {
+  addLifetimeCollected,
+  DURABILITY_MAX,
+  DURABILITY_REPAIR_COST_COPPER,
   FIELD_BUILDING_DEF_ID,
   FIELD_CAP,
   ITEM_SETTLEMENT_CURRENCY_ID,
+  playerProgressFromDb,
   SETTLEMENT_INSUFFICIENT_MESSAGE,
+  settleDurability,
   LAND_ERROR_COPY,
   PLAYER_BUILDING_SLOT_CAP,
   allowsAnotherInstanceOfDef,
@@ -46,6 +51,7 @@ import {
   withSettlementTransaction,
 } from "./settlement-db-lock";
 import { deductPlayerItem } from "./player-inventory-tx";
+import { OrdersService } from "../orders/orders.service";
 
 function toGameInt(sec: number): bigint {
   return BigInt(Math.max(0, Math.floor(sec)));
@@ -71,11 +77,18 @@ function badRequestMessage(e: BadRequestException): string {
 }
 
 function withBuildingEnvironmentFields<
-  T extends { fallowUntilGame?: bigint | null },
->(building: T, currentGameSec: number): Omit<T, "fallowUntilGame"> & { fallowUntil?: number } {
+  T extends { fallowUntilGame?: bigint | null; durability?: unknown },
+>(
+  building: T,
+  currentGameSec: number,
+): Omit<T, "fallowUntilGame"> & { fallowUntil?: number; durability: number } {
   const fallowUntil = fallowUntilForApi(building.fallowUntilGame, currentGameSec);
   const { fallowUntilGame: _omit, ...rest } = building;
-  return fallowUntil !== undefined ? { ...rest, fallowUntil } : rest;
+  const next = {
+    ...rest,
+    durability: Number(building.durability ?? 100),
+  } as Omit<T, "fallowUntilGame"> & { durability: number };
+  return fallowUntil !== undefined ? { ...next, fallowUntil } : next;
 }
 
 @Injectable()
@@ -85,6 +98,7 @@ export class InventoryService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sim: SimulationService,
+    @Optional() private readonly orders?: OrdersService,
   ) {}
 
   /** 與結算／建築寫入共用，避免並發雙花（市集等不直接持 tx 的呼叫方）。 */
@@ -113,6 +127,12 @@ export class InventoryService {
     for (const b of order) {
       await this.maybeTryAutoStartUnlocked(tx, b.id);
     }
+    const clock = await this.requireState(tx);
+    const game = this.sim.displayGameTime(
+      { startRealTimeMs: clock.startRealTime.getTime(), startGameTime: Number(clock.startGameTime) },
+      Date.now(),
+    );
+    await this.orders?.settleUnlocked(tx, game);
   }
 
   private withSettlementTx<T>(fn: (tx: SettlementTransactionClient) => Promise<T>): Promise<T> {
@@ -159,6 +179,9 @@ export class InventoryService {
     const shelf = await this.prisma.$transaction((tx) =>
       loadRetailShelfPublicState(tx, this.sim, Date.now()),
     );
+    const player = await this.prisma.player.findUniqueOrThrow({ where: { id: currentPlayerId() } });
+    const progress = playerProgressFromDb(player.progress);
+    const npcOrders = (await this.orders?.listPending()) ?? [];
     return {
       time,
       inventory,
@@ -172,6 +195,8 @@ export class InventoryService {
       fieldCap: FIELD_CAP,
       buildingCount,
       buildingSlotCap: PLAYER_BUILDING_SLOT_CAP,
+      unlockedIndustries: progress.unlockedIndustries,
+      npcOrders,
       retailShelf: {
         enabled: shelf.enabled,
         followMarket: shelf.followMarket,
@@ -622,10 +647,18 @@ export class InventoryService {
       const laborCost = this.sim.opsDepth.workforce.laborCostPerStart;
       const player = await tx.player.findUniqueOrThrow({ where: { id: currentPlayerId() } });
       const nextBusy = Math.max(0, player.workforceBusy - laborCost);
-      if (nextBusy !== player.workforceBusy) {
+      const progress =
+        Object.keys(buffered).length > 0
+          ? addLifetimeCollected(playerProgressFromDb(player.progress), buffered)
+          : null;
+      const playerPatch = {
+        ...(nextBusy !== player.workforceBusy ? { workforceBusy: nextBusy } : {}),
+        ...(progress ? { progress: progress as Prisma.InputJsonValue } : {}),
+      };
+      if (Object.keys(playerPatch).length > 0) {
         await tx.player.update({
           where: { id: currentPlayerId() },
-          data: { workforceBusy: nextBusy },
+          data: playerPatch,
         });
       }
       await this.add(tx, buffered);
@@ -655,6 +688,26 @@ export class InventoryService {
 
   async settleBuilding(id: string) {
     return this.withSettlementTx((tx) => this.settleBuildingUnlocked(tx, id));
+  }
+
+  async repair(buildingId: string) {
+    return this.withSettlementTx(async (tx) => {
+      await this.settleBuildingUnlocked(tx, buildingId);
+      const building = await tx.playerBuilding.findUnique({ where: { id: buildingId } });
+      if (!building) throw new NotFoundException("建築不存在");
+      if (Number(building.durability) >= DURABILITY_MAX - 1e-9) {
+        throw new BadRequestException("無需修復");
+      }
+      await deductPlayerItem(tx, ITEM_SETTLEMENT_CURRENCY_ID, DURABILITY_REPAIR_COST_COPPER);
+      await tx.playerBuilding.update({
+        where: { id: buildingId },
+        data: { durability: DURABILITY_MAX },
+      });
+      return tx.playerBuilding.findUniqueOrThrow({
+        where: { id: buildingId },
+        include: { buildingDef: true, method: true },
+      });
+    });
   }
 
   private async settleBuildingUnlocked(
@@ -690,6 +743,12 @@ export class InventoryService {
       }
       const prevBuffered = (building.bufferedOutputs as Record<string, number>) ?? {};
       const buffered = mergeQty(prevBuffered, completedOutputs);
+      const durabilityOut = settleDurability({
+        durability: Number(building.durability),
+        status: building.status as BuildingStatus,
+        gameDeltaSec: window.gameDeltaSec,
+        maxOfflineGameSec: this.sim.config.maxOfflineGameSec,
+      });
 
       const updated = await tx.playerBuilding.updateMany({
         where: { id, lastSettledAt },
@@ -697,6 +756,7 @@ export class InventoryService {
           status: result.status,
           queue: result.queue as unknown as Prisma.InputJsonValue,
           bufferedOutputs: buffered,
+          durability: durabilityOut.durability,
           lastSettledAt: now,
           lastSettledGame: toGameInt(game),
           lastUpdate: now,

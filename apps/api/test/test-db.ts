@@ -8,7 +8,12 @@ const apiRoot = path.join(__dirname, "..");
 loadEnv({ path: path.join(apiRoot, ".env") });
 
 function prismaEnv(databaseUrl: string): NodeJS.ProcessEnv {
-  return { ...process.env, DATABASE_URL: databaseUrl };
+  return {
+    ...process.env,
+    DATABASE_URL: databaseUrl,
+    PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION:
+      process.env.PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION ?? "yes",
+  };
 }
 
 /** CI／本機 Postgres：`DATABASE_URL` 為 postgresql:// 時沿用，不建臨時 file: DB。 */
@@ -18,14 +23,32 @@ function resolvePostgresTestDatabaseUrl(): string | undefined {
   return url;
 }
 
+function execWithRetry(command: string, databaseUrl: string, attempts = 5): void {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      execSync(command, {
+        cwd: apiRoot,
+        env: prismaEnv(databaseUrl),
+        stdio: "pipe",
+      });
+      return;
+    } catch (err) {
+      lastErr = err;
+      const delay = 500 * (i + 1);
+      const until = Date.now() + delay;
+      while (Date.now() < until) {
+        /* migrate retry backoff */
+      }
+    }
+  }
+  throw lastErr;
+}
+
 export function createEmptyTestDatabase(): string {
   const postgresUrl = resolvePostgresTestDatabaseUrl();
   if (postgresUrl) {
-    execSync("pnpm exec prisma migrate deploy", {
-      cwd: apiRoot,
-      env: prismaEnv(postgresUrl),
-      stdio: "pipe",
-    });
+    execWithRetry("pnpm exec prisma migrate deploy", postgresUrl);
     return postgresUrl;
   }
 

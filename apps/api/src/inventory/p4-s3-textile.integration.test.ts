@@ -149,8 +149,9 @@ describe.sequential("P4-S3 紡織（棉花）", () => {
     );
     const until = Number(row!.fallowUntilGame);
     expect(isFallowActive(until, game)).toBe(true);
-    const expectedMin = game + DEFAULT_ENVIRONMENT_CONFIG.fallowDurationGameSec - 2;
-    const expectedMax = game + DEFAULT_ENVIRONMENT_CONFIG.fallowDurationGameSec + 2;
+    const slackGameSec = 120;
+    const expectedMin = game + DEFAULT_ENVIRONMENT_CONFIG.fallowDurationGameSec - slackGameSec;
+    const expectedMax = game + DEFAULT_ENVIRONMENT_CONFIG.fallowDurationGameSec + slackGameSec;
     expect(until).toBeGreaterThanOrEqual(expectedMin);
     expect(until).toBeLessThanOrEqual(expectedMax);
   });

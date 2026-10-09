@@ -27,23 +27,23 @@ export const itemProperties: ItemPropertyDef[] = [
   },
 ];
 
-/** TODO(product) 待確認：汲水工時（遊戲秒，佔位 ≈10 現實秒 @ timeScale=60） */
-export const PLACEHOLDER_DRAW_WATER_DURATION_GAME_SEC = 600;
-/** TODO(product) 待確認：每次汲水產出水數量；無輸入消耗 */
-export const PLACEHOLDER_DRAW_WATER_OUTPUT_QTY = 5;
-/** TODO(product) 待確認：留種工時（遊戲秒） */
-export const PLACEHOLDER_SAVE_SEED_DURATION_GAME_SEC = 1800;
-/** TODO(product) 待確認：留種輸入小麥數量 */
-export const PLACEHOLDER_SAVE_SEED_WHEAT_INPUT_QTY = 2;
-/** TODO(product) 待確認：留種產出種子數量 */
-export const PLACEHOLDER_SAVE_SEED_OUTPUT_QTY = 1;
+/** LOCKED MVP：汲水工時（遊戲秒；≈10 現實秒 @ timeScale=60） */
+export const DRAW_WATER_DURATION_GAME_SEC = 600;
+/** LOCKED MVP：每次汲水產出水量；無輸入消耗 */
+export const DRAW_WATER_OUTPUT_QTY = 5;
+/** LOCKED MVP：留種工時（遊戲秒；≈30 現實秒） */
+export const SAVE_SEED_DURATION_GAME_SEC = 1800;
+/** LOCKED MVP：留種輸入小麥數量 */
+export const SAVE_SEED_WHEAT_INPUT_QTY = 2;
+/** LOCKED MVP：留種產出種子數量 */
+export const SAVE_SEED_OUTPUT_QTY = 1;
 
 export const itemTypes: ItemTypeDef[] = [
   { id: "it_crop", code: "crop", name: "作物", is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "it_produce", code: "produce", name: "農產加工", is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "it_commodity", code: "commodity", name: "大宗現貨", is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "it_industrial", code: "industrial", name: "工業品", is_active: true, released_in_version: RELEASED_IN_VERSION },
-  // TODO(product): 貨幣是否獨立 Player.gold 欄未定；現用 inventory 物品佔位。
+  // LOCKED：結算貨幣走庫存物品（`item_copper_ingot`），不另開 Player.gold。
   { id: ITEM_CURRENCY_TYPE_ID, code: "currency", name: "貨幣", is_active: true, released_in_version: RELEASED_IN_VERSION },
 ];
 
@@ -64,7 +64,7 @@ export const items: ItemDef[] = [
   { id: "item_cloth", code: "cloth", type_id: "it_industrial", layer: "P", derived_tier: 1, is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "item_ore", code: "ore", type_id: "it_industrial", layer: "T", derived_tier: 1, is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "item_iron", code: "iron", type_id: "it_industrial", layer: "P", derived_tier: 1, is_active: true, released_in_version: RELEASED_IN_VERSION },
-  // TODO(product): 金幣顯示名／圖示；不進生產 DAG。
+  // LOCKED：舊金錢物品保留目錄列，不進生產 DAG、不可商行交易。
   {
     id: ITEM_GOLD_ID,
     code: "gold",
@@ -170,8 +170,8 @@ export const rules: ProductionRuleDef[] = [
     code: "draw_water",
     parent_rule_id: null,
     inputs: [],
-    outputs: [{ item_id: "item_water", qty: PLACEHOLDER_DRAW_WATER_OUTPUT_QTY }],
-    duration_game_sec: PLACEHOLDER_DRAW_WATER_DURATION_GAME_SEC,
+    outputs: [{ item_id: "item_water", qty: DRAW_WATER_OUTPUT_QTY }],
+    duration_game_sec: DRAW_WATER_DURATION_GAME_SEC,
     formulas: {},
     compositions: [],
     overrides: {},
@@ -276,9 +276,9 @@ export const rules: ProductionRuleDef[] = [
     id: "rule_save_seed",
     code: "save_seed",
     parent_rule_id: null,
-    inputs: [{ item_id: "item_wheat", qty: PLACEHOLDER_SAVE_SEED_WHEAT_INPUT_QTY }],
-    outputs: [{ item_id: "item_seed_wheat", qty: PLACEHOLDER_SAVE_SEED_OUTPUT_QTY }],
-    duration_game_sec: PLACEHOLDER_SAVE_SEED_DURATION_GAME_SEC,
+    inputs: [{ item_id: "item_wheat", qty: SAVE_SEED_WHEAT_INPUT_QTY }],
+    outputs: [{ item_id: "item_seed_wheat", qty: SAVE_SEED_OUTPUT_QTY }],
+    duration_game_sec: SAVE_SEED_DURATION_GAME_SEC,
     formulas: {},
     compositions: [],
     overrides: {},

@@ -1,10 +1,19 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { api, ApiError, clearAuthToken, readAuthToken, writeAuthToken } from "./api";
+import {
+  api,
+  ApiError,
+  clearSessionTokens,
+  readAuthToken,
+  writeAuthToken,
+  writeRefreshToken,
+} from "./api";
 
 type Mode = "login" | "register";
 
 type SessionResponse = {
   token: string;
+  accessToken?: string;
+  refreshToken?: string;
   playerId: string;
   username: string;
   adoptedExistingWorld: boolean;
@@ -25,7 +34,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     api<{ username: string }>("/api/v1/auth/me").catch((err: unknown) => {
       if (cancelled) return;
       if (err instanceof ApiError && err.status === 401) {
-        clearAuthToken();
+        clearSessionTokens();
         setToken(null);
       }
     });
@@ -45,11 +54,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
         method: "POST",
         body: JSON.stringify({ username, password }),
       });
-      writeAuthToken(session.token);
+      writeAuthToken(session.accessToken ?? session.token);
+      if (session.refreshToken) writeRefreshToken(session.refreshToken);
       if (session.adoptedExistingWorld) {
         setNotice("已接上這台機器上原本的世界。");
       }
-      setToken(session.token);
+      setToken(session.accessToken ?? session.token);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "登入沒有成功");
     } finally {
@@ -57,8 +67,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
     }
   }
 
-  function logout() {
-    clearAuthToken();
+  async function logout() {
+    try {
+      await api("/api/v1/auth/logout", { method: "POST" });
+    } catch {
+      /* 本地仍清掉 */
+    }
+    clearSessionTokens();
     setToken(null);
     setPassword("");
     setNotice("");

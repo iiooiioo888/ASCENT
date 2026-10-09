@@ -118,6 +118,23 @@ describe("industry tabs", () => {
     expect(screen.queryByText("蒸汽機")).not.toBeInTheDocument();
   });
 
+  it("locks mining until the bread milestone", async () => {
+    const user = userEvent.setup();
+    const state = { ...industryState(), unlockedIndustries: ["agriculture"] };
+    apiMock.mockImplementation(
+      withMarketApiRoute(async (path: string) => {
+        if (path === "/api/v1/state") return state;
+        throw new Error(`unexpected api call: ${path}`);
+      }),
+    );
+    render(<App />);
+    const mining = await screen.findByRole("tab", { name: /礦業/ });
+    expect(mining).toHaveAttribute("aria-disabled", "true");
+    await user.click(mining);
+    expect(screen.getByRole("heading", { name: "田" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "礦坑" })).not.toBeInTheDocument();
+  });
+
   it("puts P4 礦場／冶煉廠 on 礦業 and 食品廠／紡織廠 on 工業 via systemCode", async () => {
     const user = userEvent.setup();
     const state: GameState = {

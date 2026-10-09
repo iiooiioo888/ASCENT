@@ -1,11 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { AuthGate } from "./AuthGate";
-import { clearAuthToken } from "./api";
+import { clearSessionTokens } from "./api";
 
 describe("AuthGate", () => {
   it("沒有憑證時顯示登入，不渲染遊戲", () => {
-    clearAuthToken();
+    clearSessionTokens();
     render(
       <AuthGate>
         <p>遊戲本體</p>

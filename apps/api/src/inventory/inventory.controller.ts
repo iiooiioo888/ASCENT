@@ -56,6 +56,12 @@ export class InventoryController {
     return this.inventory.collect(id);
   }
 
+  @Post("buildings/:id/repair")
+  @HttpCode(HttpStatus.OK)
+  repair(@Param("id") id: string) {
+    return this.inventory.repair(id);
+  }
+
   @Patch("buildings/:id/auto")
   setAuto(
     @Param("id") id: string,

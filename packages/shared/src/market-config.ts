@@ -1,4 +1,4 @@
-/** TODO(product): 開局銅錠、價目與可交易清單皆為佔位，產品定案後可調。 */
+/** LOCKED MVP：開局銅錠、商行價目與可交易清單（只改本檔資料，不改引擎）。 */
 export const ITEM_GOLD_ID = "item_gold";
 export const ITEM_COPPER_INGOT_ID = "item_copper_ingot";
 /** Phase B（CURR-BARTER）：結算扣／加銅錠；價目整數＝銅錠數量（1 舊金錢＝1 銅錠）。 */
@@ -18,7 +18,7 @@ export type MarketPriceBook = {
   buy: Record<string, number>;
 };
 
-/** TODO(product): 平衡未定；伺服器權威，DB 可覆寫。 */
+/** LOCKED MVP：伺服器權威預設價目；`game_config.market_prices` 可覆寫單項。 */
 export const DEFAULT_MARKET_PRICES: MarketPriceBook = {
   sell: {
     item_bread: 8,

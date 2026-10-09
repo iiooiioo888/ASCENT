@@ -1,6 +1,6 @@
 /**
  * Centralized player-facing copy and product placeholders for the agriculture MVP slice.
- * Swap strings here when product / planning confirms wording (search `TODO(product)`).
+ * LOCKED MVP 文案。其餘顯示名單一來源見 next.md 序 4。
  */
 
 /** 正式品牌顯示名（系統定義：遊戲名稱《帝國掘起》） */
@@ -11,24 +11,25 @@ export const BRAND_SUBTITLE = "農、礦、化工、工業";
 /** Browser tab title; keep in sync via `main.tsx` (single source with HUD brand). */
 export const DOCUMENT_TITLE = `${BRAND_DISPLAY_NAME} · 農礦工商`;
 
-/** TODO(product): 待確認 — 策劃簽核離線 HUD 文案（不承諾離線摘要行為，見 PR-E） */
+/** LOCKED MVP：離線 HUD 文案（不承諾離線摘要行為，見 PR-E） */
 export const OFFLINE_PROGRESS_HUD_CHIP = "🌙 離線最多補算 8 小時";
 
-/** TODO(product): 待確認 — 離線進度說明（banner） */
+/** LOCKED MVP：離線進度說明（banner） */
 export const OFFLINE_PROGRESS_BANNER =
   "離線期間最多補算 8 現實小時進度；每座建築同一時間只做一單，完成後需回來收取。";
 
-/** TODO(product): 待確認 — 切片玩法說明 */
+/** LOCKED MVP：切片玩法說明 */
 export const SLICE_FLOW_BANNER =
   "田種麥 → 磨坊磨粉／拌飼 → 爐和麵烤麵包。每個產業一張選項卡：農業、礦業、林木、化工、工業、能源。工時以遊戲秒計，現實約為六十分之一。";
 
-/** TODO(product): 待確認 — 切片目標／終局出口說明 */
-export const SLICE_GOAL_BANNER = "目標：做出第一個麵包（本切片尚無訂單或排行出口）。";
+/** LOCKED MVP：切片目標／終局出口說明 */
+export const SLICE_GOAL_BANNER =
+  "目標：做出第一個麵包，再靠商行與懸賞訂單把產線養順（本切片無排行榜）。";
 
-/** TODO(product): 待確認 — 耗盡橫幅標題（資源循環 §5.2 / U6） */
+/** LOCKED MVP：耗盡橫幅標題（資源循環 §5.2 / U6） */
 export const DEPLETION_EMPTY_TITLE = "生產已暫停：種子或水不足";
 
-/** TODO(product): 待確認 — 耗盡橫幅說明 */
+/** LOCKED MVP：耗盡橫幅說明 */
 export const DEPLETION_EMPTY_BODY = "用水井汲水，或用小麥留種後即可繼續。";
 
 /** 資源循環 v1.1：耗盡橫幅 CTA（開局預放水井，唔再引導放置） */
@@ -40,7 +41,7 @@ export const DEPLETION_CTA_SAVE_SEED = "用小麥留種";
 /** 市場 M-D13：耗盡時導向商行（與汲水／留種 CTA 並列） */
 export const DEPLETION_CTA_MARKET = "前往商行";
 
-/** TODO(product): 待確認 — 各生產方式用途提示（U13） */
+/** LOCKED MVP：各生產方式用途提示（U13） */
 export const METHOD_PURPOSE_HINTS: Partial<Record<string, string>> = {
   method_mix_feed_default: "飼料可送牧場養雞牛，或送化工廠與鹼製成肥料。",
   method_raise_livestock_default: "消耗飼料與水，產出雞蛋與牛奶。",
@@ -49,7 +50,7 @@ export const METHOD_PURPOSE_HINTS: Partial<Record<string, string>> = {
   method_mine_coal_default: "煤是冶煉、燒窯與煉焦的燃料。",
 };
 
-/** TODO(product): 待確認 — 背包物品用途提示（U13） */
+/** LOCKED MVP：背包物品用途提示（U13） */
 export const ITEM_PURPOSE_HINTS: Partial<Record<string, string>> = {
   item_feed: "可送牧場養雞牛，或與鹼在化工廠製成肥料。",
   item_straw: "可送進窯燒成木炭，或與小麥拌成飼料。",
@@ -75,19 +76,19 @@ export function parseViteBooleanEnv(raw: string | undefined, defaultValue: boole
 /**
  * When false, hide the depletion banner (logic still testable).
  * Override at build/dev time: `VITE_FEATURE_SHOW_DEPLETION_EMPTY_STATE=false`.
- * TODO(product): 待確認 — 是否永遠顯示耗盡提示
+ * LOCKED MVP：預設顯示耗盡提示；可用 VITE 關掉。
  */
 export const FEATURE_SHOW_DEPLETION_EMPTY_STATE = parseViteBooleanEnv(
   import.meta.env.VITE_FEATURE_SHOW_DEPLETION_EMPTY_STATE,
   true,
 );
 
-/** TODO(product): 待確認 — 離線摘要方案 A/B（A＝localStorage 比對；off＝關閉；B＝日後 API 摘要） */
+/** LOCKED MVP：離線摘要走方案 A（本機比對）；完整 API 摘要後置。 */
 export type OfflineSummaryFeatureMode = "A" | "off";
 
 export const FEATURE_OFFLINE_SUMMARY: OfflineSummaryFeatureMode = "A";
 
-/** TODO(product): 待確認 — 離線歸來摘要標題與整段排版（UX §E 示例以「離開期間：…」描述；標題／內文分工待策劃定案） */
+/** LOCKED MVP：離線歸來摘要標題 */
 export const OFFLINE_SUMMARY_TITLE = "離開期間";
 
 /** Small tag shown beside the summary title while product picks A vs API (B). */
@@ -161,10 +162,10 @@ export function autoMethodSelectAriaLabel(buildingName: string): string {
 
 export const AUTO_METHOD_DEFAULT_OPTION_LABEL = "預設";
 
-/** TODO(product): 待確認 — 倉卡說明（U12 精簡卡） */
+/** LOCKED MVP：倉卡說明（U12 精簡卡） */
 export const SILO_CARD_BODY = "倉庫已隱藏：僅保留既有建築展示，無法再放置。";
 
-/** TODO(product): 待確認 — 時間換算 HUD chip 文案（P3-1） */
+/** LOCKED MVP：時間換算 HUD chip 文案（P3-1） */
 export function timeScaleHudChip(timeScale: number): string {
   if (timeScale === 60) return "⚖ 1 現實秒＝1 遊戲分";
   return `⚖ 1 現實秒＝${timeScale} 遊戲秒`;

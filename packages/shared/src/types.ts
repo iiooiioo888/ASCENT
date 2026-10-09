@@ -1,4 +1,4 @@
-/** C = 貨幣等非生產 DAG 物品（TODO(product)） */
+/** C = 貨幣等非生產 DAG 物品（LOCKED：銅錠結算，不進生產 DAG） */
 export type ItemLayer = "T" | "P" | "C";
 
 export type ItemIo = {

@@ -1,6 +1,6 @@
 /**
  * Player-facing copy for the NPC market panel (MK-FE-1).
- * TODO(product): 價目、清單與文案待產品定案。
+ * LOCKED MVP：價目聽 shared `DEFAULT_MARKET_PRICES`；本檔只作文案。
  */
 
 export const MARKET_COPY = {

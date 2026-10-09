@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import { BuildingCard } from "./components/BuildingCard";
+import { NpcOrdersPanel, npcOrderPendingKey } from "./components/NpcOrdersPanel";
 import { IndustryChain } from "./components/IndustryChain";
 import { SiloBuildingCard } from "./components/SiloBuildingCard";
 import { TradingPostBuildingCard } from "./components/TradingPostBuildingCard";
@@ -23,7 +24,7 @@ import { HudPrimaryChips } from "./components/HudPrimaryChips";
 import { HudRecentActivity } from "./components/HudRecentActivity";
 import { maybeWorkforceHud } from "./components/WorkforceHud";
 import { maybeEnvironmentHud } from "./components/EnvironmentHud";
-import { hasWorkforceUi } from "./ops-depth";
+import { hasWorkforceUi, startGoldCost } from "./ops-depth";
 import type { BuildingActionErrorView } from "./building-action-error";
 import { mapBuildingActionError } from "./building-action-error";
 import type { MarketActionErrorView } from "./market-action-error";
@@ -89,7 +90,13 @@ import { isResourceDepleted } from "./depletion";
 import { FEATURE_SHOW_DEPLETION_EMPTY_STATE, FEATURE_SHOW_SILO_PLACEMENT, FEATURE_SILO_CARD_MODE } from "./featureFlags";
 import { formatUserError } from "./format";
 import { sortInventoryRows } from "./inventorySort";
-import { ITEM_COPPER_INGOT_ID } from "@ascent/shared";
+import {
+  ITEM_COPPER_INGOT_ID,
+  buildingBottleneck,
+  milestoneLockReason,
+  type MilestoneIndustryId,
+  wheatThroughputLabel,
+} from "@ascent/shared";
 import { BUILDING_ICON } from "./meta";
 import {
   BRAND_DISPLAY_NAME,
@@ -115,6 +122,12 @@ import {
   SUCCESS_FEEDBACK_MS,
 } from "./successFeedback";
 import type { GameState, Method } from "./types";
+import {
+  applyOptimisticCollect,
+  applyOptimisticStart,
+  applyOptimisticStop,
+} from "./optimistic-building";
+import { inventoryQtyMap } from "./inventory";
 import {
   diffOfflineSnapshot,
   isOfflineSummaryEnabled,
@@ -367,10 +380,20 @@ export default function App() {
     document.getElementById(anchorId)?.focus({ preventScroll: true });
   }, []);
 
-  const selectIndustry = useCallback((next: IndustryId) => {
-    industryRef.current = next;
-    setIndustry(next);
-  }, []);
+  const unlockedIndustries = useMemo(() => {
+    const fromApi = state?.unlockedIndustries;
+    if (!fromApi) return new Set<string>(INDUSTRY_TABS.map((tab) => tab.id));
+    return new Set(fromApi);
+  }, [state?.unlockedIndustries]);
+
+  const selectIndustry = useCallback(
+    (next: IndustryId) => {
+      if (!unlockedIndustries.has(next)) return;
+      industryRef.current = next;
+      setIndustry(next);
+    },
+    [unlockedIndustries],
+  );
 
   useEffect(() => {
     industryRef.current = industry;
@@ -432,6 +455,11 @@ export default function App() {
   const hudGold = useMemo(
     () => (state ? resolveHudGold(marketSnapshot?.gold, state.inventory) : 0),
     [marketSnapshot?.gold, state],
+  );
+
+  const pipelineThroughput = useMemo(
+    () => (state ? wheatThroughputLabel(state.methods) : null),
+    [state],
   );
 
   const marketCtaProminent = useMemo(
@@ -565,11 +593,16 @@ export default function App() {
       actionKey: string,
       path: string,
       body?: unknown,
-      opts?: { collectBuffered?: Record<string, number>; method?: string },
+      opts?: {
+        collectBuffered?: Record<string, number>;
+        method?: string;
+        optimistic?: (current: GameState) => GameState;
+      },
     ) => {
       if (pendingKeysRef.current.has(actionKey)) return;
 
       const httpMethod = opts?.method ?? "POST";
+      const snapshot = stateRef.current;
       setPending(actionKey, true);
       clearSuccessFeedback(actionKey);
       if (actionKey === HIRE_ACTION_KEY) {
@@ -580,6 +613,9 @@ export default function App() {
         delete next[actionKey];
         return next;
       });
+      if (opts?.optimistic && snapshot) {
+        setState(opts.optimistic(snapshot));
+      }
 
       try {
         await api(path, {
@@ -599,6 +635,9 @@ export default function App() {
         }
         await refresh();
       } catch (e) {
+        if (opts?.optimistic && snapshot) {
+          setState(snapshot);
+        }
         const mapped = mapBuildingActionError(e);
         if (mapped.shouldRefresh) {
           await refresh().catch(() => undefined);
@@ -761,6 +800,29 @@ export default function App() {
     [refresh, refreshMarket, refreshRetail, setPending, showMarketSuccess],
   );
 
+  const acceptNpcOrder = useCallback(
+    async (orderId: string) => {
+      const actionKey = npcOrderPendingKey(orderId);
+      if (pendingKeysRef.current.has(actionKey)) return;
+      setPending(actionKey, true);
+      setMarketPanelError(null);
+      try {
+        await api(`/api/v1/orders/${orderId}/accept`, { method: "POST" });
+        await refresh();
+        await refreshMarket();
+      } catch (e) {
+        const mapped = mapMarketActionError(e);
+        setMarketPanelError({ message: mapped.message, hint: mapped.hint });
+        if (mapped.shouldRefresh) {
+          await refresh().catch(() => undefined);
+        }
+      } finally {
+        setPending(actionKey, false);
+      }
+    },
+    [refresh, refreshMarket, setPending],
+  );
+
   const patchRetailShelfSetting = useCallback(
     async (patch: { enabled?: boolean; followMarket?: boolean; ask?: number }) => {
       const enabledPatch = patch.enabled !== undefined;
@@ -857,6 +919,11 @@ export default function App() {
           />
           <div className="hud-secondary-chips">
             <span className="chip chip-muted chip-hud-timescale">{timeScaleHudChip(state.time.timeScale)}</span>
+            {pipelineThroughput ? (
+              <span className="chip chip-muted" data-testid="hud-throughput">
+                {pipelineThroughput}
+              </span>
+            ) : null}
             {maybeEnvironmentHud(state.environment)}
             {maybeWorkforceHud({
               workforce: state.workforce,
@@ -891,7 +958,12 @@ export default function App() {
 
       <div className="industry-board">
         <div className="industry-tabs" role="tablist" aria-label="產業">
-          {INDUSTRY_TABS.map((tab) => (
+          {INDUSTRY_TABS.map((tab) => {
+            const locked = !unlockedIndustries.has(tab.id);
+            const lockReason = locked
+              ? milestoneLockReason(tab.id as MilestoneIndustryId)
+              : null;
+            return (
             <button
               key={tab.id}
               type="button"
@@ -899,13 +971,16 @@ export default function App() {
               id={`industry-tab-${tab.id}`}
               aria-selected={industry === tab.id}
               aria-controls="industry-panel"
-              className={industry === tab.id ? "active" : ""}
+              aria-disabled={locked}
+              title={lockReason ?? undefined}
+              className={`${industry === tab.id ? "active" : ""}${locked ? " industry-tab-locked" : ""}`}
               data-testid={`industry-tab-${tab.id}`}
               onClick={() => selectIndustry(tab.id)}
             >
-              {tab.label}
+              {locked ? `${tab.label}（未解鎖）` : tab.label}
             </button>
-          ))}
+            );
+          })}
         </div>
 
         <div id="industry-panel" role="tabpanel" aria-labelledby={`industry-tab-${industry}`}>
@@ -943,53 +1018,80 @@ export default function App() {
 
           if (isTradingPostBuilding(b)) {
             return (
-              <TradingPostBuildingCard
-                key={b.id}
-                building={b}
-                highlight={highlightDefId === b.buildingDefId}
-                marketOpen={marketOpenBuildingId === b.id}
-                onToggleMarket={() => toggleMarketPanel(b.id)}
-                market={marketSnapshot}
-                panelError={marketPanelError}
-                pendingKeys={pendingKeys}
-                successToast={marketSuccessToast}
-                tabFocusRequest={marketTabFocusRequest}
-                opsCosts={state.opsCosts}
-                commodities={commoditiesSnapshot}
-                commoditiesTabVisible={commoditiesTabVisible}
-                retail={retailSnapshot}
-                retailTabVisible={retailTabVisible}
-                onRetailTabOpen={() => {
-                  refreshRetail().catch(() => undefined);
-                }}
-                onRetailTabActiveChange={setRetailTabActive}
-                retailShelf={retailShelfSnapshot}
-                retailShelfTabVisible={retailShelfTabVisible}
-                retailShelfPendingEnabled={pendingKeys.has(RETAIL_SHELF_PENDING_ENABLED_KEY)}
-                retailShelfPendingFollowMarket={pendingKeys.has(RETAIL_SHELF_PENDING_FOLLOW_MARKET_KEY)}
-                retailShelfPendingAsk={pendingKeys.has(RETAIL_SHELF_PENDING_ASK_KEY)}
-                onRetailShelfTabOpen={() => {
-                  refreshRetailShelf().catch(() => undefined);
-                }}
-                onRetailShelfToggleEnabled={(enabled) => {
-                  void patchRetailShelfSetting({ enabled });
-                }}
-                onRetailShelfToggleFollowMarket={(followMarket) => {
-                  void patchRetailShelfSetting({ followMarket });
-                }}
-                onRetailShelfSaveAsk={(ask) => {
-                  void patchRetailShelfSetting({ ask });
-                }}
-                onSell={(itemId, quantity) => marketTrade("sell", itemId, quantity)}
-                onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
-                onCommodityBuy={(commodityId, quantity) => commodityTrade("buy", commodityId, quantity)}
-                onCommoditySell={(commodityId, quantity) => commodityTrade("sell", commodityId, quantity)}
-                landPurchaseUi={landPurchaseUi}
-                onPurchaseField={() => void purchaseField()}
-                onRetailAccept={retailAccept}
-              />
+              <div key={b.id}>
+                <TradingPostBuildingCard
+                  building={b}
+                  highlight={highlightDefId === b.buildingDefId}
+                  marketOpen={marketOpenBuildingId === b.id}
+                  onToggleMarket={() => toggleMarketPanel(b.id)}
+                  market={marketSnapshot}
+                  panelError={marketPanelError}
+                  pendingKeys={pendingKeys}
+                  successToast={marketSuccessToast}
+                  tabFocusRequest={marketTabFocusRequest}
+                  opsCosts={state.opsCosts}
+                  commodities={commoditiesSnapshot}
+                  commoditiesTabVisible={commoditiesTabVisible}
+                  retail={retailSnapshot}
+                  retailTabVisible={retailTabVisible}
+                  onRetailTabOpen={() => {
+                    refreshRetail().catch(() => undefined);
+                  }}
+                  onRetailTabActiveChange={setRetailTabActive}
+                  retailShelf={retailShelfSnapshot}
+                  retailShelfTabVisible={retailShelfTabVisible}
+                  retailShelfPendingEnabled={pendingKeys.has(RETAIL_SHELF_PENDING_ENABLED_KEY)}
+                  retailShelfPendingFollowMarket={pendingKeys.has(RETAIL_SHELF_PENDING_FOLLOW_MARKET_KEY)}
+                  retailShelfPendingAsk={pendingKeys.has(RETAIL_SHELF_PENDING_ASK_KEY)}
+                  onRetailShelfTabOpen={() => {
+                    refreshRetailShelf().catch(() => undefined);
+                  }}
+                  onRetailShelfToggleEnabled={(enabled) => {
+                    void patchRetailShelfSetting({ enabled });
+                  }}
+                  onRetailShelfToggleFollowMarket={(followMarket) => {
+                    void patchRetailShelfSetting({ followMarket });
+                  }}
+                  onRetailShelfSaveAsk={(ask) => {
+                    void patchRetailShelfSetting({ ask });
+                  }}
+                  onSell={(itemId, quantity) => marketTrade("sell", itemId, quantity)}
+                  onBuy={(itemId, quantity) => marketTrade("buy", itemId, quantity)}
+                  onCommodityBuy={(commodityId, quantity) => commodityTrade("buy", commodityId, quantity)}
+                  onCommoditySell={(commodityId, quantity) => commodityTrade("sell", commodityId, quantity)}
+                  landPurchaseUi={landPurchaseUi}
+                  onPurchaseField={() => void purchaseField()}
+                  onRetailAccept={retailAccept}
+                />
+                <NpcOrdersPanel
+                  orders={state.npcOrders ?? []}
+                  pendingKeys={pendingKeys}
+                  onAccept={(orderId) => void acceptNpcOrder(orderId)}
+                />
+              </div>
             );
           }
+
+          const stock = inventoryQtyMap(state.inventory);
+          const bottleneck = buildingBottleneck(
+            {
+              id: b.id,
+              buildingDefId: b.buildingDefId,
+              status: b.status,
+              bufferedOutputs: b.bufferedOutputs,
+            },
+            selected,
+            Object.fromEntries(stock),
+            state.buildings.map((row) => ({
+              id: row.id,
+              buildingDefId: row.buildingDefId,
+              status: row.status,
+              bufferedOutputs: row.bufferedOutputs,
+            })),
+            state.methods,
+          );
+          const goldCost = startGoldCost(state.opsCosts, b.buildingDefId);
+          const repairKey = `${b.id}:repair`;
 
           return (
             <BuildingCard
@@ -1009,11 +1111,22 @@ export default function App() {
               actionSuccess={actionSuccess[actionKey]}
               pending={pendingKeys.has(actionKey)}
               onSelectMethod={(methodId) => setPicked({ ...picked, [b.id]: methodId })}
-              onStart={() => act(actionKey, `/api/v1/buildings/${b.id}/start`, { methodId: selectedId })}
-              onStop={() => act(actionKey, `/api/v1/buildings/${b.id}/stop`)}
+              onStart={() =>
+                act(actionKey, `/api/v1/buildings/${b.id}/start`, { methodId: selectedId }, {
+                  optimistic: selected
+                    ? (current) => applyOptimisticStart(current, b.id, selected, goldCost)
+                    : undefined,
+                })
+              }
+              onStop={() =>
+                act(actionKey, `/api/v1/buildings/${b.id}/stop`, undefined, {
+                  optimistic: (current) => applyOptimisticStop(current, b.id),
+                })
+              }
               onCollect={() =>
                 act(actionKey, `/api/v1/buildings/${b.id}/collect`, undefined, {
                   collectBuffered: { ...b.bufferedOutputs },
+                  optimistic: (current) => applyOptimisticCollect(current, b.id),
                 })
               }
               autoPending={pendingKeys.has(autoActionKey)}
@@ -1037,6 +1150,14 @@ export default function App() {
               onGoMarket={() => goToMarket()}
               displayGameTime={state.time.displayGameTime}
               environmentYieldMult={state.environment?.yieldMult}
+              bottleneckLabel={bottleneck?.label ?? null}
+              throughputLabel={
+                b.buildingDefId === "bdef_field" || b.buildingDefId === "bdef_mill"
+                  ? pipelineThroughput
+                  : null
+              }
+              onRepair={() => act(repairKey, `/api/v1/buildings/${b.id}/repair`)}
+              repairPending={pendingKeys.has(repairKey)}
             />
           );
         })}

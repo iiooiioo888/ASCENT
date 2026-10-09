@@ -14,6 +14,7 @@ export type OfflineBuildingSnapshot = {
   status: string;
   methodId: string | null;
   bufferedOutputs: Record<string, number>;
+  durability?: number;
 };
 
 export type OfflineSnapshot = {
@@ -47,6 +48,7 @@ export function snapshotFromGameState(state: GameState): OfflineSnapshot {
       status: b.status,
       methodId: b.methodId,
       bufferedOutputs: { ...b.bufferedOutputs },
+      durability: b.durability,
     };
   }
 
@@ -104,6 +106,7 @@ export function parseStoredSnapshot(raw: string | null | undefined): OfflineSnap
         status: row.status,
         methodId: row.methodId as string | null,
         bufferedOutputs: buffered,
+        durability: typeof row.durability === "number" && Number.isFinite(row.durability) ? row.durability : undefined,
       };
     }
 
@@ -155,10 +158,19 @@ export function diffOfflineSnapshot(
 
     if (prev.status === "running" && b.status === "ready") {
       const pending = fmtBuffered(b.bufferedOutputs);
-      // TODO(product): 待確認 — 完成行格式（UX §E 示例：「田完成，待收取 🌾×2…」；標題見 OFFLINE_SUMMARY_TITLE）
       lines.push({
         buildingId: b.id,
         text: `${b.buildingDef.name}完成，待收取 ${pending}`,
+      });
+    }
+    if (
+      typeof prev.durability === "number" &&
+      typeof b.durability === "number" &&
+      b.durability + 0.05 < prev.durability
+    ) {
+      lines.push({
+        buildingId: `${b.id}:wear`,
+        text: `${b.buildingDef.name}耐久 ${Math.round(prev.durability)}→${Math.round(b.durability)}，可修復`,
       });
     }
   }

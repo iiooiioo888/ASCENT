@@ -25,6 +25,8 @@ async function main() {
   await prisma.playerInventory.deleteMany();
   await prisma.playerEquityHolding.deleteMany();
   await prisma.playerRetailState.deleteMany();
+  await prisma.playerNpcOrder.deleteMany();
+  await prisma.playerNpcOrderScan.deleteMany();
   await prisma.account.deleteMany();
   await prisma.player.deleteMany();
   await prisma.buildingLevel.deleteMany();

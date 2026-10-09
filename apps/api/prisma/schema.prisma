@@ -116,13 +116,13 @@ model GameConfig {
   maxOfflineRealSec  Int @default(28800) @map("max_offline_real_sec")
   maxOfflineGameSec  Int @default(1728000) @map("max_offline_game_sec")
   tickIntervalRealMs Int @default(5000) @map("tick_interval_real_ms")
-  // TODO(product): 價目平衡未定；JSON 覆寫 DEFAULT_MARKET_PRICES。
+  // LOCKED MVP：JSON 覆寫 DEFAULT_MARKET_PRICES；缺省用 shared 簽核價目。
   marketPrices       Json? @map("market_prices")
-  // TODO(product): JSON 覆寫 DEFAULT_OPS_DEPTH。
+  // LOCKED MVP：JSON 覆寫 DEFAULT_OPS_DEPTH。
   opsDepth           Json? @map("ops_depth")
   /** ENV：休地／天氣倍率與切換（覆写 shared DEFAULT_ENVIRONMENT_CONFIG）。 */
   environment        Json? @map("environment")
-  // TODO(product): JSON 覆寫 DEFAULT_RETAIL_CONFIG。
+  // LOCKED MVP：JSON 覆寫 DEFAULT_RETAIL_CONFIG。
   retailConfig       Json? @map("retail_config")
 
   @@map("game_config")
@@ -154,22 +154,27 @@ model Player {
   lastSeenAt     DateTime @map("last_seen_at")
   workforceHired Int      @default(1) @map("workforce_hired")
   workforceBusy  Int      @default(0) @map("workforce_busy")
+  progress       Json     @default(dbgenerated("'{}'"))
   account        Account?
   inventory      PlayerInventory[]
   buildings      PlayerBuilding[]
   equityHoldings PlayerEquityHolding[]
   retailState    PlayerRetailState?
+  npcOrders      PlayerNpcOrder[]
+  npcOrderScans  PlayerNpcOrderScan[]
 
   @@map("players")
 }
 
 model Account {
-  id           String   @id
-  username     String   @unique
-  passwordHash String   @map("password_hash")
-  playerId     String   @unique @map("player_id")
-  player       Player   @relation(fields: [playerId], references: [id])
-  createdAt    DateTime @map("created_at")
+  id                     String    @id
+  username               String    @unique
+  passwordHash           String    @map("password_hash")
+  playerId               String    @unique @map("player_id")
+  player                 Player    @relation(fields: [playerId], references: [id])
+  createdAt              DateTime  @map("created_at")
+  refreshTokenHash       String?   @unique @map("refresh_token_hash")
+  refreshTokenExpiresAt  DateTime? @map("refresh_token_expires_at")
 
   @@map("accounts")
 }
@@ -246,5 +251,34 @@ model PlayerBuilding {
   autoMethodId     String?  @map("auto_method_id")
   autoMethod       ProductionMethod? @relation("BuildingAutoMethod", fields: [autoMethodId], references: [id])
 
+  @@index([playerId])
+  @@index([playerId, lastSettledAt])
   @@map("player_buildings")
+}
+
+model PlayerNpcOrder {
+  id               String   @id
+  playerId         String   @map("player_id")
+  player           Player   @relation(fields: [playerId], references: [id])
+  ruleId           String   @map("rule_id")
+  spawnBucket      BigInt   @map("spawn_bucket")
+  status           String
+  requiredItems    Json     @map("required_items")
+  rewardsSnapshot  Json     @map("rewards_snapshot")
+  createdGameSec   BigInt   @map("created_game_sec")
+  expiresGameSec   BigInt   @map("expires_game_sec")
+
+  @@unique([playerId, spawnBucket, ruleId])
+  @@index([playerId, status])
+  @@map("player_npc_orders")
+}
+
+model PlayerNpcOrderScan {
+  playerId          String @map("player_id")
+  player            Player @relation(fields: [playerId], references: [id])
+  ruleId            String @map("rule_id")
+  lastScannedBucket BigInt @map("last_scanned_bucket")
+
+  @@id([playerId, ruleId])
+  @@map("player_npc_order_scans")
 }

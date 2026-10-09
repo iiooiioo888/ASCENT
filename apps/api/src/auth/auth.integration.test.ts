@@ -51,14 +51,34 @@ describe("登入（F1）", () => {
     expect(registered.status).toBe(201);
     const session = (await registered.json()) as {
       token: string;
+      accessToken?: string;
+      refreshToken: string;
       playerId: string;
       adoptedExistingWorld: boolean;
     };
     expect(session.playerId).toBe(LOCAL_PLAYER_ID);
     expect(session.adoptedExistingWorld).toBe(true);
+    expect(session.refreshToken).toBeTruthy();
+    expect(session.accessToken ?? session.token).toBeTruthy();
+
+    const rotated = await fetch(`${base}/api/v1/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken: session.refreshToken }),
+    });
+    expect(rotated.status).toBe(201);
+    const nextSession = (await rotated.json()) as { token: string; refreshToken: string };
+    expect(nextSession.refreshToken).not.toBe(session.refreshToken);
+
+    const reused = await fetch(`${base}/api/v1/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken: session.refreshToken }),
+    });
+    expect(reused.status).toBe(401);
 
     const state = await fetch(`${base}/api/v1/state`, {
-      headers: { Authorization: `Bearer ${session.token}` },
+      headers: { Authorization: `Bearer ${nextSession.token}` },
     });
     expect(state.status).toBe(200);
     const body = (await state.json()) as { inventory: unknown };

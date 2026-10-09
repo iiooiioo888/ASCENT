@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { hashPassword, verifyPassword } from "./password";
-import { signSession, verifySession } from "./jwt";
+import { ACCESS_TOKEN_TTL_SEC, signSession, verifySession } from "./jwt";
+import { hashRefreshToken, issueRefreshToken, refreshTokenMatches } from "./refresh-token";
 
 describe("密碼與 JWT", () => {
   it("雜湊可以核對，錯密碼不能過", () => {
@@ -15,7 +16,16 @@ describe("密碼與 JWT", () => {
       1_000,
     );
     expect(verifySession(token, 1_000)?.sub).toBe("player_local");
-    expect(verifySession(token, 1_000 + 8 * 24 * 60 * 60)).toBeNull();
+    expect(verifySession(token, 1_000 + 60)?.sub).toBe("player_local");
+    expect(verifySession(token, 1_000 + ACCESS_TOKEN_TTL_SEC + 1)).toBeNull();
     expect(verifySession(`${token}x`, 1_000)).toBeNull();
+  });
+
+  it("refresh token 雜湊可核對且每次簽發不同", () => {
+    const first = issueRefreshToken();
+    const second = issueRefreshToken();
+    expect(first.token).not.toBe(second.token);
+    expect(refreshTokenMatches(first.token, first.hash)).toBe(true);
+    expect(refreshTokenMatches(first.token, hashRefreshToken(second.token))).toBe(false);
   });
 });

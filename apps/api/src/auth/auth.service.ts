@@ -8,13 +8,17 @@ import {
 import { LOCAL_PLAYER_ID } from "@ascent/shared";
 import { Prisma } from "../../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { signSession } from "./jwt";
+import { ACCESS_TOKEN_TTL_SEC, signSession } from "./jwt";
 import { assertPassword, assertUsername, hashPassword, verifyPassword } from "./password";
 import { provisionNewPlayer } from "./provision-player";
 import { currentPlayerId } from "./player-context";
+import { hashRefreshToken, issueRefreshToken, refreshTokenMatches } from "./refresh-token";
 
 export type AuthSession = {
   token: string;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
   playerId: string;
   username: string;
   adoptedExistingWorld: boolean;
@@ -93,6 +97,42 @@ export class AuthService {
     return this.session(account.id, account.playerId, account.username, false);
   }
 
+  async refresh(rawToken: string): Promise<AuthSession> {
+    const token = rawToken.trim();
+    if (!token) throw new UnauthorizedException("請先登入");
+    const hash = hashRefreshToken(token);
+    const account = await this.prisma.account.findFirst({
+      where: { refreshTokenHash: hash },
+    });
+    if (!account || !refreshTokenMatches(token, account.refreshTokenHash)) {
+      throw new UnauthorizedException("登入已失效");
+    }
+    if (!account.refreshTokenExpiresAt || account.refreshTokenExpiresAt.getTime() <= Date.now()) {
+      await this.prisma.account.update({
+        where: { id: account.id },
+        data: { refreshTokenHash: null, refreshTokenExpiresAt: null },
+      });
+      throw new UnauthorizedException("登入已失效");
+    }
+    await this.prisma.player.update({
+      where: { id: account.playerId },
+      data: { lastSeenAt: new Date() },
+    });
+    return this.session(account.id, account.playerId, account.username, false);
+  }
+
+  async logout(): Promise<{ ok: true }> {
+    const playerId = currentPlayerId();
+    const account = await this.prisma.account.findUnique({ where: { playerId } });
+    if (account) {
+      await this.prisma.account.update({
+        where: { id: account.id },
+        data: { refreshTokenHash: null, refreshTokenExpiresAt: null },
+      });
+    }
+    return { ok: true };
+  }
+
   async me(): Promise<{ playerId: string; username: string }> {
     const playerId = currentPlayerId();
     const account = await this.prisma.account.findUnique({ where: { playerId } });
@@ -100,14 +140,26 @@ export class AuthService {
     return { playerId: account.playerId, username: account.username };
   }
 
-  private session(
+  private async session(
     accountId: string,
     playerId: string,
     username: string,
     adoptedExistingWorld: boolean,
-  ): AuthSession {
+  ): Promise<AuthSession> {
+    const refresh = issueRefreshToken();
+    await this.prisma.account.update({
+      where: { id: accountId },
+      data: {
+        refreshTokenHash: refresh.hash,
+        refreshTokenExpiresAt: refresh.expiresAt,
+      },
+    });
+    const accessToken = signSession({ sub: playerId, accountId, username });
     return {
-      token: signSession({ sub: playerId, accountId, username }),
+      token: accessToken,
+      accessToken,
+      refreshToken: refresh.token,
+      expiresIn: ACCESS_TOKEN_TTL_SEC,
       playerId,
       username,
       adoptedExistingWorld,

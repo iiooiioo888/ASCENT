@@ -195,6 +195,32 @@ body {
   background: rgba(120, 24, 24, 0.55);
   border: 1px solid rgba(255, 120, 120, 0.45);
 }
+.takt-line,
+.bottleneck-line,
+.durability-line {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.bottleneck-line {
+  color: var(--warn);
+  font-weight: 600;
+}
+.industry-tab-locked {
+  opacity: 0.55;
+}
+.npc-orders {
+  margin-top: 0.8rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+.npc-orders h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
 .plot-action-success {
   margin: 0.45rem 0 0;
   padding: 0.45rem 0.55rem;

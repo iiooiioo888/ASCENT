@@ -1,4 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
 import { ScheduleModule } from "@nestjs/schedule";
 import { AuthController } from "./auth/auth.controller";
 import { AuthModule } from "./auth/auth.module";
@@ -15,9 +16,12 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { RulesController } from "./rules/rules.controller";
 import { RulesModule } from "./rules/rules.module";
 import { SimulationModule } from "./simulation/simulation.module";
+import { WriteThrottleGuard } from "./common/write-throttle.guard";
+import { OrdersController } from "./orders/orders.controller";
+import { OrdersModule } from "./orders/orders.module";
 
 @Module({
-  providers: [PlayerContextMiddleware],
+  providers: [PlayerContextMiddleware, { provide: APP_GUARD, useClass: WriteThrottleGuard }],
   imports: [
     ScheduleModule.forRoot(),
     PrismaModule,
@@ -28,6 +32,7 @@ import { SimulationModule } from "./simulation/simulation.module";
     InventoryModule,
     MarketModule,
     WorkforceModule,
+    OrdersModule,
   ],
 })
 export class AppModule implements NestModule {
@@ -39,6 +44,7 @@ export class AppModule implements NestModule {
       InventoryController,
       MarketController,
       WorkforceController,
+      OrdersController,
     );
   }
 }

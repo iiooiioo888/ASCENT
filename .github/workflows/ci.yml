@@ -49,6 +49,11 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Playwright agri loop
+        run: |
+          pnpm --filter @ascent/web exec playwright install --with-deps chromium
+          pnpm test:e2e
+
   postgres-migrate-test:
     runs-on: ubuntu-24.04
     services:
@@ -100,7 +105,16 @@ jobs:
         run: |
           pnpm --filter @ascent/shared build
           pnpm --filter @ascent/api prisma:generate
-          pnpm --filter @ascent/api exec -- prisma migrate deploy
+          ok=0
+          for i in 1 2 3 4 5; do
+            if pnpm --filter @ascent/api exec -- prisma migrate deploy; then
+              ok=1
+              break
+            fi
+            echo "migrate deploy 重試 $i"
+            sleep $((i * 2))
+          done
+          test "$ok" = 1
           pnpm db:seed
 
       - name: Test (API)

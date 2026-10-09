@@ -11,6 +11,8 @@ import {
   itemProperties,
   items,
   rules,
+  DURABILITY_WEAR_PER_MAX_OFFLINE,
+  settleDurability,
   settleProduction,
   settleWindow,
   validateCatalog,
@@ -110,6 +112,25 @@ describe("生產結算", () => {
     });
     expect(alreadyReady.status).toBe("ready");
     expect(alreadyReady.completedOutputs).toEqual({});
+  });
+
+  it("運轉中耐久磨損可重播、閒置不磨", () => {
+    const fullWindow = settleDurability({
+      durability: 100,
+      status: "running",
+      gameDeltaSec: MAX_OFFLINE_GAME_SEC,
+    });
+    expect(fullWindow.worn).toBeCloseTo(DURABILITY_WEAR_PER_MAX_OFFLINE);
+    expect(fullWindow.durability).toBeCloseTo(100 - DURABILITY_WEAR_PER_MAX_OFFLINE);
+    const replay = settleDurability({
+      durability: 100,
+      status: "running",
+      gameDeltaSec: MAX_OFFLINE_GAME_SEC,
+    });
+    expect(replay).toEqual(fullWindow);
+    const idle = settleDurability({ durability: 100, status: "idle", gameDeltaSec: MAX_OFFLINE_GAME_SEC });
+    expect(idle.worn).toBe(0);
+    expect(idle.durability).toBe(100);
   });
 });
 

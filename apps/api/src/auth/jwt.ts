@@ -1,6 +1,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-const TOKEN_TTL_SEC = 7 * 24 * 60 * 60;
+/** Access token 短 TTL；長會話靠旋轉 refresh。 */
+export const ACCESS_TOKEN_TTL_SEC = 15 * 60;
+const TOKEN_TTL_SEC = ACCESS_TOKEN_TTL_SEC;
 
 export type SessionClaims = {
   sub: string;

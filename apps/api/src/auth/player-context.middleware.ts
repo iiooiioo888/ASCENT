@@ -5,7 +5,12 @@ import { verifySession } from "./jwt";
 import { runWithPlayer } from "./player-context";
 
 function isPublicRoute(method: string, path: string): boolean {
-  if (method === "POST" && (path === "/api/v1/auth/login" || path === "/api/v1/auth/register")) return true;
+  if (
+    method === "POST" &&
+    (path === "/api/v1/auth/login" || path === "/api/v1/auth/register" || path === "/api/v1/auth/refresh")
+  ) {
+    return true;
+  }
   if (method === "GET" && path === "/api/v1/time") return true;
   if (method === "GET" && (path === "/api/v1/item-types" || path === "/api/v1/item-properties")) return true;
   if (method === "GET" && (path === "/api/v1/items" || path.startsWith("/api/v1/items/"))) return true;

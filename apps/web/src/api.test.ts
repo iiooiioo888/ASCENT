@@ -1,8 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { api, ApiError } from "./api";
+import {
+  api,
+  ApiError,
+  clearSessionTokens,
+  writeAuthToken,
+  writeRefreshToken,
+} from "./api";
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  clearSessionTokens();
 });
 
 function mockResponse(status: number, body: Record<string, unknown> = {}) {
@@ -85,5 +92,38 @@ describe("api", () => {
       status: 409,
       code: "building_state_conflict",
     });
+  });
+
+  it("401 時用 refresh 換票後重試一次", async () => {
+    const mem: Record<string, string> = {};
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => mem[key] ?? null,
+      setItem: (key: string, value: string) => {
+        mem[key] = value;
+      },
+      removeItem: (key: string) => {
+        delete mem[key];
+      },
+    });
+    writeAuthToken("old-access");
+    writeRefreshToken("refresh-1");
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(mockResponse(401, { message: "登入已失效" }))
+      .mockResolvedValueOnce(
+        mockResponse(201, {
+          token: "new-access",
+          accessToken: "new-access",
+          refreshToken: "refresh-2",
+        }),
+      )
+      .mockResolvedValueOnce(mockResponse(200, { ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(api("/api/v1/state")).resolves.toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/v1/auth/refresh");
+    expect(mem["ascent.session.token"]).toBe("new-access");
+    expect(mem["ascent.session.refresh"]).toBe("refresh-2");
   });
 });

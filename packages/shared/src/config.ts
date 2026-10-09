@@ -1,3 +1,4 @@
+/** LOCKED MVP：時間比例與離線上限。只改本檔常數，不改引擎契約。 */
 export const TIME_SCALE = 60;
 export const GAME_DAY_GAME_SEC = 86400;
 export const MAX_OFFLINE_REAL_SEC = 28800;

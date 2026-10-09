@@ -15,6 +15,16 @@ export class AuthController {
     return this.auth.login(body?.username ?? "", body?.password ?? "");
   }
 
+  @Post("refresh")
+  refresh(@Body() body: { refreshToken?: string }) {
+    return this.auth.refresh(body?.refreshToken ?? "");
+  }
+
+  @Post("logout")
+  logout() {
+    return this.auth.logout();
+  }
+
   @Get("me")
   me() {
     return this.auth.me();
