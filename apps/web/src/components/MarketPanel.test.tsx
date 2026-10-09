@@ -523,26 +523,28 @@ describe("MarketPanel", () => {
 
     await user.click(screen.getByTestId("market-tab-retail"));
     expect(screen.getByTestId("retail-empty-stock")).toHaveTextContent(RETAIL_COPY.emptyStock);
-    expect(screen.getByTestId("retail-empty-offers")).toHaveTextContent(RETAIL_COPY.emptyOffers);
+    expect(screen.getAllByTestId("retail-slot-empty")).toHaveLength(3);
   });
 
-  it("hides shelf tab when not visible", () => {
+  it("shows unified retail tab when only shelf is visible", () => {
     render(
       <MarketPanel
         market={makeMarket()}
         panelError={null}
         pendingKeys={new Set()}
         retailShelf={makeShelf()}
-        retailShelfTabVisible={false}
+        retailShelfTabVisible
+        retailTabVisible={false}
         onSell={vi.fn()}
         onBuy={vi.fn()}
       />,
     );
 
+    expect(screen.getByTestId("market-tab-retail")).toBeInTheDocument();
     expect(screen.queryByTestId("market-tab-shelf")).not.toBeInTheDocument();
   });
 
-  it("shows shelf tab with toggle, ask, and revenue", async () => {
+  it("shows shelf controls inside retail tab with toggle, ask, and revenue", async () => {
     const user = userEvent.setup();
     const onToggle = vi.fn();
     const onToggleFollowMarket = vi.fn();
@@ -563,8 +565,9 @@ describe("MarketPanel", () => {
       />,
     );
 
-    await user.click(screen.getByTestId("market-tab-shelf"));
-    expect(screen.getByTestId("market-shelf-panel")).toBeInTheDocument();
+    await user.click(screen.getByTestId("market-tab-retail"));
+    expect(screen.getByTestId("market-retail-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("retail-shelf-section")).toBeInTheDocument();
     expect(screen.getByTestId("retail-shelf-today-revenue")).toHaveTextContent(
       RETAIL_SHELF_COPY.todayRevenue(15),
     );
@@ -595,7 +598,7 @@ describe("MarketPanel", () => {
       />,
     );
 
-    await user.click(screen.getByTestId("market-tab-shelf"));
+    await user.click(screen.getByTestId("market-tab-retail"));
     expect(screen.getByTestId("retail-shelf-ask-apply")).toBeDisabled();
     expect(screen.getByTestId("retail-shelf-follow-hint")).toBeInTheDocument();
   });
@@ -623,13 +626,13 @@ describe("MarketPanel", () => {
       />,
     );
 
-    await user.click(screen.getByTestId("market-tab-shelf"));
+    await user.click(screen.getByTestId("market-tab-retail"));
     expect(screen.getByTestId("retail-shelf-enabled")).toBeDisabled();
     expect(screen.getByTestId("retail-shelf-follow-market")).toBeDisabled();
     expect(screen.getByTestId("retail-shelf-ask-apply")).toBeDisabled();
   });
 
-  it("retail customer tab still works alongside shelf tab", async () => {
+  it("retail tab shows shelf and customer orders together", async () => {
     const user = userEvent.setup();
     render(
       <MarketPanel
@@ -646,13 +649,13 @@ describe("MarketPanel", () => {
     );
 
     expect(screen.getByTestId("market-tab-retail")).toBeInTheDocument();
-    expect(screen.getByTestId("market-tab-shelf")).toBeInTheDocument();
+    expect(screen.queryByTestId("market-tab-shelf")).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId("market-tab-retail"));
-    expect(screen.getByTestId("market-retail-panel")).toBeInTheDocument();
-
-    await user.click(screen.getByTestId("market-tab-shelf"));
-    expect(screen.getByTestId("market-shelf-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("retail-trading-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("retail-shelf-section")).toBeInTheDocument();
+    expect(screen.getByTestId("retail-orders-section")).toBeInTheDocument();
+    expect(screen.getByTestId("retail-slot-summary")).toHaveTextContent("槽位 1／3");
   });
 
   it("disables retail accept while pending", async () => {

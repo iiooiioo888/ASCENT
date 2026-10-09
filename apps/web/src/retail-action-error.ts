@@ -2,6 +2,7 @@ import { ApiError } from "./api";
 import { itemLabel } from "./meta";
 import { RETAIL_COPY } from "./retailCopy";
 import type { MarketActionErrorView } from "./market-action-error";
+import { SETTLEMENT_COPY } from "./settlementCopy";
 
 const INSUFFICIENT_PREFIX = "資源不足：";
 
@@ -13,6 +14,8 @@ type RegistryEntry = { copy: string; shouldRefresh: boolean };
 
 const REGISTRY: Readonly<Record<string, RegistryEntry>> = {
   客單已失效: { copy: RETAIL_COPY.expired, shouldRefresh: true },
+  金幣不足: { copy: RETAIL_COPY.needGold, shouldRefresh: false },
+  [SETTLEMENT_COPY.insufficient]: { copy: RETAIL_COPY.needGold, shouldRefresh: false },
   [RETAIL_COPY.genericError]: {
     copy: RETAIL_COPY.genericError,
     shouldRefresh: false,

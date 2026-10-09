@@ -1,8 +1,9 @@
-/** 商行「貨架」tab 文案（AFK-FE-2）。 */
+/** 商行貨架區文案（AFK-FE-2；FE-RICH-3 與零售同屏）。 */
 export const RETAIL_SHELF_COPY = {
   tab: "貨架",
+  sectionTitle: "貨架",
   subtitle: "麵包自動上架 · 離線亦會售出",
-  hint: "貨架＝標價後自動賣麵包；即時接客請用「零售」tab。",
+  hint: "貨架標價後自動售賣；同頁下方可接客單。",
   loading: "載入貨架…",
   skuLabel: "麵包",
   enabledLabel: "開啟貨架",

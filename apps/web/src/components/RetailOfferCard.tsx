@@ -1,20 +1,33 @@
 import type { RetailOffer } from "@ascent/shared";
 import { itemLabel } from "../meta";
 import { retailPreviewNet } from "../retail";
+import { formatRetailOfferRemaining, retailSlotLabel } from "../retail-offer-display";
 import { RETAIL_COPY } from "../retailCopy";
 
 type Props = {
   offer: RetailOffer;
+  slotIndex?: number;
   breadQty: number;
+  nowMs: number;
+  expired?: boolean;
   pending: boolean;
   onAccept: () => void;
 };
 
-export function RetailOfferCard({ offer, breadQty, pending, onAccept }: Props) {
+export function RetailOfferCard({
+  offer,
+  slotIndex,
+  breadQty,
+  nowMs,
+  expired = false,
+  pending,
+  onAccept,
+}: Props) {
   const net = retailPreviewNet(offer.bidGold, offer.qty);
   const insufficient = breadQty < offer.qty;
-  const disabled = pending || insufficient;
+  const disabled = pending || insufficient || expired;
   const buyer = offer.buyerLabel ?? "到訪客人";
+  const ttl = formatRetailOfferRemaining(offer.expiresAt, nowMs);
 
   return (
     <article
@@ -23,6 +36,7 @@ export function RetailOfferCard({ offer, breadQty, pending, onAccept }: Props) {
         "retail-offer-card",
         pending ? "pending" : "",
         insufficient ? "out-of-stock" : "",
+        expired ? "expired" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -34,9 +48,13 @@ export function RetailOfferCard({ offer, breadQty, pending, onAccept }: Props) {
           <div>
             <div className="commodity-row-name" data-testid="retail-offer-buyer">{buyer}</div>
             <div className="commodity-row-stats">
+              {slotIndex != null ? (
+                <span data-testid="retail-offer-slot">{retailSlotLabel(slotIndex)}</span>
+              ) : null}
               <span data-testid="retail-offer-sku">{itemLabel(offer.skuId)}</span>
               <span data-testid="retail-offer-qty">{RETAIL_COPY.offerQty(offer.qty)}</span>
               <span data-testid="retail-offer-bid">{RETAIL_COPY.bid(offer.bidGold)}</span>
+              <span data-testid="retail-offer-ttl">{ttl}</span>
             </div>
           </div>
         </div>
