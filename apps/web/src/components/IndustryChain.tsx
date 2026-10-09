@@ -91,8 +91,8 @@ const BRANCHES: Partial<Record<IndustryId, ChainBranch[]>> = {
 
 const LINES: Record<Exclude<IndustryId, "agriculture">, ChainNode[]> = {
   mining: [
-    { kind: "building", buildingDefId: "bdef_mine", label: "礦坑" },
-    { kind: "building", buildingDefId: "bdef_smelter", label: "冶煉爐" },
+    { kind: "building", buildingDefId: "bdef_mining_pit", label: "礦坑" },
+    { kind: "building", buildingDefId: "bdef_smelting_works", label: "冶煉爐" },
     { kind: "item", itemId: "item_steel", label: "鋼", icon: "⚙️" },
   ],
   timber: [

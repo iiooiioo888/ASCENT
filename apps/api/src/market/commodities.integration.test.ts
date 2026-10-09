@@ -110,6 +110,9 @@ describe("大宗石油（整合）", () => {
     await expect(commodities.buyCommodity("grain", 1)).rejects.toMatchObject({
       response: { message: "不可交易：grain", statusCode: 400 },
     });
+    await expect(commodities.buyCommodity("ore", 1)).rejects.toMatchObject({
+      response: { message: "不可交易：ore", statusCode: 400 },
+    });
   });
 
   it("priceHistory 不超過 64", async () => {

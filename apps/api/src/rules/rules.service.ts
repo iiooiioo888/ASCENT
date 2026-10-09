@@ -40,7 +40,7 @@ export class RulesService {
       {
         id: "loop_mining_steel",
         name: "礦業煉鋼",
-        steps: ["rule_mine_iron", "rule_mine_coal", "rule_smelt_iron", "rule_make_coke", "rule_make_steel"],
+        steps: ["rule_mine_iron", "rule_mine_coal", "rule_smelt_iron_coal", "rule_make_coke", "rule_make_steel"],
       },
       {
         id: "loop_chemical_fertilizer",
@@ -71,6 +71,11 @@ export class RulesService {
         id: "loop_textile_cloth",
         name: "紡織布支線",
         steps: ["rule_grow_cotton", "rule_weave_cloth"],
+      },
+      {
+        id: "loop_mining_refining",
+        name: "礦冶鐵錠支線",
+        steps: ["rule_mine_ore", "rule_smelt_iron"],
       },
     ];
   }

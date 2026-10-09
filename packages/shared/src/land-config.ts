@@ -13,7 +13,7 @@ export const FIELD_CAP = 3;
 /**
  * P-D3／LD-D4：佔槽建築上限（**不含**倉，亦**不含**產業擴充建築）。
  * P4-S1：上限 12（開局 5＋擴田與牧場等農業建築）。
- * 礦坑、採石場、林地、冶煉爐、窯、化工廠、工坊、機械廠、鍋爐各限 1 座，不佔此槽。
+ * P4 礦場（`bdef_mine`）、冶煉廠（`bdef_smelter`）佔槽；產業擴充礦坑／冶煉爐等不佔此槽。
  */
 export const PLAYER_BUILDING_SLOT_CAP = 12;
 

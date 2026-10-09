@@ -42,6 +42,7 @@ export const itemTypes: ItemTypeDef[] = [
   { id: "it_crop", code: "crop", name: "作物", is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "it_produce", code: "produce", name: "農產加工", is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "it_commodity", code: "commodity", name: "大宗現貨", is_active: true, released_in_version: RELEASED_IN_VERSION },
+  { id: "it_industrial", code: "industrial", name: "工業品", is_active: true, released_in_version: RELEASED_IN_VERSION },
   // TODO(product): 貨幣是否獨立 Player.gold 欄未定；現用 inventory 物品佔位。
   { id: ITEM_CURRENCY_TYPE_ID, code: "currency", name: "貨幣", is_active: true, released_in_version: RELEASED_IN_VERSION },
 ];
@@ -61,6 +62,8 @@ export const items: ItemDef[] = [
   { id: "item_seed_cotton", code: "seed_cotton", type_id: "it_crop", layer: "T", derived_tier: 1, is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "item_cotton", code: "cotton", type_id: "it_crop", layer: "T", derived_tier: 1, is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "item_cloth", code: "cloth", type_id: "it_industrial", layer: "P", derived_tier: 1, is_active: true, released_in_version: RELEASED_IN_VERSION },
+  { id: "item_ore", code: "ore", type_id: "it_industrial", layer: "T", derived_tier: 1, is_active: true, released_in_version: RELEASED_IN_VERSION },
+  { id: "item_iron", code: "iron", type_id: "it_industrial", layer: "P", derived_tier: 1, is_active: true, released_in_version: RELEASED_IN_VERSION },
   // TODO(product): 金幣顯示名／圖示；不進生產 DAG。
   {
     id: ITEM_GOLD_ID,
@@ -241,6 +244,35 @@ export const rules: ProductionRuleDef[] = [
     released_in_version: RELEASED_IN_VERSION,
   },
   {
+    id: "rule_mine_ore",
+    code: "mine_ore",
+    parent_rule_id: null,
+    inputs: [{ item_id: "item_water", qty: 1 }],
+    outputs: [{ item_id: "item_ore", qty: 2 }],
+    duration_game_sec: 2400,
+    formulas: {},
+    compositions: [],
+    overrides: {},
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
+  {
+    id: "rule_smelt_iron",
+    code: "smelt_iron",
+    parent_rule_id: null,
+    inputs: [
+      { item_id: "item_ore", qty: 2 },
+      { item_id: "item_oil", qty: 1 },
+    ],
+    outputs: [{ item_id: "item_iron", qty: 2 }],
+    duration_game_sec: 2400,
+    formulas: {},
+    compositions: [],
+    overrides: {},
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
+  {
     id: "rule_save_seed",
     code: "save_seed",
     parent_rule_id: null,
@@ -346,6 +378,26 @@ export const buildingDefs: BuildingDef[] = [
     is_active: true,
     released_in_version: RELEASED_IN_VERSION,
   },
+  {
+    id: "bdef_mine",
+    code: "mine",
+    name: "礦場",
+    system_code: "industry",
+    allowed_rule_ids: ["rule_mine_ore"],
+    queue_limit: 1,
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
+  {
+    id: "bdef_smelter",
+    code: "smelter",
+    name: "冶煉廠",
+    system_code: "industry",
+    allowed_rule_ids: ["rule_smelt_iron"],
+    queue_limit: 1,
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
 ];
 
 /** 開局預放建築（倉 `bdef_silo` 不預放；D3 未定；**已拍板 D2** 含水井）。 */
@@ -383,4 +435,6 @@ export const METHOD_NAME: Record<string, string> = {
   method_bake_cake_default: "焗蛋糕",
   method_grow_cotton_default: "種棉花",
   method_weave_cloth_default: "紡紗織布",
+  method_mine_ore_default: "採礦",
+  method_smelt_iron_default: "煉鐵",
 };

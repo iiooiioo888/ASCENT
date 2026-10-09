@@ -10,5 +10,6 @@ describe("item-display-names", () => {
 
   it("資源不足文案", () => {
     expect(insufficientMaterialMessage("item_egg")).toBe("資源不足：雞蛋");
+    expect(insufficientMaterialMessage("item_oil")).toBe("資源不足：石油");
   });
 });
