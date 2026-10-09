@@ -13,14 +13,12 @@ import { LAND_PURCHASE_PENDING_KEY, type LandPurchaseUiState } from "../land-pur
 import { CommodityRow } from "./CommodityRow";
 import { ExpandFieldPanel } from "./ExpandFieldPanel";
 import { MarketRow } from "./MarketRow";
-import { RetailOfferCard } from "./RetailOfferCard";
-import { RetailShelfPanel } from "./RetailShelfPanel";
+import { RetailTradingPanel } from "./RetailTradingPanel";
 import type { RetailSnapshot } from "../retail";
 import { RETAIL_COPY } from "../retailCopy";
 import type { RetailShelfSnapshot } from "../retail-shelf";
-import { RETAIL_SHELF_COPY } from "../retailShelfCopy";
 
-type Tab = "sell" | "buy" | "commodities" | "expand" | "retail" | "shelf";
+type Tab = "sell" | "buy" | "commodities" | "expand" | "retail";
 
 export type MarketTabFocusRequest = { tab: Tab; seq: number };
 
@@ -121,13 +119,19 @@ export const MarketPanel = forwardRef(function MarketPanel(
     setTab(tabFocusRequest.tab);
   }, [tabFocusRequest]);
 
+  const retailPanelVisible = retailTabVisible || retailShelfTabVisible;
+
   useEffect(() => {
-    onRetailTabActiveChange?.(tab === "retail");
-    onRetailShelfTabActiveChange?.(tab === "shelf");
-    if (tab === "retail") onRetailTabOpen?.();
-    if (tab === "shelf") onRetailShelfTabOpen?.();
+    const retailTabOpen = tab === "retail";
+    onRetailTabActiveChange?.(retailTabOpen);
+    onRetailShelfTabActiveChange?.(retailTabOpen && retailShelfTabVisible);
+    if (retailTabOpen) {
+      onRetailTabOpen?.();
+      if (retailShelfTabVisible) onRetailShelfTabOpen?.();
+    }
   }, [
     tab,
+    retailShelfTabVisible,
     onRetailTabOpen,
     onRetailTabActiveChange,
     onRetailShelfTabOpen,
@@ -243,9 +247,7 @@ export const MarketPanel = forwardRef(function MarketPanel(
             ? LAND_COPY.subtitle
             : tab === "retail"
               ? RETAIL_COPY.hint
-              : tab === "shelf"
-                ? RETAIL_SHELF_COPY.hint
-                : MARKET_COPY.hint}
+              : MARKET_COPY.hint}
       </p>
 
       <p
@@ -306,7 +308,7 @@ export const MarketPanel = forwardRef(function MarketPanel(
             {LAND_COPY.tab}
           </button>
         ) : null}
-        {retailTabVisible ? (
+        {retailPanelVisible ? (
           <button
             type="button"
             role="tab"
@@ -318,18 +320,6 @@ export const MarketPanel = forwardRef(function MarketPanel(
             {RETAIL_COPY.tab}
           </button>
         ) : null}
-        {retailShelfTabVisible ? (
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "shelf"}
-            className={tab === "shelf" ? "active" : ""}
-            onClick={() => setTab("shelf")}
-            data-testid="market-tab-shelf"
-          >
-            {RETAIL_SHELF_COPY.tab}
-          </button>
-        ) : null}
       </div>
 
       {tab === "expand" && landPurchaseUi ? (
@@ -338,47 +328,23 @@ export const MarketPanel = forwardRef(function MarketPanel(
           pending={expandPending}
           onPurchase={() => onPurchaseField?.()}
         />
-      ) : tab === "shelf" ? (
-        <div className="market-table retail-shelf-table" role="tabpanel" data-testid="market-shelf-panel">
-          <RetailShelfPanel
-            shelf={retailShelf ?? null}
-            pendingEnabled={retailShelfPendingEnabled}
-            pendingFollowMarket={retailShelfPendingFollowMarket}
-            pendingAsk={retailShelfPendingAsk}
-            onToggleEnabled={(enabled) => onRetailShelfToggleEnabled?.(enabled)}
-            onToggleFollowMarket={(followMarket) => onRetailShelfToggleFollowMarket?.(followMarket)}
-            onSaveAsk={(ask) => onRetailShelfSaveAsk?.(ask)}
-          />
-        </div>
       ) : tab === "retail" ? (
         <div className="market-table retail-table" role="tabpanel" data-testid="market-retail-panel">
-          {!retail ? (
-            <p className="market-loading">{RETAIL_COPY.loading}</p>
-          ) : (
-            <>
-              <p className="commodity-panel-subtitle">{RETAIL_COPY.subtitle}</p>
-              <p className="banner-muted retail-stock-banner" data-testid="retail-bread-stock">
-                {RETAIL_COPY.stockBanner(retail.breadQty)}
-              </p>
-              {retail.breadQty <= 0 ? (
-                <p className="market-empty" data-testid="retail-empty-stock">{RETAIL_COPY.emptyStock}</p>
-              ) : null}
-              {retail.offers.length === 0 ? (
-                <p className="market-empty" data-testid="retail-empty-offers">{RETAIL_COPY.emptyOffers}</p>
-              ) : (
-                retail.offers.map((offer) => (
-                  <RetailOfferCard
-                    key={offer.offerId}
-                    offer={offer}
-                    breadQty={retail.breadQty}
-                    pending={pendingKeys.has(retailPendingKey(offer.offerId))}
-                    onAccept={() => onRetailAccept?.(offer.offerId)}
-                  />
-                ))
-              )}
-              <p className="commodity-disclaimer banner-muted">{RETAIL_COPY.haulNote}</p>
-            </>
-          )}
+          <RetailTradingPanel
+            retail={retail ?? null}
+            retailVisible={retailTabVisible}
+            shelf={retailShelf ?? null}
+            shelfVisible={retailShelfTabVisible}
+            pendingKeys={pendingKeys}
+            retailPendingKeyForOffer={retailPendingKey}
+            shelfPendingEnabled={retailShelfPendingEnabled}
+            shelfPendingFollowMarket={retailShelfPendingFollowMarket}
+            shelfPendingAsk={retailShelfPendingAsk}
+            onRetailAccept={onRetailAccept}
+            onShelfToggleEnabled={onRetailShelfToggleEnabled}
+            onShelfToggleFollowMarket={onRetailShelfToggleFollowMarket}
+            onShelfSaveAsk={onRetailShelfSaveAsk}
+          />
         </div>
       ) : tab === "commodities" ? (
         <div className="market-table commodity-table" role="tabpanel" data-testid="market-commodities-panel">

@@ -789,6 +789,45 @@ dialog.offline-summary-dialog::backdrop {
   color: #e8d9b8;
   font-variant-numeric: tabular-nums;
 }
+.retail-trading-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.retail-panel-section-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f0e2c8;
+  letter-spacing: 0.02em;
+}
+.retail-shelf-section {
+  padding-bottom: 0.75rem;
+  border-bottom: 2px dashed rgba(201, 164, 106, 0.35);
+}
+.retail-orders-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.retail-slot-summary {
+  margin: 0;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.retail-slot-empty {
+  padding: 0.65rem 0.75rem;
+  border-style: dashed;
+  opacity: 0.75;
+}
+.retail-slot-empty-label {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #c9b896;
+}
+.retail-offer-card.expired {
+  opacity: 0.65;
+}
 .retail-stock-banner {
   margin: 0.35rem 0 0.6rem;
   font-size: 0.9rem;
