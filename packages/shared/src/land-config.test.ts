@@ -14,9 +14,10 @@ import {
 } from "./land-config";
 
 describe("land-config", () => {
-  it("開局 1 田時加購價為 10", () => {
+  it("加購田價：第二塊 10、第三塊 18", () => {
     expect(fieldPurchasePriceGold(1)).toBe(10);
-    expect(fieldPurchasePriceGold(2)).toBeNull();
+    expect(fieldPurchasePriceGold(2)).toBe(18);
+    expect(fieldPurchasePriceGold(3)).toBeNull();
   });
 
   it("countPlayerFields", () => {
@@ -78,7 +79,8 @@ describe("land-config", () => {
   it("allowsAnotherInstanceOfDef", () => {
     expect(allowsAnotherInstanceOfDef(FIELD_BUILDING_DEF_ID, 0)).toBe(true);
     expect(allowsAnotherInstanceOfDef(FIELD_BUILDING_DEF_ID, 1)).toBe(true);
-    expect(allowsAnotherInstanceOfDef(FIELD_BUILDING_DEF_ID, 2)).toBe(false);
+    expect(allowsAnotherInstanceOfDef(FIELD_BUILDING_DEF_ID, 2)).toBe(true);
+    expect(allowsAnotherInstanceOfDef(FIELD_BUILDING_DEF_ID, 3)).toBe(false);
     expect(allowsAnotherInstanceOfDef("bdef_mill", 0)).toBe(true);
     expect(allowsAnotherInstanceOfDef("bdef_mill", 1)).toBe(false);
   });

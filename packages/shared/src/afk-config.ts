@@ -6,6 +6,7 @@ export const DEFAULT_AUTO_METHOD_BY_BUILDING_DEF_ID: Record<string, string> = {
   bdef_well: "method_draw_water_default",
   bdef_ranch: "method_raise_livestock_default",
   bdef_food_factory: "method_bake_cake_default",
+  bdef_textile_mill: "method_weave_cloth_default",
   bdef_mine: "method_mine_iron_default",
   bdef_quarry: "method_quarry_stone_default",
   bdef_forest: "method_fell_timber_default",

@@ -58,6 +58,9 @@ export const items: ItemDef[] = [
   { id: "item_egg", code: "egg", type_id: "it_produce", layer: "P", derived_tier: 1, is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "item_milk", code: "milk", type_id: "it_produce", layer: "P", derived_tier: 1, is_active: true, released_in_version: RELEASED_IN_VERSION },
   { id: "item_cake", code: "cake", type_id: "it_produce", layer: "P", derived_tier: 2, is_active: true, released_in_version: RELEASED_IN_VERSION },
+  { id: "item_seed_cotton", code: "seed_cotton", type_id: "it_crop", layer: "T", derived_tier: 1, is_active: true, released_in_version: RELEASED_IN_VERSION },
+  { id: "item_cotton", code: "cotton", type_id: "it_crop", layer: "T", derived_tier: 1, is_active: true, released_in_version: RELEASED_IN_VERSION },
+  { id: "item_cloth", code: "cloth", type_id: "it_industrial", layer: "P", derived_tier: 1, is_active: true, released_in_version: RELEASED_IN_VERSION },
   // TODO(product): 金幣顯示名／圖示；不進生產 DAG。
   {
     id: ITEM_GOLD_ID,
@@ -209,6 +212,35 @@ export const rules: ProductionRuleDef[] = [
     released_in_version: RELEASED_IN_VERSION,
   },
   {
+    id: "rule_grow_cotton",
+    code: "grow_cotton",
+    parent_rule_id: null,
+    inputs: [
+      { key: "seed", item_id: "item_seed_cotton", qty: 1 },
+      { key: "water", item_id: "item_water", qty: 1 },
+    ],
+    outputs: [{ item_id: "item_cotton", qty: 3 }],
+    duration_game_sec: 3600,
+    formulas: {},
+    compositions: [],
+    overrides: {},
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
+  {
+    id: "rule_weave_cloth",
+    code: "weave_cloth",
+    parent_rule_id: null,
+    inputs: [{ item_id: "item_cotton", qty: 3 }],
+    outputs: [{ item_id: "item_cloth", qty: 1 }],
+    duration_game_sec: 1800,
+    formulas: {},
+    compositions: [],
+    overrides: {},
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
+  {
     id: "rule_save_seed",
     code: "save_seed",
     parent_rule_id: null,
@@ -229,7 +261,7 @@ export const buildingDefs: BuildingDef[] = [
     code: "field",
     name: "田",
     system_code: "agriculture",
-    allowed_rule_ids: ["rule_grow_wheat", "rule_save_seed"],
+    allowed_rule_ids: ["rule_grow_wheat", "rule_grow_cotton", "rule_save_seed"],
     queue_limit: 1,
     is_active: true,
     released_in_version: RELEASED_IN_VERSION,
@@ -304,6 +336,16 @@ export const buildingDefs: BuildingDef[] = [
     is_active: true,
     released_in_version: RELEASED_IN_VERSION,
   },
+  {
+    id: "bdef_textile_mill",
+    code: "textile_mill",
+    name: "紡織廠",
+    system_code: "industry",
+    allowed_rule_ids: ["rule_weave_cloth"],
+    queue_limit: 1,
+    is_active: true,
+    released_in_version: RELEASED_IN_VERSION,
+  },
 ];
 
 /** 開局預放建築（倉 `bdef_silo` 不預放；D3 未定；**已拍板 D2** 含水井）。 */
@@ -339,4 +381,6 @@ export const METHOD_NAME: Record<string, string> = {
   method_save_seed_default: "留種",
   method_raise_livestock_default: "飼養禽畜",
   method_bake_cake_default: "焗蛋糕",
+  method_grow_cotton_default: "種棉花",
+  method_weave_cloth_default: "紡紗織布",
 };

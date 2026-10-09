@@ -55,6 +55,10 @@ describe("afk-config", () => {
     expect(defaultAutoMethodIdForBuilding("bdef_food_factory")).toBe("method_bake_cake_default");
   });
 
+  it("紡織廠預設自動配方", () => {
+    expect(defaultAutoMethodIdForBuilding("bdef_textile_mill")).toBe("method_weave_cloth_default");
+  });
+
   it("start 失敗訊息對齊暫停文案", () => {
     expect(mapStartFailureToAutoPauseReason("人手不足")).toBe(AFK_AUTO_PAUSE_REASON.WORKFORCE);
     expect(mapStartFailureToAutoPauseReason("銅錠不足")).toBe(AFK_AUTO_PAUSE_REASON.GOLD);

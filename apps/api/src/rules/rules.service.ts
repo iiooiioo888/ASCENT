@@ -67,6 +67,11 @@ export class RulesService {
         name: "食品廠蛋糕支線",
         steps: ["rule_mill_flour", "rule_raise_livestock", "rule_bake_cake"],
       },
+      {
+        id: "loop_textile_cloth",
+        name: "紡織布支線",
+        steps: ["rule_grow_cotton", "rule_weave_cloth"],
+      },
     ];
   }
 

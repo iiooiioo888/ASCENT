@@ -28,6 +28,8 @@ export const DEFAULT_MARKET_PRICES: MarketPriceBook = {
     item_egg: 3,
     item_milk: 4,
     item_cake: 28,
+    item_cotton: 2,
+    item_cloth: 12,
     item_iron_ingot: 6,
     item_copper_ore: 2,
     item_silver_ore: 5,
@@ -49,6 +51,7 @@ export const DEFAULT_MARKET_PRICES: MarketPriceBook = {
   },
   buy: {
     item_seed_wheat: 3,
+    item_seed_cotton: 3,
     item_water: 1,
     item_coal: 2,
     item_iron_ore: 2,
