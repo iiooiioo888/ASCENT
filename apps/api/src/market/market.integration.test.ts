@@ -44,10 +44,17 @@ describe("市集（整合）", () => {
     });
   }
 
-  it("種子後開局銅錠為 10", async () => {
+  it("種子後開局銅錠為 50000", async () => {
     const res = await market.getMarket();
     expect(res.settlementCurrencyItemId).toBe(ITEM_SETTLEMENT_CURRENCY_ID);
-    expect(res.gold).toBe(10);
+    expect(res.gold).toBe(50_000);
+  });
+
+  it("既有銅錠存量不因開局常數被覆寫", async () => {
+    await setQty(ITEM_SETTLEMENT_CURRENCY_ID, 123);
+    const res = await market.getMarket();
+    expect(res.gold).toBe(123);
+    expect(res.holdings[ITEM_SETTLEMENT_CURRENCY_ID]).toBe(123);
   });
 
   it("GET 摘要回傳價目與結算銅錠", async () => {

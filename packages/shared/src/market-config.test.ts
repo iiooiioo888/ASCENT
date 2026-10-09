@@ -3,7 +3,7 @@ import {
   DEFAULT_MARKET_PRICES,
   ITEM_GOLD_ID,
   ITEM_SETTLEMENT_CURRENCY_ID,
-  STARTING_COPPER_INGOT,
+  STARTING_COPPER,
   marketPricesFromDb,
   parseTradeQuantity,
   resolveMarketUnitPrice,
@@ -18,8 +18,8 @@ describe("market-config", () => {
     expect(parseTradeQuantity(3)).toBe(3);
   });
 
-  it("開局銅錠已拍板為 10", () => {
-    expect(STARTING_COPPER_INGOT).toBe(10);
+  it("開局銅錠已拍板為 50000", () => {
+    expect(STARTING_COPPER).toBe(50_000);
     expect(ITEM_SETTLEMENT_CURRENCY_ID).toBe("item_copper_ingot");
   });
 
