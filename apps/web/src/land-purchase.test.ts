@@ -6,7 +6,7 @@ import type { GameState } from "./types";
 describe("evaluateLandPurchaseUi", () => {
   const baseStats = {
     fieldCount: 1,
-    fieldCap: 2,
+    fieldCap: 3,
     slottedBuildingCount: 5,
     buildingSlotCap: 6,
   };
@@ -25,7 +25,7 @@ describe("evaluateLandPurchaseUi", () => {
   });
 
   it("blocks when field cap reached", () => {
-    const ui = evaluateLandPurchaseUi({ ...baseStats, fieldCount: 2 }, 100);
+    const ui = evaluateLandPurchaseUi({ ...baseStats, fieldCount: 3 }, 100);
     expect(ui.canBuy).toBe(false);
     expect(ui.blockReason).toBe(LAND_COPY.fieldAtCap);
     expect(ui.priceGold).toBeNull();

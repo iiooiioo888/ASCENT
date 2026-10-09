@@ -1,6 +1,12 @@
 import { ITEM_GOLD_ID, ITEM_OIL_ID, playableBuildingDefs, playableItems } from "@ascent/shared";
 import { describe, expect, it } from "vitest";
-import { INDUSTRY_TABS, industryOfBuildingDef, industryOfItem, isIndustryId } from "./industries";
+import {
+  createIndustryModel,
+  INDUSTRY_TABS,
+  industryOfBuildingDef,
+  industryOfItem,
+  isIndustryId,
+} from "./industries";
 
 describe("industry tabs", () => {
   it("maps every playable building to exactly one tab", () => {
@@ -15,6 +21,8 @@ describe("industry tabs", () => {
     expect(industryOfBuildingDef("bdef_trading_post")).toBe("agriculture");
     expect(industryOfBuildingDef("bdef_well")).toBe("agriculture");
     expect(industryOfBuildingDef("bdef_mining_pit")).toBe("mining");
+    expect(industryOfBuildingDef("bdef_mine")).toBe("mining");
+    expect(industryOfBuildingDef("bdef_smelter")).toBe("mining");
     expect(industryOfBuildingDef("bdef_forest")).toBe("timber");
     expect(industryOfBuildingDef("bdef_kiln")).toBe("chemical");
     expect(industryOfBuildingDef("bdef_workshop")).toBe("industry");
@@ -31,6 +39,7 @@ describe("industry tabs", () => {
     expect(industryOfItem("item_iron_ore")).toBe("mining");
     expect(industryOfItem("item_coal")).toBe("mining");
     expect(industryOfItem("item_steel")).toBe("mining");
+    expect(industryOfItem("item_ore")).toBe("mining");
     expect(industryOfItem("item_log")).toBe("timber");
     expect(industryOfItem("item_fertilizer")).toBe("chemical");
     expect(industryOfItem("item_charcoal")).toBe("chemical");
@@ -38,6 +47,7 @@ describe("industry tabs", () => {
     expect(industryOfItem("item_engine")).toBe("industry");
     expect(industryOfItem("item_cake")).toBe("industry");
     expect(industryOfBuildingDef("bdef_food_factory")).toBe("industry");
+    expect(industryOfBuildingDef("bdef_textile_mill")).toBe("industry");
     expect(industryOfItem("item_steam")).toBe("energy");
     expect(industryOfItem(ITEM_GOLD_ID)).toBeNull();
     expect(industryOfItem(ITEM_OIL_ID)).toBeNull();
@@ -45,5 +55,26 @@ describe("industry tabs", () => {
       .map((item) => item.id)
       .filter((id) => id !== ITEM_GOLD_ID && id !== ITEM_OIL_ID && industryOfItem(id) == null);
     expect(unmapped).toEqual([]);
+  });
+});
+
+describe("createIndustryModel", () => {
+  it("prefers systemCode from GET /state buildingDefs over catalog", () => {
+    const model = createIndustryModel([
+      { id: "bdef_mine", code: "mine", systemCode: "mining" },
+      { id: "bdef_food_factory", code: "food_factory", system_code: "industry" },
+    ]);
+    expect(model.industryOfBuildingDef("bdef_mine")).toBe("mining");
+    expect(model.industryOfBuildingDef("bdef_food_factory")).toBe("industry");
+  });
+
+  it("falls back to catalog when API omits systemCode", () => {
+    const model = createIndustryModel([{ id: "bdef_smelter", code: "smelter" }]);
+    expect(model.industryOfBuildingDef("bdef_smelter")).toBe("mining");
+  });
+
+  it("does not crash on empty or partial buildingDefs", () => {
+    expect(createIndustryModel([]).industryOfBuildingDef("bdef_field")).toBe("agriculture");
+    expect(createIndustryModel([{ id: "bdef_custom" }]).industryOfBuildingDef("bdef_custom")).toBe("agriculture");
   });
 });

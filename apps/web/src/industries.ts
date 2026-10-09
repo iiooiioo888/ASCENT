@@ -12,9 +12,17 @@ export const INDUSTRY_TABS = [
 
 export type IndustryId = (typeof INDUSTRY_TABS)[number]["id"];
 
+/** GET /state `buildingDefs` 可用欄位（API 為 camelCase，亦容忍 snake_case）。 */
+export type BuildingDefIndustrySource = {
+  id: string;
+  code?: string;
+  systemCode?: string;
+  system_code?: string;
+};
+
 const INDUSTRY_IDS = new Set<string>(INDUSTRY_TABS.map((tab) => tab.id));
 
-const SYSTEM_BY_BUILDING_DEF = new Map(
+const CATALOG_SYSTEM_BY_BUILDING_DEF = new Map(
   playableBuildingDefs.map((def) => [def.id, def.system_code] as const),
 );
 
@@ -22,36 +30,33 @@ export function isIndustryId(value: string): value is IndustryId {
   return INDUSTRY_IDS.has(value);
 }
 
-/** 目錄裡的建築對到所屬產業。未知 id 回農業，避免卡從畫面上消失。 */
-export function industryOfBuildingDef(buildingDefId: string): IndustryId {
-  const system = SYSTEM_BY_BUILDING_DEF.get(buildingDefId);
+function readSystemCode(source: BuildingDefIndustrySource | undefined): string | undefined {
+  if (!source) return undefined;
+  const raw = source.systemCode ?? source.system_code;
+  if (typeof raw !== "string" || raw.trim() === "") return undefined;
+  return raw.trim();
+}
+
+function resolveSystemCode(
+  buildingDefId: string,
+  defById: Map<string, BuildingDefIndustrySource>,
+): string | undefined {
+  const fromApi = readSystemCode(defById.get(buildingDefId));
+  if (fromApi) return fromApi;
+  return CATALOG_SYSTEM_BY_BUILDING_DEF.get(buildingDefId);
+}
+
+function systemCodeToIndustry(system: string | undefined): IndustryId {
   if (system && isIndustryId(system)) return system;
   return "agriculture";
 }
 
-export function inIndustry<T extends { id?: string; buildingDefId?: string }>(
-  row: T,
-  industry: IndustryId,
-): boolean {
-  const defId = row.buildingDefId ?? row.id;
-  if (!defId) return false;
-  return industryOfBuildingDef(defId) === industry;
-}
-
-const ITEM_INDUSTRY = buildItemIndustry();
-
-/** 產品歸到產出它的產業。金錢（item_gold）與大宗不進任何產業卡。 */
-export function industryOfItem(itemId: string): IndustryId | null {
-  if (itemId === ITEM_GOLD_ID || itemId === ITEM_OIL_ID) return null;
-  return ITEM_INDUSTRY.get(itemId) ?? null;
-}
-
-function buildItemIndustry(): Map<string, IndustryId> {
+function buildItemIndustry(industryForDef: (buildingDefId: string) => IndustryId): Map<string, IndustryId> {
   const ruleIndustry = new Map<string, IndustryId>();
   for (const def of playableBuildingDefs) {
-    if (!isIndustryId(def.system_code)) continue;
+    const industry = industryForDef(def.id);
     for (const ruleId of def.allowed_rule_ids) {
-      if (!ruleIndustry.has(ruleId)) ruleIndustry.set(ruleId, def.system_code);
+      if (!ruleIndustry.has(ruleId)) ruleIndustry.set(ruleId, industry);
     }
   }
   const itemIndustry = new Map<string, IndustryId>();
@@ -61,6 +66,50 @@ function buildItemIndustry(): Map<string, IndustryId> {
     for (const output of rule.outputs) {
       if (!itemIndustry.has(output.item_id)) itemIndustry.set(output.item_id, industry);
     }
+    for (const input of rule.inputs) {
+      if (!input.item_id.includes("_seed_")) continue;
+      if (!itemIndustry.has(input.item_id)) itemIndustry.set(input.item_id, industry);
+    }
   }
   return itemIndustry;
 }
+
+export type IndustryModel = {
+  industryOfBuildingDef: (buildingDefId: string) => IndustryId;
+  inIndustry: <T extends { id?: string; buildingDefId?: string }>(row: T, industry: IndustryId) => boolean;
+  industryOfItem: (itemId: string) => IndustryId | null;
+};
+
+/** 依 state.buildingDefs 的 systemCode 分組；缺欄時回退 shared 目錄。 */
+export function createIndustryModel(apiBuildingDefs: BuildingDefIndustrySource[] = []): IndustryModel {
+  const defById = new Map(apiBuildingDefs.map((def) => [def.id, def]));
+
+  function industryOfBuildingDef(buildingDefId: string): IndustryId {
+    return systemCodeToIndustry(resolveSystemCode(buildingDefId, defById));
+  }
+
+  function inIndustry<T extends { id?: string; buildingDefId?: string }>(
+    row: T,
+    industry: IndustryId,
+  ): boolean {
+    const defId = row.buildingDefId ?? row.id;
+    if (!defId) return false;
+    return industryOfBuildingDef(defId) === industry;
+  }
+
+  const itemIndustry = buildItemIndustry(industryOfBuildingDef);
+
+  function industryOfItem(itemId: string): IndustryId | null {
+    if (itemId === ITEM_GOLD_ID || itemId === ITEM_OIL_ID) return null;
+    return itemIndustry.get(itemId) ?? null;
+  }
+
+  return { industryOfBuildingDef, inIndustry, industryOfItem };
+}
+
+const defaultModel = createIndustryModel();
+
+/** 無 API 上下文時使用 shared 目錄（單元測試與靜態推導）。 */
+export const industryOfBuildingDef = defaultModel.industryOfBuildingDef;
+export const inIndustry = defaultModel.inIndustry;
+export const industryOfItem = defaultModel.industryOfItem;

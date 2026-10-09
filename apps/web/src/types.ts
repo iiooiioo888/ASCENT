@@ -57,7 +57,13 @@ export type GameState = {
   inventory: InvRow[];
   buildings: Building[];
   methods: Method[];
-  buildingDefs: { id: string; name: string; code: string }[];
+  buildingDefs: {
+    id: string;
+    name: string;
+    code: string;
+    systemCode?: string;
+    system_code?: string;
+  }[];
   workforce?: WorkforceSnapshot;
   opsCosts?: OpsCostsSnapshot;
   environment?: EnvironmentState;
