@@ -14,6 +14,8 @@ export const ITEM_DISPLAY_NAME: Record<string, string> = {
   item_seed_cotton: "棉花種子",
   item_cotton: "棉花",
   item_cloth: "布",
+  item_ore: "礦石",
+  item_iron: "鐵錠",
   item_gold: "金幣",
   item_oil: "石油",
 };

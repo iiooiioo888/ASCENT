@@ -14,7 +14,7 @@ describe("產業擴充目錄", () => {
   it("不改寫農業切片的物品與規則條數", () => {
     expect(items.some((i) => i.id === "item_iron_ore")).toBe(false);
     expect(rules.some((r) => r.id === "rule_mine_iron")).toBe(false);
-    expect(generateMethods(rules).length).toBeLessThanOrEqual(13);
+    expect(generateMethods(rules).length).toBeLessThanOrEqual(16);
   });
 
   it("可玩目錄通過驗證，且飼料有肥料下游", () => {
@@ -42,11 +42,11 @@ describe("產業擴充目錄", () => {
     expect(smeltGold.outputs[0]?.item_id).toBe("item_gold_ingot");
     expect(smeltGold.outputs.some((o) => o.item_id === "item_gold")).toBe(false);
     expect(playableItems.some((i) => i.id === "item_gold_ingot")).toBe(true);
-    const mineBuilding = industryBuildingDefs.find((b) => b.id === "bdef_mine")!;
+    const mineBuilding = industryBuildingDefs.find((b) => b.id === "bdef_mining_pit")!;
     expect(mineBuilding.allowed_rule_ids).toEqual(
       expect.arrayContaining(["rule_mine_silver", "rule_mine_gold"]),
     );
-    const smelter = industryBuildingDefs.find((b) => b.id === "bdef_smelter")!;
+    const smelter = industryBuildingDefs.find((b) => b.id === "bdef_smelting_works")!;
     expect(smelter.allowed_rule_ids).toEqual(
       expect.arrayContaining(["rule_smelt_silver", "rule_smelt_gold"]),
     );

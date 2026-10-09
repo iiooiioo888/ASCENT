@@ -29,14 +29,16 @@ describe("land-config", () => {
     expect(countPlayerFields(buildings)).toBe(2);
   });
 
-  it("產業擴充不佔農業槽，槽滿後仍可放置", () => {
-    expect(buildingCountsTowardSlotCap("bdef_mine")).toBe(false);
+  it("P4 礦場／冶煉廠佔槽；產業擴充礦坑不佔槽", () => {
+    expect(buildingCountsTowardSlotCap("bdef_mine")).toBe(true);
+    expect(buildingCountsTowardSlotCap("bdef_smelter")).toBe(true);
+    expect(buildingCountsTowardSlotCap("bdef_mining_pit")).toBe(false);
     expect(buildingCountsTowardSlotCap("bdef_machine_shop")).toBe(false);
     const buildings = [
       { buildingDefId: FIELD_BUILDING_DEF_ID },
       { buildingDefId: "bdef_mill" },
-      { buildingDefId: "bdef_mine" },
-      { buildingDefId: "bdef_smelter" },
+      { buildingDefId: "bdef_mining_pit" },
+      { buildingDefId: "bdef_smelting_works" },
     ];
     expect(countBuildingsOccupyingSlots(buildings)).toBe(2);
     const atCap = Array.from({ length: PLAYER_BUILDING_SLOT_CAP }, () => ({

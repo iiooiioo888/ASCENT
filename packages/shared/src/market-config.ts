@@ -30,6 +30,8 @@ export const DEFAULT_MARKET_PRICES: MarketPriceBook = {
     item_cake: 28,
     item_cotton: 2,
     item_cloth: 12,
+    item_ore: 2,
+    item_iron: 15,
     item_iron_ingot: 6,
     item_copper_ore: 2,
     item_silver_ore: 5,

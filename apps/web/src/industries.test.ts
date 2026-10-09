@@ -14,7 +14,7 @@ describe("industry tabs", () => {
   it("keeps commerce buildings on the agriculture tab", () => {
     expect(industryOfBuildingDef("bdef_trading_post")).toBe("agriculture");
     expect(industryOfBuildingDef("bdef_well")).toBe("agriculture");
-    expect(industryOfBuildingDef("bdef_mine")).toBe("mining");
+    expect(industryOfBuildingDef("bdef_mining_pit")).toBe("mining");
     expect(industryOfBuildingDef("bdef_forest")).toBe("timber");
     expect(industryOfBuildingDef("bdef_kiln")).toBe("chemical");
     expect(industryOfBuildingDef("bdef_workshop")).toBe("industry");

@@ -39,11 +39,11 @@ function industryState(): GameState {
   return {
     time: { displayGameTime: 3600, timeScale: 60, serverRealTime: "2026-01-01T00:00:00.000Z" },
     inventory: [inv("item_wheat", "3"), inv("item_iron_ore", "2"), inv("item_log", "1"), inv("item_copper_ingot", "10")],
-    buildings: [building("pb_field", "bdef_field", "田"), building("pb_mine", "bdef_mine", "礦坑")],
+    buildings: [building("pb_field", "bdef_field", "田"), building("pb_mine", "bdef_mining_pit", "礦坑")],
     methods: [],
     buildingDefs: [
       { id: "bdef_field", name: "田", code: "field" },
-      { id: "bdef_mine", name: "礦坑", code: "mine" },
+      { id: "bdef_mining_pit", name: "礦坑", code: "mining_pit" },
       { id: "bdef_forest", name: "林地", code: "forest" },
       { id: "bdef_kiln", name: "窯", code: "kiln" },
       { id: "bdef_workshop", name: "工坊", code: "workshop" },

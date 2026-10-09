@@ -129,8 +129,8 @@ export const industryRules: ProductionRuleDef[] = [
   rule("rule_dig_sand", "dig_sand", [], [io("item_sand", 2)], 1800),
   rule("rule_fell_timber", "fell_timber", [], [io("item_log", 2)], 2400),
   rule(
-    "rule_smelt_iron",
-    "smelt_iron",
+    "rule_smelt_iron_coal",
+    "smelt_iron_coal",
     [io("item_iron_ore", 2), io("item_coal", 1)],
     [io("item_iron_ingot", 1)],
     2400,
@@ -247,7 +247,7 @@ export const industryRules: ProductionRuleDef[] = [
 ];
 
 export const industryBuildingDefs: BuildingDef[] = [
-  building("bdef_mine", "mine", "礦坑", "mining", [
+  building("bdef_mining_pit", "mining_pit", "礦坑", "mining", [
     "rule_mine_iron",
     "rule_mine_copper",
     "rule_mine_silver",
@@ -261,8 +261,8 @@ export const industryBuildingDefs: BuildingDef[] = [
     "rule_dig_sand",
   ]),
   building("bdef_forest", "forest", "林地", "timber", ["rule_fell_timber"]),
-  building("bdef_smelter", "smelter", "冶煉爐", "mining", [
-    "rule_smelt_iron",
+  building("bdef_smelting_works", "smelting_works", "冶煉爐", "mining", [
+    "rule_smelt_iron_coal",
     "rule_smelt_iron_charcoal",
     "rule_smelt_copper",
     "rule_smelt_silver",
@@ -312,7 +312,7 @@ const METHOD_LABELS: Record<string, string> = {
   dig_clay: "挖黏土",
   dig_sand: "挖砂",
   fell_timber: "伐木",
-  smelt_iron: "煉鐵",
+  smelt_iron_coal: "煉鐵",
   smelt_iron_charcoal: "木炭煉鐵",
   smelt_copper: "煉銅",
   smelt_silver: "煉銀",

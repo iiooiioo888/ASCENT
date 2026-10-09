@@ -49,6 +49,8 @@ export const ITEM_META: Record<string, { name: string; icon: string }> = {
   item_machine: { name: "機械", icon: "🏭" },
   item_engine: { name: "蒸汽機", icon: "🚂" },
   item_fertilizer: { name: "肥料", icon: "🌱" },
+  item_ore: { name: "礦石", icon: "🪨" },
+  item_iron: { name: "鐵錠", icon: "🔩" },
 };
 
 /** P3-5: method display names from shared catalog (avoid drift). */
@@ -63,10 +65,12 @@ export const BUILDING_ICON: Record<string, string> = {
   bdef_ranch: "🐄",
   bdef_food_factory: "🧁",
   bdef_trading_post: "🏪",
+  bdef_mining_pit: "⛏️",
   bdef_mine: "⛏️",
   bdef_quarry: "⛰️",
   bdef_forest: "🌲",
-  bdef_smelter: "🔥",
+  bdef_smelting_works: "🔥",
+  bdef_smelter: "⚒️",
   bdef_kiln: "🏺",
   bdef_chem_works: "⚗️",
   bdef_workshop: "🔨",

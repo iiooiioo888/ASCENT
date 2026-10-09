@@ -55,5 +55,10 @@ describe("ops-depth-config", () => {
     expect(costs.wageByBuilding.bdef_textile_mill).toBe(2);
     expect(costs.haulByBuilding.bdef_textile_mill).toBe(1);
     expect(costs.sellTransport.item_cloth).toBe(1);
+    expect(costs.wageByBuilding.bdef_mine).toBe(2);
+    expect(costs.haulByBuilding.bdef_mine).toBe(0);
+    expect(costs.wageByBuilding.bdef_smelter).toBe(3);
+    expect(costs.haulByBuilding.bdef_smelter).toBe(2);
+    expect(costs.sellTransport.item_iron).toBe(1);
   });
 });
