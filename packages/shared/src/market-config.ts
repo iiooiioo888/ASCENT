@@ -6,10 +6,12 @@ export const ITEM_SETTLEMENT_CURRENCY_ID = ITEM_COPPER_INGOT_ID;
 export const SETTLEMENT_INSUFFICIENT_MESSAGE = "銅錠不足";
 export const ITEM_CURRENCY_TYPE_ID = "it_currency";
 
-/** 已拍板：開局 10 銅錠（原金錢餘額 1:1 語意）。 */
-export const STARTING_COPPER_INGOT = 10;
-/** @deprecated 使用 {@link STARTING_COPPER_INGOT} */
-export const STARTING_GOLD = STARTING_COPPER_INGOT;
+/** 已拍板（LOCKED）：開局 50,000 銅錠（原金錢餘額 1:1 語意）。 */
+export const STARTING_COPPER = 50_000;
+/** @deprecated 使用 {@link STARTING_COPPER} */
+export const STARTING_COPPER_INGOT = STARTING_COPPER;
+/** @deprecated 使用 {@link STARTING_COPPER} */
+export const STARTING_GOLD = STARTING_COPPER;
 
 export type MarketPriceBook = {
   sell: Record<string, number>;

@@ -3,7 +3,7 @@ import {
   ITEM_CURRENCY_TYPE_ID,
   ITEM_COPPER_INGOT_ID,
   ITEM_GOLD_ID,
-  STARTING_COPPER_INGOT,
+  STARTING_COPPER,
 } from "./market-config";
 import type { BuildingDef, ItemDef, ItemPropertyDef, ItemTypeDef, ProductionRuleDef } from "./types";
 
@@ -418,7 +418,7 @@ export const startingInventory: Record<string, number> = {
   item_feed: 0,
   item_dough: 0,
   item_bread: 0,
-  [ITEM_COPPER_INGOT_ID]: STARTING_COPPER_INGOT,
+  [ITEM_COPPER_INGOT_ID]: STARTING_COPPER,
 };
 
 export const METHOD_NAME: Record<string, string> = {
