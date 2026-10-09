@@ -13,10 +13,10 @@ describe("ops-depth-config", () => {
     const depth = opsDepthFromDb(null);
     expect(depth.workforce.startingHired).toBe(1);
     expect(depth.workforce.maxHired).toBe(8);
-    expect(depth.workforce.hireCostGold).toBe(8);
+    expect(depth.workforce.hireCostGold).toBe(80);
     expect(depth.workforce.laborCostPerStart).toBe(1);
-    expect(wageGoldForBuilding("bdef_field", depth)).toBe(1);
-    expect(wageGoldForBuilding("bdef_mill", depth)).toBe(2);
+    expect(wageGoldForBuilding("bdef_field", depth)).toBe(10);
+    expect(wageGoldForBuilding("bdef_mill", depth)).toBe(20);
     expect(haulGoldForBuilding("bdef_mill", depth)).toBe(1);
     expect(haulGoldForBuilding("bdef_field", depth)).toBe(0);
     expect(depth.sellTransport.item_bread).toBe(1);
@@ -29,7 +29,7 @@ describe("ops-depth-config", () => {
       sellTransport: { item_bread: -2 },
     });
     expect(depth.workforce.hireCostGold).toBe(DEFAULT_OPS_DEPTH.workforce.hireCostGold);
-    expect(depth.wages.byBuildingId.bdef_field).toBe(1);
+    expect(depth.wages.byBuildingId.bdef_field).toBe(10);
     expect(depth.sellTransport.item_bread).toBe(1);
   });
 
@@ -44,20 +44,20 @@ describe("ops-depth-config", () => {
 
   it("opsCosts 快照含 haul／sellTransport 供預覽", () => {
     const costs = opsCostsFromDepth();
-    expect(costs.hireCostGold).toBe(8);
+    expect(costs.hireCostGold).toBe(80);
     expect(costs.laborCostPerStart).toBe(1);
-    expect(costs.wageByBuilding.bdef_oven).toBe(2);
+    expect(costs.wageByBuilding.bdef_oven).toBe(20);
     expect(costs.haulByBuilding.bdef_oven).toBe(2);
     expect(costs.sellTransport.item_bread).toBe(1);
-    expect(costs.wageByBuilding.bdef_food_factory).toBe(3);
+    expect(costs.wageByBuilding.bdef_food_factory).toBe(30);
     expect(costs.haulByBuilding.bdef_food_factory).toBe(2);
     expect(costs.sellTransport.item_cake).toBe(1);
-    expect(costs.wageByBuilding.bdef_textile_mill).toBe(2);
+    expect(costs.wageByBuilding.bdef_textile_mill).toBe(20);
     expect(costs.haulByBuilding.bdef_textile_mill).toBe(1);
     expect(costs.sellTransport.item_cloth).toBe(1);
-    expect(costs.wageByBuilding.bdef_mine).toBe(2);
+    expect(costs.wageByBuilding.bdef_mine).toBe(20);
     expect(costs.haulByBuilding.bdef_mine).toBe(0);
-    expect(costs.wageByBuilding.bdef_smelter).toBe(3);
+    expect(costs.wageByBuilding.bdef_smelter).toBe(30);
     expect(costs.haulByBuilding.bdef_smelter).toBe(2);
     expect(costs.sellTransport.item_iron).toBe(1);
   });

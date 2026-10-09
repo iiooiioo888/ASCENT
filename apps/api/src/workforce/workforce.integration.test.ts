@@ -79,15 +79,15 @@ describe("工位池（OD-BE-1 整合）", () => {
     expect(well?.status).toBe("running");
   });
 
-  it("H2：僱工扣 8 金、hired=2，可兩座並行", async () => {
+  it("H2：僱工扣 80 金、hired=2，可兩座並行", async () => {
     await resetBuilding(fieldId);
     await resetBuilding(wellId);
     await setHired(1, 0);
-    await setGold(20);
+    await setGold(100);
 
     const res = await workforce.hire();
     expect(res.workforce.hired).toBe(2);
-    expect(res.gold).toBe(12);
+    expect(res.gold).toBe(20);
 
     await inventory.start(fieldId, growMethodId);
     await inventory.start(wellId, drawMethodId);
@@ -98,7 +98,7 @@ describe("工位池（OD-BE-1 整合）", () => {
   it("H3：開工扣工資；stop 唔退金", async () => {
     await resetBuilding(fieldId);
     await setHired(1, 0);
-    await setGold(1);
+    await setGold(10);
 
     await inventory.start(fieldId, growMethodId);
     const afterStart = await prisma.playerInventory.findUnique({
@@ -125,8 +125,8 @@ describe("工位池（OD-BE-1 整合）", () => {
   it("GET state 含 workforce 與 opsCosts", async () => {
     const state = await inventory.state();
     expect(state.workforce).toMatchObject({ hired: 1, busy: 0, free: 1, maxHired: 8 });
-    expect(state.opsCosts.hireCostGold).toBe(8);
-    expect(state.opsCosts.wageByBuilding.bdef_field).toBe(1);
+    expect(state.opsCosts.hireCostGold).toBe(80);
+    expect(state.opsCosts.wageByBuilding.bdef_field).toBe(10);
     expect(state.opsCosts.haulByBuilding.bdef_mill).toBe(1);
     expect(state.opsCosts.sellTransport.item_bread).toBe(1);
     expect(state.opsCosts.laborCostPerStart).toBe(1);
@@ -134,7 +134,7 @@ describe("工位池（OD-BE-1 整合）", () => {
 
   it("銅錠不足僱工", async () => {
     await setHired(1, 0);
-    await setGold(7);
+    await setGold(79);
     await expect(workforce.hire()).rejects.toMatchObject({
       response: { message: "銅錠不足", statusCode: 400 },
     });

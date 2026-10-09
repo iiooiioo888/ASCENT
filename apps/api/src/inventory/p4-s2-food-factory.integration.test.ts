@@ -114,7 +114,7 @@ describe.sequential("P4-S2 食品廠（蛋糕）", () => {
         playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID },
       },
     });
-    expect(Number(goldBefore?.quantity) - Number(goldAfterStart?.quantity)).toBe(5);
+    expect(Number(goldBefore?.quantity) - Number(goldAfterStart?.quantity)).toBe(32);
 
     await windBuildingBack(factory.id, 30);
     const ready = await prisma.playerBuilding.findUnique({ where: { id: factory.id } });
@@ -155,7 +155,7 @@ describe.sequential("P4-S2 食品廠（蛋糕）", () => {
 
   it("state.opsCosts 含食品廠工資與運費", async () => {
     const state = await inventory.state();
-    expect(state.opsCosts.wageByBuilding.bdef_food_factory).toBe(3);
+    expect(state.opsCosts.wageByBuilding.bdef_food_factory).toBe(30);
     expect(state.opsCosts.haulByBuilding.bdef_food_factory).toBe(2);
     expect(state.opsCosts.sellTransport.item_cake).toBe(1);
   });

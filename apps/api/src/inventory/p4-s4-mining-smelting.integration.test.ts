@@ -97,7 +97,7 @@ describe.sequential("P4-S4 礦冶（接大宗石油）", () => {
     expect(stateAfter.buildingSlotCap).toBe(12);
   });
 
-  it("礦場：1 水 → 40s → 2 礦石；工資 2、運費 0", async () => {
+  it("礦場：1 水 → 40s → 2 礦石；工資 20、運費 0", async () => {
     const mine = await inventory.place("bdef_mine");
     await setQty("item_water", 5);
     await prisma.player.update({
@@ -117,7 +117,7 @@ describe.sequential("P4-S4 礦冶（接大宗石油）", () => {
         playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID },
       },
     });
-    expect(Number(copperBefore?.quantity) - Number(copperAfterStart?.quantity)).toBe(2);
+    expect(Number(copperBefore?.quantity) - Number(copperAfterStart?.quantity)).toBe(20);
 
     await windBuildingBack(mine.id, 40);
     await inventory.collect(mine.id);
@@ -127,7 +127,7 @@ describe.sequential("P4-S4 礦冶（接大宗石油）", () => {
     expect(Number(ore?.quantity)).toBeGreaterThanOrEqual(2);
   });
 
-  it("冶煉：2 礦＋1 石油 → 40s → 2 鐵；工資 3＋運費 2", async () => {
+  it("冶煉：2 礦＋1 石油 → 40s → 2 鐵；工資 30＋運費 2", async () => {
     const smelter = await inventory.place("bdef_smelter");
     await setQty("item_ore", 2);
     await setQty("item_oil", 1);
@@ -148,7 +148,7 @@ describe.sequential("P4-S4 礦冶（接大宗石油）", () => {
         playerId_itemId: { playerId: LOCAL_PLAYER_ID, itemId: ITEM_SETTLEMENT_CURRENCY_ID },
       },
     });
-    expect(Number(copperBefore?.quantity) - Number(copperAfterStart?.quantity)).toBe(5);
+    expect(Number(copperBefore?.quantity) - Number(copperAfterStart?.quantity)).toBe(32);
 
     await windBuildingBack(smelter.id, 40);
     await inventory.collect(smelter.id);
@@ -201,9 +201,9 @@ describe.sequential("P4-S4 礦冶（接大宗石油）", () => {
 
   it("state.opsCosts 含礦場／冶煉廠工資與運費", async () => {
     const state = await inventory.state();
-    expect(state.opsCosts.wageByBuilding.bdef_mine).toBe(2);
+    expect(state.opsCosts.wageByBuilding.bdef_mine).toBe(20);
     expect(state.opsCosts.haulByBuilding.bdef_mine).toBe(0);
-    expect(state.opsCosts.wageByBuilding.bdef_smelter).toBe(3);
+    expect(state.opsCosts.wageByBuilding.bdef_smelter).toBe(30);
     expect(state.opsCosts.haulByBuilding.bdef_smelter).toBe(2);
     expect(state.opsCosts.sellTransport.item_iron).toBe(1);
   });

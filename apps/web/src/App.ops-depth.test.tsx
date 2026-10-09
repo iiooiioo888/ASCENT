@@ -20,7 +20,7 @@ function makeStateWithWorkforce(): GameState {
     inventory: [
       {
         itemId: "item_copper_ingot",
-        quantity: "10",
+        quantity: "100",
         item: { code: "item_copper_ingot", layer: "T", derivedTier: 1 },
       },
       {
@@ -49,9 +49,9 @@ function makeStateWithWorkforce(): GameState {
     buildingDefs: [{ id: "bdef_field", name: "田", code: "field" }],
     workforce: { hired: 1, busy: 0, free: 1, maxHired: 4 },
     opsCosts: {
-      hireCostGold: 8,
+      hireCostGold: 80,
       laborCostPerStart: 1,
-      wageByBuilding: { bdef_field: 1 },
+      wageByBuilding: { bdef_field: 10 },
       haulByBuilding: { bdef_field: 0 },
     },
   };
@@ -62,8 +62,8 @@ describe("App OD-FE-1 workforce HUD", () => {
     apiMock.mockReset();
     const state = makeStateWithWorkforce();
     const market = defaultMarketSnapshotForTests({
-      gold: 10,
-      holdings: { item_copper_ingot: 10, item_seed_wheat: 40, item_water: 80 },
+      gold: 100,
+      holdings: { item_copper_ingot: 100, item_seed_wheat: 40, item_water: 80 },
     });
     apiMock.mockImplementation(
       withMarketApiRoute(
