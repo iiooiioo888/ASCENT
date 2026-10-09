@@ -10,6 +10,8 @@
 
 本檔鎖定產品決定，**不得刪減下列決策**。技術棧**目標**聽 [ADR 0001](adr/0001-tech-stack.md)（不改定案表）；生產規則聽 [GDD v2.0 正式全文](gdd/production-system-v2.md)、[節次入口](gdd/production-system.md) 與分冊 0001–0007；工程切片聽 [mvp.md](mvp.md)；產品約束摘要見 [ADR 0002](adr/0002-product-constraints.md)。
 
+**體驗北星（怎麼玩）**：核心玩法＝**空間效率 × 時間規劃＝利潤**——見 [gdd/core-loop-planning.md](gdd/core-loop-planning.md)。下表決策 #3「**生產鏈深度**」仍是**內容深度**法源，兩者並存、互不取代。
+
 衝突時：產品範圍、優先級、離線 **8 現實小時**聽**本檔**；框架與模組邊界聽 ADR 0001；規則與驗證聽生產系統／GDD。目標棧與 MVP 技術子集寫成「目標 vs MVP」，**不互相覆蓋、不從 ADR 刪 Redis／Socket.IO**。
 
 ---
@@ -51,7 +53,7 @@
 | --- | --- |
 | 名稱 | 帝國掘起 |
 | 類型 | 無限發展的模擬經營 |
-| 核心 | **生產鏈深度** |
+| 核心 | **生產鏈深度**（內容深度）；體驗北星見 [core-loop-planning.md](gdd/core-loop-planning.md)（空間效率×時間規劃） |
 | 勝利條件 | **無** |
 | 遊玩 | **隨時可玩** |
 | 玩家做 | 建造 + 管理 + 競爭 + 探索 |

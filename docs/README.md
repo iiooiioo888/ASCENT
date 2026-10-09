@@ -45,6 +45,7 @@ gameTime = startGameTime + (now - startRealTime) / 1000 × timeScale
 | --- | --- | --- |
 | [../README.md](../README.md) | 專案入口：定位、核心精神、技術棧、MVP、開發順序 | 入口 |
 | [system-definition.md](system-definition.md) | 系統定義 v1.0（產品法源） | **確定** |
+| [gdd/core-loop-planning.md](gdd/core-loop-planning.md) | 核心玩法北星（空間效率×時間規劃＝利潤） | **LOCKED** |
 | [system-definition-v1.md](system-definition-v1.md) | 舊檔名轉址 | 轉址 |
 | [production-system.md](production-system.md) | 生產系統正式設計（規則濃縮契約） | **確定** |
 | [mvp.md](mvp.md) | 工程 MVP 範圍、非目標、驗收 | **確定** |
@@ -63,6 +64,7 @@ gameTime = startGameTime + (now - startRealTime) / 1000 × timeScale
 | 層 | 法源 | 狀態 |
 | --- | --- | --- |
 | 產品邊界、優先級、離線 8 現實小時 | [系統定義 v1.0](system-definition.md)、[ADR 0002](adr/0002-product-constraints.md) | **確定** |
+| 產品體驗北星（怎麼玩＝規劃） | [gdd/core-loop-planning.md](gdd/core-loop-planning.md) | **LOCKED** |
 | 技術棧最終定案、NestJS 模組 | [ADR 0001](adr/0001-tech-stack.md) | **確定**／**分期** |
 | 生產規則（GDD v2.0 正式全文） | [gdd/production-system-v2.md](gdd/production-system-v2.md) | **確定** |
 | 生產規則（節次入口／核心規則速覽） | [gdd/production-system.md](gdd/production-system.md) | 入口，不是全文 |
@@ -104,20 +106,21 @@ gameTime = startGameTime + (now - startRealTime) / 1000 × timeScale
 ## 閱讀順序
 
 1. [system-definition.md](system-definition.md) — 系統定義 v1.0 正式法源。
-2. [adr/README.md](adr/README.md) → [adr/0001-tech-stack.md](adr/0001-tech-stack.md) — 編號約定與技術棧定案（**分期落地**）。
-3. [adr/0002-product-constraints.md](adr/0002-product-constraints.md) — 單人、1000 人、免費+內購。
-4. [mvp.md](mvp.md) — 工程 MVP 農業切片與驗收。
-5. [gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md) — MVP 物品／建築／規則 ID 與驗證對照。
-6. [production-system.md](production-system.md) — 規則濃縮契約（T／P、公式、繼承、驗證）。
-7. [gdd/production-system.md](gdd/production-system.md) — GDD 節次入口與核心規則速覽。
-8. [gdd/production-system-v2.md](gdd/production-system-v2.md) — 《帝國掘起》遊戲設計文件 v2.0 **正式全文**（節 1–17）。
-9. [gdd/0002-time-and-settlement.md](gdd/0002-time-and-settlement.md) — 1:60、懶結算、離線 **8 現實小時**。
-10. [gdd/0003-tiers-and-types.md](gdd/0003-tiers-and-types.md) → [0007](gdd/0007-scope-expansion.md) · [launch-scope.md](gdd/launch-scope.md)
-11. [architecture.md](architecture.md) · [overview](architecture/overview.md) · [time-and-settlement](architecture/time-and-settlement.md)
-12. [api/v1.md](api/v1.md) — `/api/v1` 端點表。
-13. [adr/0003-production-rules.md](adr/0003-production-rules.md) — 規則／驗證作為架構約束。
-14. [roadmap.md](roadmap.md)
-15. [next.md](next.md) — 現況與接下來要做的事。
+2. [gdd/core-loop-planning.md](gdd/core-loop-planning.md) — 核心玩法北星：**空間效率 × 時間規劃 = 利潤**（體驗法源；內容深度仍聽生產鏈深度）。
+3. [adr/README.md](adr/README.md) → [adr/0001-tech-stack.md](adr/0001-tech-stack.md) — 編號約定與技術棧定案（**分期落地**）。
+4. [adr/0002-product-constraints.md](adr/0002-product-constraints.md) — 單人、1000 人、免費+內購。
+5. [mvp.md](mvp.md) — 工程 MVP 農業切片與驗收。
+6. [gdd/mvp-agriculture-catalog.md](gdd/mvp-agriculture-catalog.md) — MVP 物品／建築／規則 ID 與驗證對照。
+7. [production-system.md](production-system.md) — 規則濃縮契約（T／P、公式、繼承、驗證）。
+8. [gdd/production-system.md](gdd/production-system.md) — GDD 節次入口與核心規則速覽。
+9. [gdd/production-system-v2.md](gdd/production-system-v2.md) — 《帝國掘起》遊戲設計文件 v2.0 **正式全文**（節 1–17）。
+10. [gdd/0002-time-and-settlement.md](gdd/0002-time-and-settlement.md) — 1:60、懶結算、離線 **8 現實小時**。
+11. [gdd/0003-tiers-and-types.md](gdd/0003-tiers-and-types.md) → [0007](gdd/0007-scope-expansion.md) · [launch-scope.md](gdd/launch-scope.md)
+12. [architecture.md](architecture.md) · [overview](architecture/overview.md) · [time-and-settlement](architecture/time-and-settlement.md)
+13. [api/v1.md](api/v1.md) — `/api/v1` 端點表。
+14. [adr/0003-production-rules.md](adr/0003-production-rules.md) — 規則／驗證作為架構約束。
+15. [roadmap.md](roadmap.md)
+16. [next.md](next.md) — 現況與接下來要做的事。
 
 [system-definition-v1.md](system-definition-v1.md) 只轉址，不要當正文讀。[gdd/production-system.md](gdd/production-system.md) 是節次入口與核心規則速覽，不要當第二套全文讀。
 
@@ -149,6 +152,7 @@ gameTime = startGameTime + (now - startRealTime) / 1000 × timeScale
 docs/
   README.md                         ← 本檔（索引）
   system-definition.md              ← 系統定義 v1.0 正式法源
+  gdd/core-loop-planning.md         ← 核心玩法北星（LOCKED）
   system-definition-v1.md           ← 轉址，非法源
   production-system.md              ← 規則濃縮契約
   mvp.md
