@@ -42,12 +42,12 @@ function industryState(): GameState {
     buildings: [building("pb_field", "bdef_field", "田"), building("pb_mine", "bdef_mining_pit", "礦坑")],
     methods: [],
     buildingDefs: [
-      { id: "bdef_field", name: "田", code: "field" },
-      { id: "bdef_mining_pit", name: "礦坑", code: "mining_pit" },
-      { id: "bdef_forest", name: "林地", code: "forest" },
-      { id: "bdef_kiln", name: "窯", code: "kiln" },
-      { id: "bdef_workshop", name: "工坊", code: "workshop" },
-      { id: "bdef_boiler", name: "鍋爐", code: "boiler" },
+      { id: "bdef_field", name: "田", code: "field", systemCode: "agriculture" },
+      { id: "bdef_mining_pit", name: "礦坑", code: "mining_pit", systemCode: "mining" },
+      { id: "bdef_forest", name: "林地", code: "forest", systemCode: "timber" },
+      { id: "bdef_kiln", name: "窯", code: "kiln", systemCode: "chemical" },
+      { id: "bdef_workshop", name: "工坊", code: "workshop", systemCode: "industry" },
+      { id: "bdef_boiler", name: "鍋爐", code: "boiler", systemCode: "energy" },
     ],
   };
 }
@@ -116,5 +116,43 @@ describe("industry tabs", () => {
     expect(screen.queryByRole("button", { name: "放置工坊" })).not.toBeInTheDocument();
     expect(screen.getByText("蒸汽")).toBeInTheDocument();
     expect(screen.queryByText("蒸汽機")).not.toBeInTheDocument();
+  });
+
+  it("puts P4 礦場／冶煉廠 on 礦業 and 食品廠／紡織廠 on 工業 via systemCode", async () => {
+    const user = userEvent.setup();
+    const state: GameState = {
+      ...industryState(),
+      buildings: [
+        building("pb_field", "bdef_field", "田"),
+        building("pb_mine", "bdef_mine", "礦場"),
+        building("pb_smelter", "bdef_smelter", "冶煉廠"),
+      ],
+      buildingDefs: [
+        { id: "bdef_field", name: "田", code: "field", systemCode: "agriculture" },
+        { id: "bdef_mine", name: "礦場", code: "mine", systemCode: "mining" },
+        { id: "bdef_smelter", name: "冶煉廠", code: "smelter", systemCode: "mining" },
+        { id: "bdef_food_factory", name: "食品廠", code: "food_factory", systemCode: "industry" },
+        { id: "bdef_textile_mill", name: "紡織廠", code: "textile_mill", systemCode: "industry" },
+      ],
+    };
+    apiMock.mockImplementation(
+      withMarketApiRoute(async (path: string) => {
+        if (path === "/api/v1/state") return state;
+        throw new Error(`unexpected api call: ${path}`);
+      }),
+    );
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "田" });
+
+    await user.click(screen.getByRole("tab", { name: "礦業" }));
+    expect(screen.getByRole("heading", { name: "礦場" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "冶煉廠" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "放置食品廠" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "工業" }));
+    expect(screen.getByRole("button", { name: "放置食品廠" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "放置紡織廠" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "礦場" })).not.toBeInTheDocument();
   });
 });

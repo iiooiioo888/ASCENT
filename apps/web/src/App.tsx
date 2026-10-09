@@ -18,7 +18,7 @@ import {
 } from "./components/MarketPanel";
 import { OfflineSummaryNotice } from "./components/OfflineSummaryNotice";
 import { LoadingScreen } from "./components/LoadingScreen";
-import { INDUSTRY_TABS, inIndustry, industryOfBuildingDef, industryOfItem, type IndustryId } from "./industries";
+import { createIndustryModel, INDUSTRY_TABS, type IndustryId } from "./industries";
 import { HudPrimaryChips } from "./components/HudPrimaryChips";
 import { HudRecentActivity } from "./components/HudRecentActivity";
 import { maybeWorkforceHud } from "./components/WorkforceHud";
@@ -383,6 +383,22 @@ export default function App() {
     }
   }, [industry, scrollToAnchor]);
 
+  const methodsByRule = useMemo(() => {
+    const m = new Map<string, Method[]>();
+    for (const method of state?.methods ?? []) {
+      const arr = m.get(method.ruleId) ?? [];
+      arr.push(method);
+      m.set(method.ruleId, arr);
+    }
+    return m;
+  }, [state]);
+
+  const industryModel = useMemo(
+    () => createIndustryModel(state?.buildingDefs ?? []),
+    [state?.buildingDefs],
+  );
+  const { industryOfBuildingDef, inIndustry, industryOfItem } = industryModel;
+
   const revealBuilding = useCallback(
     (buildingDefId: string, anchor: string | null, marketPanel = false) => {
       const next = industryOfBuildingDef(buildingDefId);
@@ -395,18 +411,8 @@ export default function App() {
       pendingRevealRef.current = { anchor, marketPanel };
       selectIndustry(next);
     },
-    [flashHighlight, scrollToAnchor, selectIndustry],
+    [flashHighlight, industryOfBuildingDef, scrollToAnchor, selectIndustry],
   );
-
-  const methodsByRule = useMemo(() => {
-    const m = new Map<string, Method[]>();
-    for (const method of state?.methods ?? []) {
-      const arr = m.get(method.ruleId) ?? [];
-      arr.push(method);
-      m.set(method.ruleId, arr);
-    }
-    return m;
-  }, [state]);
 
   const resourceDepleted = useMemo(() => {
     if (!state) return false;
@@ -416,12 +422,12 @@ export default function App() {
   const industryInventory = useMemo(() => {
     if (!state) return [];
     return sortInventoryRows(state.inventory).filter((row) => industryOfItem(row.itemId) === industry);
-  }, [state, industry]);
+  }, [state, industry, industryOfItem]);
 
   const industryBuildings = useMemo(() => {
     if (!state) return [];
     return sortBuildings(state.buildings).filter((b) => inIndustry(b, industry));
-  }, [state, industry]);
+  }, [state, industry, inIndustry]);
 
   const hudGold = useMemo(
     () => (state ? resolveHudGold(marketSnapshot?.gold, state.inventory) : 0),
